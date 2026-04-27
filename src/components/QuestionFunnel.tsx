@@ -4,98 +4,86 @@ export function QuestionFunnel() {
   const maxAnswered = QUESTION_FUNNEL[0].answered
 
   return (
-    <section id="question-funnel" className="px-6 py-4">
-      <h2 className="text-sm font-semibold text-slate-300 mb-1">
-        8. Question Response Funnel
-      </h2>
-      <p className="text-xs text-slate-500 mb-4">
-        How many answered each question · Questions are NOT strictly sequential · Independent bases
-      </p>
+    <div>
+      <h2 className="section-title">8. Question Response Funnel</h2>
+      <p className="section-sub">How many answered each question · Questions are NOT strictly sequential · Independent bases</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Visual funnel */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           {QUESTION_FUNNEL.map((q, i) => {
             const pct = (q.answered / maxAnswered) * 100
+            const yesPct = (q.yesCount / maxAnswered) * 100
             const barColor =
               q.yesPct >= 70 ? 'bg-emerald-500' :
               q.yesPct >= 40 ? 'bg-amber-500' : 'bg-red-500'
+            const textColor =
+              q.yesPct >= 70 ? 'text-emerald-700' :
+              q.yesPct >= 40 ? 'text-amber-700' : 'text-red-600'
             return (
-              <div key={i} className="relative">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-mono text-slate-500 w-6">{q.q}</span>
-                  <span className="text-xs text-slate-300 font-medium">{q.label}</span>
-                  <span className={`ml-auto text-xs font-bold ${
-                    q.yesPct >= 70 ? 'text-emerald-400' :
-                    q.yesPct >= 40 ? 'text-amber-400' : 'text-red-400'
-                  }`}>{q.yesPct.toFixed(1)}% yes</span>
+              <div key={i}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold w-6 text-center py-0.5 rounded ${barColor} text-white`}>{q.q}</span>
+                    <span className="text-sm font-medium text-gray-700">{q.label}</span>
+                  </div>
+                  <span className={`text-sm font-bold ${textColor}`}>{q.yesPct.toFixed(1)}% yes</span>
                 </div>
-                {/* Answered bar */}
-                <div className="h-7 bg-slate-800 rounded overflow-hidden relative">
-                  <div
-                    className="h-full bg-slate-700 rounded transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
-                  {/* Yes portion */}
-                  <div
-                    className={`absolute top-0 left-0 h-full ${barColor} opacity-70 rounded transition-all`}
-                    style={{ width: `${(q.yesCount / maxAnswered) * 100}%` }}
-                  />
-                  <div className="absolute inset-0 flex items-center px-2">
-                    <span className="text-xs font-mono text-white font-semibold">
+                <div className="h-8 bg-gray-100 rounded-lg overflow-hidden relative border border-gray-200">
+                  <div className="h-full bg-gray-200 rounded-lg transition-all" style={{ width: `${pct}%` }} />
+                  <div className={`absolute top-0 left-0 h-full ${barColor} opacity-80 rounded-lg transition-all`}
+                    style={{ width: `${yesPct}%` }} />
+                  <div className="absolute inset-0 flex items-center px-3 justify-between">
+                    <span className="text-xs font-semibold text-white drop-shadow">
                       {q.answered.toLocaleString()} answered
                     </span>
-                    <span className="ml-auto text-xs font-mono text-white/70">
-                      {q.yesCount.toLocaleString()} yes / {q.noCount.toLocaleString()} no
+                    <span className="text-xs text-white/90 drop-shadow">
+                      {q.yesCount.toLocaleString()} yes
                     </span>
                   </div>
                 </div>
-                {q.note && (
-                  <p className="text-xs text-slate-600 mt-0.5 pl-8">{q.note}</p>
-                )}
+                {q.note && <p className="text-xs text-gray-400 mt-0.5 pl-8">{q.note}</p>}
               </div>
             )
           })}
-          <div className="mt-2 text-xs text-slate-500">
-            Bar width = answered as % of Q1 base (9,224) · Color = % yes satisfaction
-          </div>
+          <p className="text-xs text-gray-400 mt-1">Bar width = answered as % of Q1 base · Color = yes% satisfaction</p>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 h-fit">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-800">
-                <th className="text-left py-2 pr-2 text-xs font-medium text-slate-500 uppercase tracking-wide">Q</th>
-                <th className="text-right py-2 px-2 text-xs font-medium text-slate-500 uppercase tracking-wide">Answered</th>
-                <th className="text-right py-2 px-2 text-xs font-medium text-slate-500 uppercase tracking-wide">Yes</th>
-                <th className="text-right py-2 px-2 text-xs font-medium text-slate-500 uppercase tracking-wide">No</th>
-                <th className="text-right py-2 px-2 text-xs font-medium text-slate-500 uppercase tracking-wide">Yes %</th>
-                <th className="text-left py-2 pl-2 text-xs font-medium text-slate-500 uppercase tracking-wide hidden sm:table-cell">Base</th>
+              <tr>
+                <th className="th">Q</th>
+                <th className="th text-right">Answered</th>
+                <th className="th text-right">Yes</th>
+                <th className="th text-right">No</th>
+                <th className="th text-right">Yes %</th>
+                <th className="th hidden sm:table-cell">Base</th>
               </tr>
             </thead>
             <tbody>
               {QUESTION_FUNNEL.map((q) => (
-                <tr key={q.q} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                  <td className="py-2 pr-2 text-slate-400 font-mono text-xs">{q.q}</td>
-                  <td className="py-2 px-2 text-right text-slate-300 font-mono">{q.answered.toLocaleString()}</td>
-                  <td className="py-2 px-2 text-right text-emerald-400 font-mono text-xs">{q.yesCount.toLocaleString()}</td>
-                  <td className="py-2 px-2 text-right text-red-400 font-mono text-xs">{q.noCount.toLocaleString()}</td>
-                  <td className={`py-2 px-2 text-right font-mono font-bold ${
-                    q.yesPct >= 70 ? 'text-emerald-400' :
-                    q.yesPct >= 40 ? 'text-amber-400' : 'text-red-400'
+                <tr key={q.q} className="hover:bg-gray-50">
+                  <td className="td font-mono text-xs font-bold text-gray-500">{q.q}</td>
+                  <td className="td-mono text-right">{q.answered.toLocaleString()}</td>
+                  <td className="td-mono text-right text-emerald-600 text-xs">{q.yesCount.toLocaleString()}</td>
+                  <td className="td-mono text-right text-red-500 text-xs">{q.noCount.toLocaleString()}</td>
+                  <td className={`td-mono text-right font-bold ${
+                    q.yesPct >= 70 ? 'text-emerald-700' :
+                    q.yesPct >= 40 ? 'text-amber-700' : 'text-red-600'
                   }`}>{q.yesPct.toFixed(1)}%</td>
-                  <td className="py-2 pl-2 text-slate-500 text-xs hidden sm:table-cell">{q.base}</td>
+                  <td className="td text-xs text-gray-400 hidden sm:table-cell">{q.base}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="mt-3 bg-slate-800/30 border border-slate-700 rounded p-3 text-xs text-slate-400">
-            <p className="font-semibold text-slate-300 mb-1">Note on bases:</p>
-            <p>Q1 base = 9,224 usable calls (any call where Q1 was answered). Q2–Q5 base = 12,583 consented calls — not all consented callers answered every question.</p>
+          <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 leading-relaxed">
+            <span className="font-semibold text-gray-700">Note on bases: </span>
+            Q1 base = 9,224 usable calls. Q2–Q5 base = 12,583 consented calls — not all answered every question.
           </div>
         </div>
       </div>
-    </section>
+    </div>
   )
 }

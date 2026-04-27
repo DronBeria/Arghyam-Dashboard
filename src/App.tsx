@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Header }         from './components/Header'
 import { KPICards }       from './components/KPICards'
 import { CallSummary }    from './components/CallSummary'
@@ -11,90 +11,123 @@ import { CallAttempts }   from './components/CallAttempts'
 import { QuestionFunnel } from './components/QuestionFunnel'
 
 const NAV_ITEMS = [
-  { id: 'kpi-cards',       label: 'KPI Overview',        icon: '◈' },
-  { id: 'call-summary',    label: '1. Call Summary',      icon: '◉' },
-  { id: 'kpi-results',     label: '2. KPI Results',       icon: '◈' },
-  { id: 'scheme-coverage', label: '3. Scheme Coverage',   icon: '◉' },
-  { id: 'zone-scores',     label: '4. Zone Scores',       icon: '◈' },
-  { id: 'district-scores', label: '5. District Scores',   icon: '◉' },
-  { id: 'repeat-callers',  label: '6. Repeat Callers',    icon: '◈' },
-  { id: 'call-attempts',   label: '7. Call Attempts',     icon: '◉' },
-  { id: 'question-funnel', label: '8. Question Funnel',   icon: '◈' },
+  { id: 'kpi-cards',       label: 'Overview'          },
+  { id: 'call-summary',    label: 'Call Summary'      },
+  { id: 'kpi-results',     label: 'KPI Results'       },
+  { id: 'scheme-coverage', label: 'Schemes'           },
+  { id: 'zone-scores',     label: 'Zone Scores'       },
+  { id: 'district-scores', label: 'Districts'         },
+  { id: 'repeat-callers',  label: 'Repeat Callers'    },
+  { id: 'call-attempts',   label: 'Call Attempts'     },
+  { id: 'question-funnel', label: 'Question Funnel'   },
 ]
 
 function scrollTo(id: string) {
   const el = document.getElementById(id)
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (el) {
+    const offset = 120 // header + nav height
+    const top = el.getBoundingClientRect().top + window.scrollY - offset
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
 }
 
 export default function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [activeSection, setActiveSection] = useState('kpi-cards')
+  const observerRef = useRef<IntersectionObserver | null>(null)
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id)
+          }
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+    )
+    NAV_ITEMS.forEach(({ id }) => {
+      const el = document.getElementById(id)
+      if (el) observerRef.current?.observe(el)
+    })
+    return () => observerRef.current?.disconnect()
+  }, [])
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
-      <Header />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Sticky top block: header + nav */}
+      <div className="sticky top-0 z-40 shadow-sm">
+        <Header />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside
-          className={`${
-            sidebarOpen ? 'w-52' : 'w-0 overflow-hidden'
-          } flex-shrink-0 bg-slate-900 border-r border-slate-800 transition-all duration-200 hidden md:block`}
-        >
-          <nav className="py-4">
-            <p className="px-4 text-xs font-semibold text-slate-600 uppercase tracking-widest mb-2">
-              Sections
-            </p>
+        {/* Sticky section nav */}
+        <nav className="bg-white border-b border-gray-200 px-4 overflow-x-auto">
+          <div className="flex items-center gap-1 min-w-max">
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
                 onClick={() => scrollTo(item.id)}
-                className="w-full text-left px-4 py-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-2"
+                className={`relative px-4 py-3 text-xs font-medium whitespace-nowrap transition-colors ${
+                  activeSection === item.id
+                    ? 'text-blue-700'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}
               >
-                <span className="text-slate-600">{item.icon}</span>
                 {item.label}
+                {activeSection === item.id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-t" />
+                )}
               </button>
             ))}
-          </nav>
-
-          <div className="absolute bottom-4 left-0 right-0 px-4">
-            <div className="bg-slate-800 rounded p-2 text-xs text-slate-500 leading-relaxed">
-              <p className="font-semibold text-slate-400">CSAT AI Phase 1</p>
-              <p>Assam JJM · April 2026</p>
-              <p>Bot: Raya</p>
-            </div>
           </div>
-        </aside>
-
-        {/* Main scrollable content */}
-        <main className="flex-1 overflow-y-auto">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden md:block fixed top-20 left-2 z-50 bg-slate-800 border border-slate-700 rounded p-1 text-slate-400 hover:text-white"
-            title="Toggle sidebar"
-          >
-            {sidebarOpen ? '←' : '→'}
-          </button>
-
-          <div className="divide-y divide-slate-800/60">
-            <KPICards />
-            <CallSummary />
-            <KPIResults />
-            <SchemeCoverage />
-            <ZoneScores />
-            <DistrictScores />
-            <RepeatCallers />
-            <CallAttempts />
-            <QuestionFunnel />
-          </div>
-
-          {/* Footer */}
-          <footer className="px-6 py-4 border-t border-slate-800 text-xs text-slate-600 leading-relaxed">
-            Source: CSAT AI Phase 1 · Assam Jal Jeevan Mission · 45,863 completed calls · April 2026 ·
-            All figures verified from primary data · BSI = raw score (0–5.0) ÷ 5 = scale 0–1.0 · Benchmark ≥ 0.70 = Good
-          </footer>
-        </main>
+        </nav>
       </div>
+
+      {/* Main content */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+        <section id="kpi-cards">
+          <KPICards />
+        </section>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <section id="call-summary" className="card p-5">
+            <CallSummary />
+          </section>
+          <section id="kpi-results" className="card p-5">
+            <KPIResults />
+          </section>
+        </div>
+
+        <section id="scheme-coverage" className="card p-5">
+          <SchemeCoverage />
+        </section>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <section id="zone-scores" className="card p-5">
+            <ZoneScores />
+          </section>
+          <section id="district-scores" className="card p-5">
+            <DistrictScores />
+          </section>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <section id="repeat-callers" className="card p-5">
+            <RepeatCallers />
+          </section>
+          <section id="call-attempts" className="card p-5">
+            <CallAttempts />
+          </section>
+        </div>
+
+        <section id="question-funnel" className="card p-5">
+          <QuestionFunnel />
+        </section>
+
+        <footer className="text-center text-xs text-gray-400 py-4 border-t border-gray-200">
+          Source: CSAT AI Phase 1 · Assam Jal Jeevan Mission · 45,863 calls · April 2026 ·
+          All figures verified from primary data · BSI scale 0–1.0 · Benchmark ≥ 0.70 = Good
+        </footer>
+      </main>
     </div>
   )
 }

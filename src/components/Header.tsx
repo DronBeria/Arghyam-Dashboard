@@ -1,49 +1,56 @@
 export function Header() {
   return (
-    <div className="bg-slate-900 border-b border-slate-800 px-6 py-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-8 bg-blue-500 rounded-full" />
+    <div className="bg-white border-b border-gray-200 shadow-sm">
+      {/* Top gov banner */}
+      <div className="bg-blue-900 px-6 py-1.5 flex items-center justify-between">
+        <span className="text-xs text-blue-200 font-medium tracking-wide">
+          Government of Assam · Jal Jeevan Mission
+        </span>
+        <span className="text-xs text-blue-300">
+          Phase 1 Report · April 2026
+        </span>
+      </div>
+
+      {/* Main header */}
+      <div className="px-6 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {/* Emblem placeholder */}
+            <div className="w-12 h-12 rounded-full bg-blue-900 flex items-center justify-center flex-shrink-0 shadow">
+              <span className="text-white text-lg font-bold">JJM</span>
+            </div>
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">
+              <h1 className="text-xl font-bold text-gray-900 tracking-tight leading-tight">
                 Assam Jal Jeevan Mission
               </h1>
-              <p className="text-sm text-slate-400 mt-0.5">
-                CSAT AI Phase 1 — Official Results Dashboard
+              <p className="text-sm text-blue-700 font-medium mt-0.5">
+                CSAT AI Phase 1 — Official Beneficiary Satisfaction Report
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                AI Voice Bot (Raya) · 45,863 calls · 2,373 schemes · 7 zones · 31 districts
               </p>
             </div>
           </div>
+
+          {/* Status legend */}
+          <div className="flex flex-wrap gap-2 sm:text-right">
+            {[
+              { color: 'bg-emerald-500', label: 'Good', sub: '≥ 70%' },
+              { color: 'bg-amber-500',   label: 'Moderate', sub: '40–69%' },
+              { color: 'bg-red-500',     label: 'Critical', sub: '< 40%' },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
+                <span className="text-xs font-medium text-gray-700">{s.label}</span>
+                <span className="text-xs text-gray-400">{s.sub}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+              <span className="text-xs font-semibold text-blue-700">BSI</span>
+              <span className="text-xs text-blue-500">scale 0–1.0</span>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-          <span className="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full">
-            AI Voice Bot (Raya)
-          </span>
-          <span className="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full">
-            45,863 Calls
-          </span>
-          <span className="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full">
-            2,373 Schemes · 7 Zones · 31 Districts
-          </span>
-          <span className="bg-blue-950 border border-blue-800 text-blue-300 px-3 py-1.5 rounded-full font-medium">
-            April 2026
-          </span>
-        </div>
-      </div>
-      <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-emerald-400" /> Good ≥ 0.70
-        </span>
-        <span className="mx-1">·</span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-amber-400" /> Moderate 0.40–0.69
-        </span>
-        <span className="mx-1">·</span>
-        <span className="inline-flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-red-400" /> Critical &lt; 0.40
-        </span>
-        <span className="mx-1">·</span>
-        <span>BSI scale 0–1.0 · Benchmark ≥ 0.70 = Good</span>
       </div>
     </div>
   )

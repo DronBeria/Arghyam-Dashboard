@@ -1,22 +1,22 @@
 export function statusColor(status: string | null) {
-  if (!status) return 'text-slate-400'
-  if (status === 'Good')    return 'text-emerald-400'
-  if (status === 'Critical') return 'text-red-400'
-  if (status === 'No Data') return 'text-slate-500'
-  return 'text-amber-400' // Moderate
+  if (!status) return 'text-gray-400'
+  if (status === 'Good')     return 'text-emerald-600'
+  if (status === 'Critical') return 'text-red-600'
+  if (status === 'No Data')  return 'text-gray-400'
+  return 'text-amber-600'
 }
 
 export function statusBg(status: string | null) {
-  if (!status) return 'bg-slate-800 text-slate-400'
-  if (status === 'Good')    return 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-  if (status === 'Critical') return 'bg-red-950 text-red-300 border border-red-800'
-  if (status === 'No Data') return 'bg-slate-800 text-slate-400 border border-slate-700'
-  return 'bg-amber-950 text-amber-300 border border-amber-800'
+  if (!status) return 'bg-gray-100 text-gray-500'
+  if (status === 'Good')     return 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+  if (status === 'Critical') return 'bg-red-50 text-red-700 border border-red-200'
+  if (status === 'No Data')  return 'bg-gray-100 text-gray-500 border border-gray-200'
+  return 'bg-amber-50 text-amber-700 border border-amber-200'
 }
 
 export function StatusBadge({ status }: { status: string | null }) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusBg(status)}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${statusBg(status)}`}>
       {status ?? '—'}
     </span>
   )
