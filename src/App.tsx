@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Header }           from './components/Header'
-import { OverviewPage }     from './pages/OverviewPage'
-import { CallAnalysisPage } from './pages/CallAnalysisPage'
+import { Header }            from './components/Header'
+import { OverviewPage }      from './pages/OverviewPage'
+import { CallAnalysisPage }  from './pages/CallAnalysisPage'
+import { CallRecordsPage }   from './pages/CallRecordsPage'
 import { SurveyResultsPage } from './pages/SurveyResultsPage'
-import { SchemePage }       from './pages/SchemePage'
-import { GeographicPage }   from './pages/GeographicPage'
+import { SchemePage }        from './pages/SchemePage'
+import { GeographicPage }    from './pages/GeographicPage'
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
-type PageId = 'overview' | 'calls' | 'survey' | 'schemes' | 'geographic'
+type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic'
 
 interface NavGroup {
   label: string
@@ -27,7 +28,8 @@ const NAV: NavGroup[] = [
     label: 'Call Data',
     icon: '📞',
     items: [
-      { id: 'calls',      label: 'Call Analysis',   description: 'Summary, attempts, repeat callers' },
+      { id: 'calls',   label: 'Call Analysis',   description: 'Summary, attempts, repeat callers' },
+      { id: 'records', label: 'Call Records',    description: 'Browse individual calls + recordings' },
     ],
   },
   {
@@ -54,23 +56,31 @@ const NAV: NavGroup[] = [
 ]
 
 const PAGE_META: Record<PageId, { title: string; sub: string }> = {
-  overview:   { title: 'Dashboard Overview',  sub: 'State-level KPIs at a glance' },
-  calls:      { title: 'Call Analysis',        sub: 'Breakdown of 45,863 calls' },
-  survey:     { title: 'Survey Results',       sub: 'Q1–Q5 satisfaction indicators' },
-  schemes:    { title: 'Scheme Coverage',      sub: '2,373 IMIS schemes analysed' },
-  geographic: { title: 'Zone & District Scores', sub: 'BSI by geography across Assam' },
+  overview:   { title: 'Dashboard Overview',     sub: 'State-level KPIs at a glance' },
+  calls:      { title: 'Call Analysis',           sub: 'Breakdown of 45,863 calls' },
+  records:    { title: 'Call Records',            sub: 'Browse, filter and play individual calls' },
+  survey:     { title: 'Survey Results',          sub: 'Q1–Q5 satisfaction indicators' },
+  schemes:    { title: 'Scheme Coverage',         sub: '2,373 IMIS schemes analysed' },
+  geographic: { title: 'Zone & District Scores',  sub: 'BSI by geography across Assam' },
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [page, setPage] = useState<PageId>('overview')
+  const [page, setPage]               = useState<PageId>('overview')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
 
   function navigate(id: PageId) {
     setPage(id)
-    // On mobile close sidebar after nav
     if (window.innerWidth < 768) setSidebarOpen(false)
+  }
+
+  function toggleGroup(label: string) {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      next.has(label) ? next.delete(label) : next.add(label)
+      return next
+    })
   }
 
   return (
@@ -78,7 +88,7 @@ export default function App() {
       {/* Top header */}
       <Header pageTitle={PAGE_META[page].title} />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 56px)' }}>
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className={`${sidebarOpen ? 'w-56' : 'w-14'} flex-shrink-0 bg-white border-r border-gray-200 flex flex-col transition-all duration-200 overflow-hidden`}>
           {/* Collapse toggle */}
@@ -91,15 +101,15 @@ export default function App() {
 
           <nav className="flex-1 py-2 overflow-y-auto">
             {NAV.map((group) => {
-              const isExpanded = expandedGroup === group.label || group.items.length === 1
+              const isExpanded = expandedGroups.has(group.label) || group.items.length === 1
               const hasActiveItem = group.items.some(i => i.id === page)
 
               return (
                 <div key={group.label} className="mb-1">
-                  {/* Group header (only when sidebar open) */}
+                  {/* Group header — shown when sidebar open AND group has >1 item */}
                   {sidebarOpen && group.items.length > 1 && (
                     <button
-                      onClick={() => setExpandedGroup(isExpanded ? null : group.label)}
+                      onClick={() => toggleGroup(group.label)}
                       className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
                         hasActiveItem ? 'text-blue-700' : 'text-gray-400 hover:text-gray-600'
                       }`}
@@ -108,8 +118,15 @@ export default function App() {
                         <span>{group.icon}</span>
                         {group.label}
                       </span>
-                      <span>{isExpanded ? '▾' : '▸'}</span>
+                      <span className="text-gray-400">{isExpanded ? '▾' : '▸'}</span>
                     </button>
+                  )}
+
+                  {/* Section label for single-item groups when sidebar open */}
+                  {sidebarOpen && group.items.length === 1 && (
+                    <p className="px-3 pt-2 pb-0.5 text-xs font-semibold uppercase tracking-wider text-gray-300">
+                      {group.label}
+                    </p>
                   )}
 
                   {/* Nav items */}
@@ -120,11 +137,11 @@ export default function App() {
                         key={item.id}
                         onClick={() => navigate(item.id)}
                         title={!sidebarOpen ? item.label : undefined}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors rounded-none ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                           active
                             ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600 font-medium'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                        }`}
+                        } ${sidebarOpen && group.items.length > 1 ? 'pl-6' : ''}`}
                       >
                         <span className="text-base flex-shrink-0">{group.icon}</span>
                         {sidebarOpen && (
@@ -157,7 +174,6 @@ export default function App() {
           {/* Page subtitle bar */}
           <div className="bg-white border-b border-gray-100 px-6 py-2 flex items-center justify-between">
             <p className="text-xs text-gray-400">{PAGE_META[page].sub}</p>
-            {/* Breadcrumb */}
             <nav className="hidden sm:flex items-center gap-1.5 text-xs text-gray-400">
               <span>Araghyam</span>
               <span>›</span>
@@ -169,6 +185,7 @@ export default function App() {
           <div className="px-5 sm:px-6 py-6 max-w-7xl mx-auto w-full">
             {page === 'overview'   && <OverviewPage />}
             {page === 'calls'      && <CallAnalysisPage />}
+            {page === 'records'    && <CallRecordsPage />}
             {page === 'survey'     && <SurveyResultsPage />}
             {page === 'schemes'    && <SchemePage />}
             {page === 'geographic' && <GeographicPage />}
