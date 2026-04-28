@@ -30,7 +30,7 @@ export function GeographicPage() {
 
   const zoneChartData = ZONE_SCORES
     .filter(z => z.bsi !== null && z.zone !== 'Assam (State)')
-    .map(z => ({ zone: z.zone.replace(' Assam', ''), bsi: z.bsi!, color: bsiColor(z.bsi) }))
+    .map(z => ({ zone: z.zone.replace(' Assam', ''), bsi: +(z.bsi! * 5).toFixed(3), rawBsi: z.bsi!, color: bsiColor(z.bsi) }))
 
   return (
     <div className="space-y-5">
@@ -80,18 +80,18 @@ function ZonesView({ chartData }: { chartData: { zone: string; bsi: number; colo
       {/* Bar chart */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
         <p className="text-sm font-semibold text-gray-700 mb-1">Zone BSI Comparison</p>
-        <p className="text-xs text-gray-400 mb-4">BSI out of 1.0 · Green dashed = 0.70 benchmark</p>
+        <p className="text-xs text-gray-400 mb-4">BSI out of 5.0 · Green dashed = 3.50 target</p>
         <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 48, bottom: 0, left: 72 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-              <XAxis type="number" domain={[0, 0.7]} tick={{ fill: '#9ca3af', fontSize: 10 }} />
+              <XAxis type="number" domain={[0, 3.5]} tick={{ fill: '#9ca3af', fontSize: 10 }} />
               <YAxis type="category" dataKey="zone" tick={{ fill: '#374151', fontSize: 11 }} width={70} />
               <Tooltip
                 contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8 }}
-                formatter={(val: number) => [val.toFixed(4), 'BSI']}
+                formatter={(val: number) => [`${val.toFixed(3)} / 5.0`, 'BSI']}
               />
-              <ReferenceLine x={0.70} stroke="#10b981" strokeDasharray="4 2" />
+              <ReferenceLine x={3.50} stroke="#10b981" strokeDasharray="4 2" />
               <Bar dataKey="bsi" radius={[0, 4, 4, 0]}>
                 {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Bar>
@@ -110,7 +110,7 @@ function ZonesView({ chartData }: { chartData: { zone: string; bsi: number; colo
             <thead>
               <tr>
                 <th className="th">Zone</th>
-                <th className="th text-right">BSI</th>
+                <th className="th text-right">BSI (/5.0)</th>
                 <th className="th text-right hidden sm:table-cell">Quality</th>
                 <th className="th text-right hidden sm:table-cell">Quantity</th>
                 <th className="th text-right hidden md:table-cell">Daily</th>
@@ -125,7 +125,7 @@ function ZonesView({ chartData }: { chartData: { zone: string; bsi: number; colo
                   <tr key={i} className={`hover:bg-gray-50 ${isState ? 'bg-blue-50 font-semibold' : ''}`}>
                     <td className={`td font-medium ${isState ? 'text-blue-700' : 'text-gray-800'}`}>{z.zone}</td>
                     <td className={`td-mono text-right font-bold ${statusColor(z.status)}`}>
-                      {z.bsi !== null ? z.bsi.toFixed(4) : '—'}
+                      {z.bsi !== null ? (z.bsi * 5).toFixed(3) : '—'}
                     </td>
                     <td className="td-mono text-right text-gray-500 hidden sm:table-cell">
                       {z.quality !== null ? z.quality.toFixed(3) : '—'}
@@ -148,7 +148,7 @@ function ZonesView({ chartData }: { chartData: { zone: string; bsi: number; colo
         </div>
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
           <p className="text-xs text-gray-400">
-            DHAC excluded: only 95 calls made · 1.1% consent rate · to be re-called in Phase 2
+            DHAC excluded: only 95 calls made · 1.1% consent rate · to be re-called in Phase 2 · BSI shown out of 5.0 (Good ≥ 3.50)
           </p>
         </div>
       </div>
@@ -211,7 +211,7 @@ function DistrictsView({
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
             {[
-              { label: 'BSI Score',      val: activeDistrict.bsi.toFixed(4) },
+              { label: 'BSI (/5.0)',      val: (activeDistrict.bsi * 5).toFixed(3) },
               { label: 'Quality',        val: activeDistrict.quality.toFixed(3) },
               { label: 'Quantity',       val: activeDistrict.quantity.toFixed(3) },
               { label: 'Usable Calls',   val: activeDistrict.usableCalls.toLocaleString() },
@@ -233,7 +233,7 @@ function DistrictsView({
                 style={{ width: `${(activeDistrict.bsi / 0.7) * 100}%` }}
               />
             </div>
-            <span className="text-xs text-gray-400">{((activeDistrict.bsi / 0.7) * 100).toFixed(0)}% of target</span>
+            <span className="text-xs text-gray-400">{((activeDistrict.bsi / 0.7) * 100).toFixed(0)}% of 3.50 target</span>
           </div>
         </div>
       )}
@@ -247,7 +247,7 @@ function DistrictsView({
                 <th className="th w-8">#</th>
                 <th className="th">District</th>
                 <th className="th hidden sm:table-cell">Zone</th>
-                <th className="th text-right">BSI</th>
+                <th className="th text-right">BSI (/5.0)</th>
                 <th className="th text-right hidden md:table-cell">Quality</th>
                 <th className="th text-right hidden md:table-cell">Quantity</th>
                 <th className="th text-right hidden lg:table-cell">Schemes</th>
@@ -268,7 +268,7 @@ function DistrictsView({
                   <td className="td font-medium text-gray-800">{d.district}</td>
                   <td className="td text-gray-500 text-xs hidden sm:table-cell">{d.zone}</td>
                   <td className={`td-mono text-right font-bold ${statusColor(d.status)}`}>
-                    {d.bsi.toFixed(4)}
+                    {(d.bsi * 5).toFixed(3)}
                   </td>
                   <td className="td-mono text-right text-gray-500 hidden md:table-cell">{d.quality.toFixed(3)}</td>
                   <td className="td-mono text-right text-gray-500 hidden md:table-cell">{d.quantity.toFixed(3)}</td>
@@ -281,8 +281,8 @@ function DistrictsView({
           </table>
         </div>
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500">
-          <span><span className="text-emerald-600 font-semibold">Best:</span> Sivasagar — BSI 0.5320</span>
-          <span><span className="text-red-600 font-semibold">Worst:</span> Hailakandi — BSI 0.2785</span>
+          <span><span className="text-emerald-600 font-semibold">Best:</span> Sivasagar — BSI 2.660/5.0</span>
+          <span><span className="text-red-600 font-semibold">Worst:</span> Hailakandi — BSI 1.393/5.0</span>
           <span className="text-gray-400">Showing {filteredDistricts.length} of 31 districts</span>
         </div>
       </div>

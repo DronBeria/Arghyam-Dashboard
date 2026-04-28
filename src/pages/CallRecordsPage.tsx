@@ -41,9 +41,80 @@ interface CallRecord {
   satisfaction: string | null
 }
 
-const ZONES = ['All Zones', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC']
+const ZONES = ['All Zones', 'Critical Zones', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC']
 const STATUSES = ['All', 'Completed', 'Unanswered', 'Pending']
 const SATISFACTIONS = ['All', 'Satisfied', 'Neutral', 'Dissatisfied', 'No Q5']
+const Q1_OPTS = ['All', 'Yes', 'No']
+const PAGE_SIZE = 50
+
+// Quick filter presets
+interface Preset {
+  id: string
+  label: string
+  icon: string
+  desc: string
+  filters: {
+    zone?: string
+    status?: string
+    sat?: string
+    q1?: string
+    hasRecording?: boolean | null
+    callbackOnly?: boolean
+    minDuration?: number | null
+  }
+}
+
+const QUICK_FILTERS: Preset[] = [
+  {
+    id: 'dissatisfied_rec',
+    label: 'Dissatisfied + Recording',
+    icon: '😞',
+    desc: 'Completed calls where Q5=Dissatisfied and recording exists',
+    filters: { status: 'Completed', sat: 'Dissatisfied', hasRecording: true },
+  },
+  {
+    id: 'no_daily_water',
+    label: 'No Daily Water (Q1=No)',
+    icon: '🚱',
+    desc: 'Households reporting water did not come every day',
+    filters: { q1: 'No', status: 'All' },
+  },
+  {
+    id: 'critical_zones',
+    label: 'Critical Zones',
+    icon: '🔴',
+    desc: 'BTAD and Barak Valley — lowest BSI regions',
+    filters: { zone: 'Critical Zones', status: 'All' },
+  },
+  {
+    id: 'callbacks',
+    label: 'Callback Requested',
+    icon: '📲',
+    desc: 'Callers who asked to be called back',
+    filters: { callbackOnly: true, status: 'All' },
+  },
+  {
+    id: 'long_calls',
+    label: 'Long Calls (>3 min)',
+    icon: '⏱️',
+    desc: 'High-engagement calls with rich data',
+    filters: { minDuration: 180, status: 'Completed' },
+  },
+  {
+    id: 'with_recordings',
+    label: 'Has Recording',
+    icon: '🎙️',
+    desc: 'All completed calls with an audio recording',
+    filters: { hasRecording: true, status: 'Completed' },
+  },
+  {
+    id: 'neutral_calls',
+    label: 'Neutral Satisfaction',
+    icon: '😐',
+    desc: 'Q5 answered as Neutral — borderline cases',
+    filters: { sat: 'Neutral', status: 'Completed' },
+  },
+]
 
 function fmtDur(sec: number | null) {
   if (!sec) return '—'
@@ -60,20 +131,32 @@ function fmtDate(iso: string | null) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function CallRecordsPage() {
-  const [records, setRecords]   = useState<CallRecord[]>([])
-  const [total, setTotal]       = useState(0)
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
-  const [zone, setZone]         = useState('All Zones')
-  const [status, setStatus]     = useState('Completed')
-  const [sat, setSat]           = useState('All')
-  const [page, setPage]         = useState(0)
-  const [selected, setSelected] = useState<CallRecord | null>(null)
-  const PAGE_SIZE = 50
+  const [records, setRecords]       = useState<CallRecord[]>([])
+  const [total, setTotal]           = useState(0)
+  const [loading, setLoading]       = useState(true)
+  const [search, setSearch]         = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [zone, setZone]             = useState('All Zones')
+  const [status, setStatus]         = useState('Completed')
+  const [sat, setSat]               = useState('All')
+  const [q1Filter, setQ1Filter]     = useState('All')
+  const [hasRecording, setHasRecording] = useState<boolean | null>(null)
+  const [callbackOnly, setCallbackOnly] = useState(false)
+  const [minDuration, setMinDuration]   = useState<number | null>(null)
+  const [activePreset, setActivePreset] = useState<string | null>(null)
+  const [page, setPage]             = useState(0)
+  const [selected, setSelected]     = useState<CallRecord | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
 
-  useEffect(() => { fetch() }, [zone, status, sat, page])
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 500)
+    return () => clearTimeout(t)
+  }, [search])
 
-  async function fetch() {
+  useEffect(() => { fetchRecords() }, [zone, status, sat, q1Filter, hasRecording, callbackOnly, minDuration, page, debouncedSearch])
+
+  async function fetchRecords() {
     setLoading(true)
     let q = supabase
       .from('call_records')
@@ -81,35 +164,106 @@ export function CallRecordsPage() {
       .order('call_start_time', { ascending: false, nullsFirst: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-    if (zone !== 'All Zones') q = q.eq('zone', zone)
-    if (status !== 'All')     q = q.eq('contact_status', status)
-    if (sat === 'No Q5')      q = q.is('q5_answer', null)
-    else if (sat !== 'All')   q = q.eq('satisfaction', sat)
+    if (zone === 'Critical Zones') q = q.in('zone', ['BTAD', 'Barak Valley'])
+    else if (zone !== 'All Zones') q = q.eq('zone', zone)
+
+    if (status !== 'All') q = q.eq('contact_status', status)
+
+    if (sat === 'No Q5') q = q.is('q5_answer', null)
+    else if (sat !== 'All') q = q.eq('satisfaction', sat)
+
+    if (q1Filter === 'Yes') q = q.eq('q1_answer', 'yes')
+    else if (q1Filter === 'No') q = q.eq('q1_answer', 'no')
+
+    if (hasRecording === true)  q = q.not('call_recording_url', 'is', null)
+    if (hasRecording === false) q = q.is('call_recording_url', null)
+
+    if (callbackOnly) q = q.eq('callback_requested', true)
+    if (minDuration)  q = q.gte('call_duration', minDuration)
+
+    if (debouncedSearch.trim()) {
+      const s = debouncedSearch.trim()
+      q = q.or(`scheme_name.ilike.%${s}%,district.ilike.%${s}%,call_summary.ilike.%${s}%,call_id.eq.${Number.isInteger(+s) ? s : -1}`)
+    }
 
     const { data, count, error } = await q
     if (!error && data) { setRecords(data); setTotal(count ?? 0) }
     setLoading(false)
   }
 
-  const filtered = search.trim()
-    ? records.filter(r =>
-        String(r.call_id).includes(search) ||
-        String(r.contact_id).includes(search) ||
-        r.call_summary?.toLowerCase().includes(search.toLowerCase()) ||
-        r.scheme_name?.toLowerCase().includes(search.toLowerCase()) ||
-        r.district?.toLowerCase().includes(search.toLowerCase())
-      )
-    : records
+  function applyPreset(p: Preset) {
+    if (activePreset === p.id) {
+      // Toggle off — reset to defaults
+      resetFilters()
+      return
+    }
+    setActivePreset(p.id)
+    setZone(p.filters.zone ?? 'All Zones')
+    setStatus(p.filters.status ?? 'Completed')
+    setSat(p.filters.sat ?? 'All')
+    setQ1Filter(p.filters.q1 ?? 'All')
+    setHasRecording(p.filters.hasRecording ?? null)
+    setCallbackOnly(p.filters.callbackOnly ?? false)
+    setMinDuration(p.filters.minDuration ?? null)
+    setPage(0)
+    setSelected(null)
+  }
+
+  function resetFilters() {
+    setZone('All Zones'); setStatus('Completed'); setSat('All')
+    setQ1Filter('All'); setHasRecording(null); setCallbackOnly(false)
+    setMinDuration(null); setSearch(''); setPage(0); setActivePreset(null)
+    setSelected(null)
+  }
+
+  const activeFilterCount = [
+    zone !== 'All Zones', status !== 'Completed', sat !== 'All',
+    q1Filter !== 'All', hasRecording !== null, callbackOnly, minDuration !== null,
+    debouncedSearch.trim() !== '',
+  ].filter(Boolean).length
 
   return (
     <div className="space-y-4">
-      {/* Stats bar */}
+
+      {/* ── Quick Filter Presets ─────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">Quick Filters</p>
+            <p className="text-xs text-gray-400">One-click analysis views · click again to clear</p>
+          </div>
+          {activePreset && (
+            <button onClick={resetFilters} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+              Clear all ×
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {QUICK_FILTERS.map(p => (
+            <button
+              key={p.id}
+              onClick={() => applyPreset(p)}
+              title={p.desc}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                activePreset === p.id
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50'
+              }`}
+            >
+              <span>{p.icon}</span>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Stats bar ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total in DB',    val: total.toLocaleString(),       color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200' },
+          { label: 'Showing',        val: total.toLocaleString(),       color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200' },
           { label: 'With Recording', val: '8,782',                      color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200' },
           { label: 'Survey Usable',  val: '9,224',                      color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-          { label: 'Zone',           val: zone === 'All Zones' ? 'All' : zone, color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' },
+          { label: 'Active Filters', val: activeFilterCount > 0 ? `${activeFilterCount} active` : 'Default', color: activeFilterCount > 0 ? 'text-amber-700' : 'text-gray-500', bg: activeFilterCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200' },
         ].map(c => (
           <div key={c.label} className={`rounded-xl border p-3 ${c.bg}`}>
             <div className={`text-lg font-bold ${c.color}`}>{c.val}</div>
@@ -118,45 +272,95 @@ export function CallRecordsPage() {
         ))}
       </div>
 
-      {/* Filters */}
+      {/* ── Filters ─────────────────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-48">
             <label className="block text-xs text-gray-500 mb-1 font-medium">Search</label>
             <input
               type="text"
-              placeholder="Call ID, contact ID, summary keywords..."
+              placeholder="District, scheme, summary keywords, call ID…"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setPage(0) }}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
             />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Zone</label>
-            <select value={zone} onChange={e => { setZone(e.target.value); setPage(0) }}
+            <select value={zone} onChange={e => { setZone(e.target.value); setPage(0); setActivePreset(null) }}
               className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
               {ZONES.map(z => <option key={z}>{z}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Status</label>
-            <select value={status} onChange={e => { setStatus(e.target.value); setPage(0) }}
+            <select value={status} onChange={e => { setStatus(e.target.value); setPage(0); setActivePreset(null) }}
               className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
               {STATUSES.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Q5 Satisfaction</label>
-            <select value={sat} onChange={e => { setSat(e.target.value); setPage(0) }}
+            <select value={sat} onChange={e => { setSat(e.target.value); setPage(0); setActivePreset(null) }}
               className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
               {SATISFACTIONS.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
-          <button onClick={() => { setZone('All Zones'); setStatus('Completed'); setSat('All'); setSearch(''); setPage(0) }}
+
+          {/* More filters toggle */}
+          <button onClick={() => setShowFilters(!showFilters)}
+            className={`px-3 py-2 text-xs border rounded-lg transition-colors ${showFilters ? 'bg-blue-50 border-blue-300 text-blue-600' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
+            More ▾
+          </button>
+          <button onClick={resetFilters}
             className="px-3 py-2 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50">
             Reset
           </button>
         </div>
+
+        {/* Expanded filters */}
+        {showFilters && (
+          <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-100 items-end">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1 font-medium">Q1 Daily Water</label>
+              <div className="flex gap-1">
+                {Q1_OPTS.map(o => (
+                  <button key={o} onClick={() => { setQ1Filter(o); setPage(0); setActivePreset(null) }}
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${q1Filter === o ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                    {o}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1 font-medium">Recording</label>
+              <div className="flex gap-1">
+                {([['All', null], ['Has', true], ['None', false]] as [string, boolean | null][]).map(([label, val]) => (
+                  <button key={label} onClick={() => { setHasRecording(val); setPage(0); setActivePreset(null) }}
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${hasRecording === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1 font-medium">Min Duration</label>
+              <div className="flex gap-1">
+                {([['Any', null], ['>1min', 60], ['>3min', 180], ['>5min', 300]] as [string, number | null][]).map(([label, val]) => (
+                  <button key={label} onClick={() => { setMinDuration(val); setPage(0); setActivePreset(null) }}
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${minDuration === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={callbackOnly} onChange={e => { setCallbackOnly(e.target.checked); setPage(0); setActivePreset(null) }}
+                className="rounded border-gray-300 text-blue-600" />
+              <span className="text-xs text-gray-600 font-medium">Callback Requested only</span>
+            </label>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-4">
@@ -165,23 +369,22 @@ export function CallRecordsPage() {
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-700">
               Call Records
-              {!loading && <span className="ml-2 text-xs font-normal text-gray-400">{total.toLocaleString()} total · showing {filtered.length}</span>}
+              {!loading && <span className="ml-2 text-xs font-normal text-gray-400">{total.toLocaleString()} total · page {page + 1}</span>}
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">Page {page + 1}</span>
               <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}
-                className="px-2 py-1 text-xs border border-gray-200 rounded disabled:opacity-40 hover:bg-gray-50">←</button>
+                className="px-2 py-1 text-xs border border-gray-200 rounded disabled:opacity-40 hover:bg-gray-50">← Prev</button>
               <button onClick={() => { setPage(page + 1); setSelected(null) }} disabled={records.length < PAGE_SIZE}
-                className="px-2 py-1 text-xs border border-gray-200 rounded disabled:opacity-40 hover:bg-gray-50">→</button>
+                className="px-2 py-1 text-xs border border-gray-200 rounded disabled:opacity-40 hover:bg-gray-50">Next →</button>
             </div>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center h-48 text-gray-400 text-sm gap-2">
-              <span className="animate-spin">⟳</span> Loading…
+              <span className="animate-spin inline-block">⟳</span> Loading…
             </div>
-          ) : filtered.length === 0 ? (
-            <EmptyState />
+          ) : records.length === 0 ? (
+            <EmptyState zone={zone} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -189,15 +392,17 @@ export function CallRecordsPage() {
                   <tr>
                     <th className="th">Call ID</th>
                     <th className="th hidden sm:table-cell">Date</th>
+                    <th className="th hidden sm:table-cell">District</th>
                     <th className="th hidden lg:table-cell">Summary (preview)</th>
                     <th className="th text-center">Status</th>
                     <th className="th text-center">Q5</th>
+                    <th className="th text-center hidden md:table-cell">Q1</th>
                     <th className="th text-right hidden md:table-cell">Duration</th>
                     <th className="th text-center">🎙️</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(r => (
+                  {records.map(r => (
                     <tr key={r.id}
                       onClick={() => setSelected(selected?.id === r.id ? null : r)}
                       className={`cursor-pointer transition-colors hover:bg-blue-50/40 ${selected?.id === r.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}>
@@ -206,11 +411,15 @@ export function CallRecordsPage() {
                         {r.zone && <div className="text-xs text-gray-400">{r.zone}</div>}
                       </td>
                       <td className="td text-xs text-gray-500 hidden sm:table-cell whitespace-nowrap">{fmtDate(r.call_start_time)}</td>
+                      <td className="td text-xs text-gray-500 hidden sm:table-cell">{r.district ?? '—'}</td>
                       <td className="td text-xs text-gray-500 hidden lg:table-cell max-w-xs">
                         <p className="truncate">{r.call_summary ?? '—'}</p>
                       </td>
                       <td className="td text-center"><StatusBadge r={r} /></td>
                       <td className="td text-center"><SatBadge sat={r.satisfaction} /></td>
+                      <td className="td text-center hidden md:table-cell">
+                        <Q1Badge ans={r.q1_answer} />
+                      </td>
                       <td className="td-mono text-right text-xs text-gray-400 hidden md:table-cell">{fmtDur(r.call_duration)}</td>
                       <td className="td text-center">
                         {r.call_recording_url
@@ -237,16 +446,25 @@ export function CallRecordsPage() {
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
-function EmptyState() {
+function EmptyState({ zone }: { zone: string }) {
+  const isNonUpperAssam = zone !== 'All Zones' && zone !== 'Upper Assam' && zone !== 'Critical Zones'
   return (
     <div className="flex flex-col items-center justify-center h-56 gap-3 text-center px-6">
       <span className="text-4xl">📭</span>
-      <p className="text-sm font-medium text-gray-600">No records loaded yet</p>
-      <ol className="text-xs text-gray-400 space-y-1 text-left list-decimal list-inside">
-        <li>Paste <code className="bg-gray-100 px-1 rounded">supabase/call_records_schema.sql</code> into Supabase SQL Editor</li>
-        <li>Run <code className="bg-gray-100 px-1 rounded">python scripts/import_call_records.py</code></li>
-        <li>Refresh this page</li>
-      </ol>
+      {isNonUpperAssam ? (
+        <>
+          <p className="text-sm font-medium text-gray-600">No records for {zone}</p>
+          <p className="text-xs text-gray-400 max-w-xs">
+            Only Upper Assam data has been imported so far (105,512 rows from "Upper Assam Test Batch.xlsx").
+            Other zone data will appear once their batch files are imported.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-sm font-medium text-gray-600">No records match these filters</p>
+          <p className="text-xs text-gray-400">Try adjusting the filters above, or use Reset to return to defaults.</p>
+        </>
+      )}
     </div>
   )
 }
@@ -262,9 +480,12 @@ function CallDetail({ record: r, onClose }: { record: CallRecord; onClose: () =>
           <p className="text-sm font-bold text-gray-800 font-mono">
             {r.call_id ? `Call #${r.call_id}` : `Contact #${r.contact_id}`}
           </p>
-          <div className="flex gap-1.5 mt-1">
+          <div className="flex gap-1.5 mt-1 flex-wrap">
             <StatusBadge r={r} />
             <SatBadge sat={r.satisfaction} />
+            {r.callback_requested && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">📲 Callback</span>
+            )}
           </div>
         </div>
         <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-200 text-gray-500 text-lg">×</button>
@@ -303,9 +524,11 @@ function CallDetail({ record: r, onClose }: { record: CallRecord; onClose: () =>
               { k: 'Attempt #',    v: `Attempt ${r.contact_attempts}` },
               { k: 'Status',       v: r.contact_status ?? '—' },
               { k: 'Zone',         v: r.zone ?? '—' },
+              { k: 'District',     v: r.district ?? '—' },
+              { k: 'Scheme',       v: r.scheme_name ?? '—' },
               { k: 'Consented',    v: r.consented === true ? 'Yes ✓' : r.consented === false ? 'No ✗' : '—' },
               ...(r.call_ended_early ? [{ k: 'Ended Early', v: r.early_end_reason ?? 'Yes' }] : []),
-              ...(r.callback_requested ? [{ k: 'Callback', v: 'Requested' }] : []),
+              ...(r.callback_requested ? [{ k: 'Callback', v: 'Requested ✓' }] : []),
             ].map(({ k, v }) => (
               <div key={k} className="flex justify-between text-xs">
                 <span className="text-gray-400">{k}</span>
@@ -320,18 +543,18 @@ function CallDetail({ record: r, onClose }: { record: CallRecord; onClose: () =>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Survey Answers</p>
           <div className="space-y-2">
             {[
-              { q: 'Q1', label: 'Water came every day?',       val: r.q1_answer, evidence: r.q1_evidence, extra: r.days_without_water ? `Days without: ${r.days_without_water}` : null },
-              { q: 'Q2', label: 'Water quality clean?',        val: r.q2_answer, evidence: r.q2_evidence, extra: r.quality_issue_details },
-              { q: 'Q3', label: 'Sufficient quantity?',        val: r.q3_answer, evidence: r.q3_evidence, extra: r.quantity_issue_details },
-              { q: 'Q4', label: 'Consistent timing?',          val: r.q4_answer, evidence: r.q4_evidence, extra: r.q4_answer === 'no' ? r.dissatisfaction_reason : null },
-              { q: 'Q5', label: 'Overall satisfied?',          val: r.q5_answer, evidence: r.q5_evidence, extra: r.satisfaction_reason ?? r.dissatisfaction_reason },
+              { q: 'Q1', label: 'Water came every day?',   val: r.q1_answer, evidence: r.q1_evidence, extra: r.days_without_water ? `Days without water: ${r.days_without_water}` : null },
+              { q: 'Q2', label: 'Water quality clean?',    val: r.q2_answer, evidence: r.q2_evidence, extra: r.quality_issue_details },
+              { q: 'Q3', label: 'Sufficient quantity?',    val: r.q3_answer, evidence: r.q3_evidence, extra: r.quantity_issue_details },
+              { q: 'Q4', label: 'Consistent timing?',      val: r.q4_answer, evidence: r.q4_evidence, extra: null },
+              { q: 'Q5', label: 'Overall satisfied?',      val: r.q5_answer, evidence: r.q5_evidence, extra: r.satisfaction_reason ?? r.dissatisfaction_reason },
             ].map(({ q, label, val, evidence, extra }) => {
               const isYes = val === 'yes'
               const isNo  = val === 'no'
               const isNA  = !val || val === 'not_asked'
               const bg    = isNA ? 'bg-gray-50' : isYes ? 'bg-emerald-50' : 'bg-red-50'
               const textColor = isNA ? 'text-gray-300' : isYes ? 'text-emerald-600' : 'text-red-600'
-              const displayVal = isNA ? (val === 'not_asked' ? 'N/A' : '—') : val === 'unknown' ? '?' : val?.charAt(0).toUpperCase() + val!.slice(1)
+              const displayVal = isNA ? (val === 'not_asked' ? 'N/A' : '—') : val === 'unknown' ? '?' : val!.charAt(0).toUpperCase() + val!.slice(1)
               return (
                 <div key={q} className={`rounded-lg px-3 py-2 ${bg}`}>
                   <div className="flex items-center justify-between text-xs">
@@ -447,4 +670,11 @@ function SatBadge({ sat }: { sat: string | null }) {
     Dissatisfied: 'bg-red-100 text-red-700',
   }
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${map[sat] ?? 'bg-gray-100 text-gray-500'}`}>{sat}</span>
+}
+
+function Q1Badge({ ans }: { ans: string | null }) {
+  if (!ans || ans === 'not_asked') return <span className="text-gray-300 text-xs">—</span>
+  if (ans === 'yes') return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700">Y</span>
+  if (ans === 'no')  return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">N</span>
+  return <span className="text-gray-400 text-xs">?</span>
 }

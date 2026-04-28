@@ -1,6 +1,6 @@
 import {
   KPI_HEADLINE, KPI_QUESTIONS, SCHEME_COVERAGE,
-  ZONE_SCORES, DISTRICT_SCORES,
+  ZONE_SCORES,
 } from '../data/csatData'
 import {
   RadialBarChart, RadialBar, ResponsiveContainer,
@@ -13,12 +13,15 @@ const TOTAL_CALLS   = 45863
 const CONSENTED     = 12583
 const USABLE        = 9224
 const COMPLETED_ALL = 1578
-const STATE_BSI     = KPI_HEADLINE.stateBSI
+const STATE_BSI     = KPI_HEADLINE.stateBSI   // 0–1 internally
+const STATE_BSI_5   = +(STATE_BSI * 5).toFixed(2)  // display: 2.20 / 5.0
+const TARGET_BSI_5  = (0.70 * 5).toFixed(2)        // "3.50"
 
+// Gauge still uses 0–100 internally; only labels/text are shown as /5
 const BSI_GAUGE = [
-  { name: 'BSI',    value: +(STATE_BSI * 100).toFixed(2), fill: '#f59e0b' },
-  { name: 'Gap to target', value: +(70 - STATE_BSI * 100).toFixed(2), fill: '#d1fae5' },
-  { name: 'Above target',  value: 30, fill: '#f3f4f6' },
+  { name: 'BSI',          value: +(STATE_BSI * 100).toFixed(2), fill: '#f59e0b' },
+  { name: 'Gap',          value: +(70 - STATE_BSI * 100).toFixed(2), fill: '#d1fae5' },
+  { name: 'Above target', value: 30, fill: '#f3f4f6' },
 ]
 
 const Q_CHART = [...KPI_QUESTIONS]
@@ -34,6 +37,55 @@ const ZONES_RANKED = ZONE_SCORES
 
 function fmt(n: number) { return n.toLocaleString() }
 
+function nav(page: string) {
+  window.dispatchEvent(new CustomEvent('navigate', { detail: page }))
+}
+
+// Section card wrapper — clickable with hover state
+function SectionCard({
+  children, page, className = '',
+}: {
+  children: React.ReactNode
+  page?: string
+  className?: string
+}) {
+  if (!page) {
+    return <div className={`bg-white rounded-xl border border-gray-200 p-5 shadow-sm ${className}`}>{children}</div>
+  }
+  return (
+    <div
+      onClick={() => nav(page)}
+      className={`bg-white rounded-xl border border-gray-200 p-5 shadow-sm cursor-pointer
+        hover:border-blue-300 hover:shadow-md transition-all group ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+// Section header row with optional "View →" link
+function SectionHeader({
+  title, sub, page,
+}: {
+  title: string
+  sub: string
+  page?: string
+}) {
+  return (
+    <div className="flex items-start justify-between mb-3">
+      <div>
+        <p className="text-sm font-semibold text-gray-700">{title}</p>
+        <p className="text-xs text-gray-400">{sub}</p>
+      </div>
+      {page && (
+        <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium flex items-center gap-0.5 flex-shrink-0 mt-0.5">
+          View detail →
+        </span>
+      )}
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function OverviewPage() {
   return (
@@ -48,7 +100,7 @@ export function OverviewPage() {
           ⚠️ 507 of 615 valid schemes non-functional
         </span>
         <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-          📍 2 zones Critical · 0 zones meet 0.70 target
+          📍 2 zones Critical · 0 zones meet 3.50/5 target
         </span>
         <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
           Phase 1 complete · Phase 2 re-calling recommended
@@ -58,18 +110,23 @@ export function OverviewPage() {
       {/* ── Headline KPIs ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
-          { label: 'Total Calls',      value: fmt(TOTAL_CALLS),              sub: fmt(2373) + ' IMIS schemes',              t: 'border-blue-400',    bg: 'bg-blue-50',    text: 'text-blue-700'    },
-          { label: 'State BSI',        value: STATE_BSI + ' / 1.0',          sub: 'Moderate · target ≥ 0.70',               t: 'border-amber-400',   bg: 'bg-amber-50',   text: 'text-amber-700'   },
-          { label: 'Q5 Satisfied',     value: KPI_HEADLINE.satisfied + '%',  sub: '2,233 of 4,284 who reached Q5',          t: 'border-amber-400',   bg: 'bg-amber-50',   text: 'text-amber-700'   },
-          { label: 'Functional Schms', value: KPI_HEADLINE.functionalSchemes + '%', sub: '108 of 615 valid schemes',        t: 'border-red-400',     bg: 'bg-red-50',     text: 'text-red-700'     },
-          { label: 'Consent Rate',     value: ((CONSENTED / TOTAL_CALLS) * 100).toFixed(1) + '%', sub: fmt(CONSENTED) + ' agreed to participate', t: 'border-slate-400', bg: 'bg-slate-50', text: 'text-slate-700' },
-          { label: 'Usable Calls',     value: fmt(USABLE),                   sub: ((USABLE / TOTAL_CALLS) * 100).toFixed(1) + '% of total · BSI base', t: 'border-emerald-400', bg: 'bg-emerald-50', text: 'text-emerald-700' },
+          { label: 'Total Calls',      value: fmt(TOTAL_CALLS),            sub: fmt(2373) + ' IMIS schemes',                  t: 'border-blue-400',    text: 'text-blue-700',    page: 'calls'     },
+          { label: 'State BSI',        value: STATE_BSI_5 + ' / 5.0',      sub: 'Moderate · target ≥ ' + TARGET_BSI_5,        t: 'border-amber-400',   text: 'text-amber-700',   page: 'geographic' },
+          { label: 'Q5 Satisfied',     value: KPI_HEADLINE.satisfied + '%', sub: '2,233 of 4,284 who reached Q5',             t: 'border-amber-400',   text: 'text-amber-700',   page: 'survey'    },
+          { label: 'Functional Schms', value: KPI_HEADLINE.functionalSchemes + '%', sub: '108 of 615 valid schemes',           t: 'border-red-400',     text: 'text-red-700',     page: 'schemes'   },
+          { label: 'Consent Rate',     value: ((CONSENTED / TOTAL_CALLS) * 100).toFixed(1) + '%', sub: fmt(CONSENTED) + ' agreed', t: 'border-slate-400', text: 'text-slate-700', page: 'calls'     },
+          { label: 'Usable Calls',     value: fmt(USABLE),                  sub: ((USABLE / TOTAL_CALLS) * 100).toFixed(1) + '% of total · BSI base', t: 'border-emerald-400', text: 'text-emerald-700', page: 'calls' },
         ].map(c => (
-          <div key={c.label}
-            className={`bg-white rounded-xl border border-gray-100 border-t-4 ${c.t} p-4 shadow-sm hover:shadow-md transition-shadow`}>
+          <div
+            key={c.label}
+            onClick={() => nav(c.page)}
+            className={`bg-white rounded-xl border border-gray-100 border-t-4 ${c.t} p-4 shadow-sm
+              hover:shadow-md hover:border-blue-200 cursor-pointer transition-all group`}
+          >
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 leading-tight">{c.label}</p>
             <p className={`text-xl font-bold ${c.text} leading-tight`}>{c.value}</p>
             <p className="text-xs text-gray-400 mt-1 leading-snug">{c.sub}</p>
+            <p className="text-xs text-blue-400 group-hover:text-blue-600 mt-1">View →</p>
           </div>
         ))}
       </div>
@@ -78,9 +135,12 @@ export function OverviewPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
         {/* BSI Gauge */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col items-center">
-          <p className="text-sm font-semibold text-gray-700 mb-0.5 self-start">State BSI Score</p>
-          <p className="text-xs text-gray-400 mb-3 self-start">Composite 0–1.0 · Good ≥ 0.70</p>
+        <SectionCard page="geographic">
+          <SectionHeader
+            title="State BSI Score"
+            sub={`Composite 0–5.0 · Good ≥ ${TARGET_BSI_5}`}
+            page="geographic"
+          />
           <div className="h-36 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <RadialBarChart cx="50%" cy="85%" innerRadius="60%" outerRadius="100%"
@@ -90,14 +150,16 @@ export function OverviewPage() {
             </ResponsiveContainer>
           </div>
           <div className="text-center -mt-8">
-            <span className="text-3xl font-bold text-amber-600">{STATE_BSI}</span>
-            <span className="text-sm text-amber-400 ml-1">/ 1.0</span>
+            <span className="text-3xl font-bold text-amber-600">{STATE_BSI_5}</span>
+            <span className="text-sm text-amber-400 ml-1">/ 5.0</span>
             <p className="text-xs text-amber-600 font-medium mt-0.5">
-              Moderate · {((0.70 - STATE_BSI) * 100).toFixed(1)}pts below 0.70 target
+              Moderate · {((0.70 - STATE_BSI) * 5).toFixed(2)} below {TARGET_BSI_5} target
             </p>
           </div>
           <div className="mt-2 w-full flex justify-between text-xs text-gray-400">
-            <span>0</span><span className="text-emerald-600 font-semibold">0.70 target</span><span>1.0</span>
+            <span>0</span>
+            <span className="text-emerald-600 font-semibold">{TARGET_BSI_5} target</span>
+            <span>5.0</span>
           </div>
           <div className="mt-3 w-full space-y-1.5 pt-3 border-t border-gray-100">
             {[
@@ -122,12 +184,15 @@ export function OverviewPage() {
               )
             })}
           </div>
-        </div>
+        </SectionCard>
 
         {/* Survey KPIs */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <p className="text-sm font-semibold text-gray-700 mb-0.5">Survey KPIs — % Yes</p>
-          <p className="text-xs text-gray-400 mb-3">Each question has an independent respondent base</p>
+        <SectionCard page="survey">
+          <SectionHeader
+            title="Survey KPIs — % Yes"
+            sub="Each question has an independent respondent base"
+            page="survey"
+          />
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={Q_CHART} margin={{ top: 4, right: 12, bottom: 0, left: -20 }}>
@@ -157,18 +222,21 @@ export function OverviewPage() {
               </div>
             ))}
           </div>
-        </div>
+        </SectionCard>
 
         {/* Call Funnel */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <p className="text-sm font-semibold text-gray-700 mb-0.5">Call Funnel</p>
-          <p className="text-xs text-gray-400 mb-4">All % of {fmt(TOTAL_CALLS)} total calls</p>
+        <SectionCard page="calls">
+          <SectionHeader
+            title="Call Funnel"
+            sub={`All % of ${fmt(TOTAL_CALLS)} total calls`}
+            page="calls"
+          />
           <div className="space-y-3">
             {[
-              { label: 'Total Dialled',  val: TOTAL_CALLS,   pct: 100,                                                    color: 'bg-blue-500'    },
-              { label: 'Consented',      val: CONSENTED,     pct: +((CONSENTED / TOTAL_CALLS) * 100).toFixed(1),         color: 'bg-indigo-400'  },
-              { label: 'Usable (Q1)',    val: USABLE,        pct: +((USABLE / TOTAL_CALLS) * 100).toFixed(1),            color: 'bg-emerald-500' },
-              { label: 'All 5 complete', val: COMPLETED_ALL, pct: +((COMPLETED_ALL / TOTAL_CALLS) * 100).toFixed(1),    color: 'bg-emerald-700' },
+              { label: 'Total Dialled',   val: TOTAL_CALLS,   pct: 100,                                                 color: 'bg-blue-500'    },
+              { label: 'Consented',       val: CONSENTED,     pct: +((CONSENTED / TOTAL_CALLS) * 100).toFixed(1),      color: 'bg-indigo-400'  },
+              { label: 'Usable (Q1)',     val: USABLE,        pct: +((USABLE / TOTAL_CALLS) * 100).toFixed(1),         color: 'bg-emerald-500' },
+              { label: 'All 5 complete',  val: COMPLETED_ALL, pct: +((COMPLETED_ALL / TOTAL_CALLS) * 100).toFixed(1), color: 'bg-emerald-700' },
             ].map((s, i, arr) => (
               <div key={s.label}>
                 <div className="flex justify-between text-xs text-gray-600 mb-1">
@@ -186,22 +254,25 @@ export function OverviewPage() {
               </div>
             ))}
           </div>
-        </div>
+        </SectionCard>
       </div>
 
       {/* ── Zone Rankings · Scheme Coverage ───────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
         {/* Zone Rankings */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <SectionCard page="geographic">
+          <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-sm font-semibold text-gray-700">Zone BSI Rankings</p>
-              <p className="text-xs text-gray-400">Scale 0–1.0 · Target ≥ 0.70 · No zone qualifies yet</p>
+              <p className="text-xs text-gray-400">Scale 0–5.0 · Target ≥ {TARGET_BSI_5} · No zone qualifies yet</p>
             </div>
-            <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-full font-medium">
-              0 / 6 meet target
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-full font-medium">
+                0 / 6 meet target
+              </span>
+              <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">View →</span>
+            </div>
           </div>
           <div className="space-y-2.5">
             {ZONES_RANKED.map((z, i) => (
@@ -212,8 +283,8 @@ export function OverviewPage() {
                   <div className={`h-full rounded ${z.status === 'Critical' ? 'bg-red-400' : 'bg-amber-400'}`}
                     style={{ width: `${(z.bsi! / 1.0) * 100}%` }} />
                 </div>
-                <span className={`text-xs font-bold font-mono w-14 text-right flex-shrink-0 ${z.status === 'Critical' ? 'text-red-600' : 'text-amber-700'}`}>
-                  {z.bsi?.toFixed(4)}
+                <span className={`text-xs font-bold font-mono w-16 text-right flex-shrink-0 ${z.status === 'Critical' ? 'text-red-600' : 'text-amber-700'}`}>
+                  {(z.bsi! * 5).toFixed(2)}/5
                 </span>
                 <div className="flex-shrink-0"><StatusBadge status={z.status} /></div>
               </div>
@@ -225,21 +296,24 @@ export function OverviewPage() {
             <div className="flex-1 h-5 bg-blue-50 rounded overflow-hidden border border-blue-100">
               <div className="h-full bg-blue-300 rounded" style={{ width: `${(0.4406 / 1.0) * 100}%` }} />
             </div>
-            <span className="text-xs font-bold font-mono w-14 text-right text-blue-600">0.4406</span>
+            <span className="text-xs font-bold font-mono w-16 text-right text-blue-600">{STATE_BSI_5}/5</span>
             <div className="flex-shrink-0"><StatusBadge status="Moderate" /></div>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Scheme Coverage */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <SectionCard page="schemes">
+          <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-sm font-semibold text-gray-700">Scheme Coverage</p>
               <p className="text-xs text-gray-400">{fmt(SCHEME_COVERAGE.total)} total IMIS schemes</p>
             </div>
-            <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-full font-medium">
-              {SCHEME_COVERAGE.functionalRate}% functional
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-full font-medium">
+                {SCHEME_COVERAGE.functionalRate}% functional
+              </span>
+              <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">View →</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center mb-3">
@@ -256,7 +330,6 @@ export function OverviewPage() {
             ))}
           </div>
 
-          {/* Stacked bar — sums to 100% */}
           <div className="h-3 rounded-full overflow-hidden flex mb-1">
             <div className="bg-emerald-400 h-full" style={{ width: `${SCHEME_COVERAGE.validPct}%` }} />
             <div className="bg-amber-400 h-full"   style={{ width: `${SCHEME_COVERAGE.flaggedPct}%` }} />
@@ -280,13 +353,16 @@ export function OverviewPage() {
             </div>
             <p className="text-xs text-gray-400 mt-1">Q1 ≥50% AND Q2 ≥70% AND Q3 ≥70%</p>
           </div>
-        </div>
+        </SectionCard>
       </div>
 
       {/* ── Q5 Satisfaction split ──────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <p className="text-sm font-semibold text-gray-700 mb-1">Q5 — Overall Satisfaction</p>
-        <p className="text-xs text-gray-400 mb-4">4,284 respondents · 3-way split</p>
+      <SectionCard page="survey">
+        <SectionHeader
+          title="Q5 — Overall Satisfaction"
+          sub="4,284 respondents · 3-way split"
+          page="survey"
+        />
         <div className="grid grid-cols-3 gap-4">
           {[
             { label: 'Satisfied',    pct: 52.1, n: 2233, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', bar: 'bg-emerald-500' },
@@ -303,11 +379,12 @@ export function OverviewPage() {
             </div>
           ))}
         </div>
-      </div>
+      </SectionCard>
 
       {/* ── Navigate to deeper views ───────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <p className="text-sm font-semibold text-gray-700 mb-3">Explore in Detail</p>
+        <p className="text-sm font-semibold text-gray-700 mb-1">Explore in Detail</p>
+        <p className="text-xs text-gray-400 mb-3">Click any section above or use these shortcuts</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
             { page: 'calls',      icon: '📞', label: 'Call Analysis',    sub: 'Funnel, attempts, repeat' },
@@ -316,20 +393,15 @@ export function OverviewPage() {
             { page: 'schemes',    icon: '🏗️', label: 'Scheme Coverage',  sub: 'Functional analysis' },
             { page: 'geographic', icon: '🗺️', label: 'Zone & Districts', sub: 'BSI by geography' },
           ].map(n => (
-            <a
+            <button
               key={n.page}
-              href={`#${n.page}`}
-              onClick={(e) => {
-                e.preventDefault()
-                const event = new CustomEvent('navigate', { detail: n.page })
-                window.dispatchEvent(event)
-              }}
-              className="flex flex-col items-start gap-1 p-3.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group cursor-pointer"
+              onClick={() => nav(n.page)}
+              className="flex flex-col items-start gap-1 p-3.5 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors group text-left"
             >
               <span className="text-xl">{n.icon}</span>
               <span className="text-xs font-semibold text-gray-700 group-hover:text-blue-700">{n.label}</span>
               <span className="text-xs text-gray-400">{n.sub}</span>
-            </a>
+            </button>
           ))}
         </div>
       </div>
