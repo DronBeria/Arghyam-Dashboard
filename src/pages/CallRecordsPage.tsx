@@ -65,7 +65,7 @@ export function CallRecordsPage() {
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const [zone, setZone]         = useState('All Zones')
-  const [status, setStatus]     = useState('All')
+  const [status, setStatus]     = useState('Completed')
   const [sat, setSat]           = useState('All')
   const [page, setPage]         = useState(0)
   const [selected, setSelected] = useState<CallRecord | null>(null)
@@ -78,7 +78,7 @@ export function CallRecordsPage() {
     let q = supabase
       .from('call_records')
       .select('*', { count: 'exact' })
-      .order('call_start_time', { ascending: false })
+      .order('call_start_time', { ascending: false, nullsFirst: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (zone !== 'All Zones') q = q.eq('zone', zone)
@@ -152,7 +152,7 @@ export function CallRecordsPage() {
               {SATISFACTIONS.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
-          <button onClick={() => { setZone('All Zones'); setStatus('All'); setSat('All'); setSearch(''); setPage(0) }}
+          <button onClick={() => { setZone('All Zones'); setStatus('Completed'); setSat('All'); setSearch(''); setPage(0) }}
             className="px-3 py-2 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50">
             Reset
           </button>
