@@ -86,7 +86,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top header */}
-      <Header pageTitle={PAGE_META[page].title} />
+      <Header pageTitle={PAGE_META[page].title} onNavigate={(id) => navigate(id as PageId)} />
 
       <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 56px)' }}>
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
