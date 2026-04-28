@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Header }            from './components/Header'
 import { OverviewPage }      from './pages/OverviewPage'
 import { CallAnalysisPage }  from './pages/CallAnalysisPage'
@@ -74,6 +74,13 @@ export default function App() {
     setPage(id)
     if (window.innerWidth < 768) setSidebarOpen(false)
   }
+
+  // Listen for navigation events dispatched from child pages (e.g. OverviewPage nav cards)
+  useEffect(() => {
+    function onNav(e: Event) { navigate((e as CustomEvent).detail as PageId) }
+    window.addEventListener('navigate', onNav)
+    return () => window.removeEventListener('navigate', onNav)
+  }, [])
 
   function toggleGroup(label: string) {
     setExpandedGroups(prev => {
