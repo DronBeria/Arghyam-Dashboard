@@ -466,5 +466,70 @@ function _pageHeader(doc: jsPDF, title: string, sub: string, W: number, M: numbe
   return 26
 }
 
+// ─── Filtered call records CSV export ────────────────────────────────────────
+export interface CallExportFilters {
+  zone?: string          // 'All Zones' | 'Critical Zones' | specific zone
+  sat?: string           // 'All' | 'Satisfied' | 'Neutral' | 'Dissatisfied'
+  q1?: string            // 'All' | 'Yes' | 'No'
+  hasRecording?: boolean | null
+  callbackOnly?: boolean
+  minDuration?: number | null
+  dateFrom?: string      // ISO date string yyyy-mm-dd
+  dateTo?: string
+}
+
+export async function downloadFilteredCallsCSV(filters: CallExportFilters, label?: string): Promise<number> {
+  // Lazy import supabase so reports.ts stays usable without it
+  const { supabase } = await import('../lib/supabase')
+
+  let q = supabase
+    .from('call_records')
+    .select('call_id,contact_id,call_start_time,zone,district,scheme_name,contact_status,contact_attempts,call_duration,consented,satisfaction,q1_answer,q2_answer,q3_answer,q4_answer,q5_answer,callback_requested,call_recording_url,call_summary')
+    .order('call_start_time', { ascending: false, nullsFirst: false })
+    .limit(10000)
+
+  if (filters.zone === 'Critical Zones') q = q.in('zone', ['BTAD', 'Barak Valley'])
+  else if (filters.zone && filters.zone !== 'All Zones') q = q.eq('zone', filters.zone)
+
+  if (filters.sat === 'No Q5') q = q.is('q5_answer', null)
+  else if (filters.sat && filters.sat !== 'All') q = q.eq('satisfaction', filters.sat)
+
+  if (filters.q1 === 'Yes') q = q.eq('q1_answer', 'yes')
+  else if (filters.q1 === 'No') q = q.eq('q1_answer', 'no')
+
+  if (filters.hasRecording === true)  q = q.not('call_recording_url', 'is', null)
+  if (filters.hasRecording === false) q = q.is('call_recording_url', null)
+  if (filters.callbackOnly) q = q.eq('callback_requested', true)
+  if (filters.minDuration)  q = q.gte('call_duration', filters.minDuration)
+  if (filters.dateFrom) q = q.gte('call_start_time', filters.dateFrom)
+  if (filters.dateTo)   q = q.lte('call_start_time', filters.dateTo + 'T23:59:59')
+
+  const { data } = await q
+  if (!data || data.length === 0) return 0
+
+  const headers = ['Call_ID','Contact_ID','Date_Time','Zone','District','Scheme','Status','Attempt','Duration_sec','Consented','Satisfaction','Q1_Daily_Water','Q2_Quality','Q3_Quantity','Q4_Timing','Q5_Overall','Callback_Requested','Has_Recording','AI_Summary']
+  const rows: (string | number | null)[][] = data.map((r: Record<string, unknown>) => {
+    const s = (v: unknown) => (v as string | null) ?? ''
+    const n = (v: unknown) => (v as number | null) ?? null
+    return [
+      n(r.call_id) ?? n(r.contact_id),
+      n(r.contact_id),
+      r.call_start_time ? new Date(r.call_start_time as string).toLocaleString('en-IN') : '',
+      s(r.zone), s(r.district), s(r.scheme_name), s(r.contact_status),
+      n(r.contact_attempts), n(r.call_duration),
+      r.consented === true ? 'Yes' : r.consented === false ? 'No' : '',
+      s(r.satisfaction), s(r.q1_answer), s(r.q2_answer), s(r.q3_answer),
+      s(r.q4_answer), s(r.q5_answer),
+      r.callback_requested ? 'Yes' : 'No',
+      r.call_recording_url ? 'Yes' : 'No',
+      (s(r.call_summary)).replace(/\n/g, ' '),
+    ]
+  })
+
+  const slug = label ? label.replace(/\s+/g, '_') : 'Filtered'
+  downloadCSVFile(toCSV(headers, rows), `Araghyam_Calls_${slug}_${new Date().toISOString().split('T')[0]}.csv`)
+  return data.length
+}
+
 // Re-export for convenience
 export { KPI_HEADLINE, SCHEME_COVERAGE, Q5_SPLIT }

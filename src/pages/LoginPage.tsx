@@ -3,6 +3,13 @@ import { supabase } from '../lib/supabase'
 
 type Mode = 'signin' | 'magic'
 
+const STATS = [
+  { val: '45,863', label: 'Calls Analysed',    icon: '📞' },
+  { val: '9,224',  label: 'Surveys Completed', icon: '✅' },
+  { val: '31',     label: 'Districts Covered', icon: '🗺️' },
+  { val: '2.20/5', label: 'State BSI Score',   icon: '📊' },
+]
+
 export function LoginPage() {
   const [mode, setMode]           = useState<Mode>('signin')
   const [email, setEmail]         = useState('')
@@ -32,40 +39,79 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex bg-white">
 
-      {/* Background grid texture */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
+      {/* ── Left branding panel (desktop only) ──────────────────────────── */}
+      <div className="hidden lg:flex flex-col flex-1 bg-slate-900 p-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.04)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Card */}
-      <div className="relative w-full max-w-sm">
-
-        {/* Logo + branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/30 mb-4">
-            <span className="text-white text-2xl font-black">A</span>
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
+            <span className="text-white text-sm font-black">A</span>
           </div>
-          <h1 className="text-white text-2xl font-black tracking-tight">Araghyam</h1>
-          <p className="text-slate-400 text-sm mt-1">CSAT AI · Assam Jal Jeevan Mission</p>
-          <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-emerald-400 text-xs font-medium">Phase 1 Dashboard · April 2026</span>
+          <div>
+            <p className="text-white font-bold text-base leading-none">Araghyam</p>
+            <p className="text-slate-500 text-xs mt-0.5">CSAT AI Platform</p>
           </div>
         </div>
 
-        {/* Login card */}
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl">
+        <div className="flex-1 flex flex-col justify-center relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 w-fit mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-blue-400 text-xs font-medium">Phase 1 · April 2026 · Live</span>
+          </div>
+          <h1 className="text-white text-4xl font-black leading-tight mb-4">
+            Assam Jal Jeevan<br />Mission Survey
+          </h1>
+          <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
+            AI-powered citizen satisfaction analysis across 31 districts and 6 zones of Assam.
+            Government-ready insights from field survey data.
+          </p>
+          <div className="grid grid-cols-2 gap-3 mt-10 max-w-xs">
+            {STATS.map(s => (
+              <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl p-3.5">
+                <p className="text-xl mb-1">{s.icon}</p>
+                <p className="text-white font-bold text-base leading-none">{s.val}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="text-slate-700 text-xs relative z-10">
+          Araghyam · Confidential · Government of Assam · Jal Jeevan Mission
+        </p>
+      </div>
+
+      {/* ── Right form panel ─────────────────────────────────────────────── */}
+      <div className="flex-1 lg:max-w-[420px] flex flex-col items-center justify-center p-8">
+
+        {/* Mobile logo */}
+        <div className="lg:hidden flex items-center gap-2 mb-10 self-start">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <span className="text-white text-xs font-black">A</span>
+          </div>
+          <div>
+            <p className="font-bold text-gray-800 text-sm">Araghyam</p>
+            <p className="text-gray-400 text-xs">CSAT AI · Assam JJM</p>
+          </div>
+        </div>
+
+        <div className="w-full max-w-sm">
+          <h2 className="text-2xl font-black text-gray-900 mb-1">Sign in</h2>
+          <p className="text-gray-400 text-sm mb-8">Access the JJM CSAT dashboard</p>
 
           {/* Mode tabs */}
-          <div className="flex gap-1 p-1 bg-slate-800 rounded-xl mb-6">
-            {([['signin', 'Email & Password'], ['magic', 'Magic Link']] as [Mode, string][]).map(([m, label]) => (
+          <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-6">
+            {([['signin', 'Password'], ['magic', 'Magic Link']] as [Mode, string][]).map(([m, label]) => (
               <button
                 key={m}
                 onClick={() => { setMode(m); setError(''); setMagicSent(false) }}
-                className={`flex-1 text-xs font-semibold py-2 rounded-lg transition-all ${
+                className={`flex-1 text-xs font-semibold py-2.5 rounded-lg transition-all ${
                   mode === m
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
+                    : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 {label}
@@ -74,20 +120,26 @@ export function LoginPage() {
           </div>
 
           {magicSent ? (
-            <div className="text-center py-6 space-y-3">
-              <div className="text-4xl">📧</div>
-              <p className="text-white font-semibold">Check your inbox</p>
-              <p className="text-slate-400 text-sm">Magic link sent to <span className="text-blue-400">{email}</span></p>
-              <button onClick={() => { setMagicSent(false); setEmail('') }}
-                className="text-xs text-slate-500 hover:text-slate-300 mt-2">
-                Try a different email
+            <div className="text-center py-10 space-y-3">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto text-3xl">
+                📧
+              </div>
+              <p className="text-gray-800 font-bold">Check your inbox</p>
+              <p className="text-gray-500 text-sm">
+                Magic link sent to{' '}
+                <span className="text-blue-600 font-medium">{email}</span>
+              </p>
+              <button
+                onClick={() => { setMagicSent(false); setEmail('') }}
+                className="text-xs text-gray-400 hover:text-gray-600 underline"
+              >
+                Use a different email
               </button>
             </div>
           ) : (
             <form onSubmit={mode === 'signin' ? handleSignIn : handleMagicLink} className="space-y-4">
-
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
                   Email Address
                 </label>
                 <input
@@ -95,16 +147,16 @@ export function LoginPage() {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-4 py-3
-                    placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                  placeholder="you@araghyam.org"
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
+                    placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                     transition-all"
                 />
               </div>
 
               {mode === 'signin' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
                     Password
                   </label>
                   <input
@@ -113,42 +165,51 @@ export function LoginPage() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-4 py-3
-                      placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
+                      placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                       transition-all"
                   />
                 </div>
               )}
 
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-xs">
-                  {error}
+                <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-600 text-xs flex items-start gap-2">
+                  <span className="flex-shrink-0 mt-0.5">⚠</span>
+                  <span>{error}</span>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-semibold
-                  text-sm py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 text-white font-semibold
+                  text-sm py-3 rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 mt-1"
               >
                 {loading ? (
                   <><span className="animate-spin text-base">⟳</span> Signing in…</>
                 ) : mode === 'signin' ? (
-                  '→ Sign In'
+                  'Sign In'
                 ) : (
-                  '→ Send Magic Link'
+                  'Send Magic Link'
                 )}
               </button>
+
+              {mode === 'magic' && (
+                <p className="text-center text-xs text-gray-400 pt-1">
+                  We'll email a one-click login link. No password needed.
+                </p>
+              )}
             </form>
           )}
-        </div>
 
-        {/* Footer note */}
-        <p className="text-center text-xs text-slate-600 mt-6">
-          Araghyam · Confidential · Phase 1 Data · 45,863 calls
-        </p>
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <p className="text-center text-xs text-gray-300">
+              Restricted to authorised Araghyam personnel
+            </p>
+          </div>
+        </div>
       </div>
+
     </div>
   )
 }

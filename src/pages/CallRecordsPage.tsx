@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { downloadFilteredCallsCSV } from '../utils/reports'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CallRecord {
@@ -44,8 +45,11 @@ interface CallRecord {
 const ZONES = ['All Zones', 'Critical Zones', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC']
 const STATUSES = ['All', 'Completed', 'Unanswered', 'Pending']
 const SATISFACTIONS = ['All', 'Satisfied', 'Neutral', 'Dissatisfied', 'No Q5']
-const Q1_OPTS = ['All', 'Yes', 'No']
+const Q_OPTS = ['All', 'Yes', 'No']
 const PAGE_SIZE = 50
+
+type SortCol = 'call_start_time' | 'call_duration' | 'contact_attempts' | 'district' | 'zone'
+type SortDir = 'asc' | 'desc'
 
 // Quick filter presets
 interface Preset {
@@ -140,13 +144,21 @@ export function CallRecordsPage() {
   const [status, setStatus]         = useState('Completed')
   const [sat, setSat]               = useState('All')
   const [q1Filter, setQ1Filter]     = useState('All')
+  const [q2Filter, setQ2Filter]     = useState('All')
+  const [q3Filter, setQ3Filter]     = useState('All')
+  const [q4Filter, setQ4Filter]     = useState('All')
   const [hasRecording, setHasRecording] = useState<boolean | null>(null)
   const [callbackOnly, setCallbackOnly] = useState(false)
   const [minDuration, setMinDuration]   = useState<number | null>(null)
+  const [dateFrom, setDateFrom]         = useState('')
+  const [dateTo, setDateTo]             = useState('')
   const [activePreset, setActivePreset] = useState<string | null>(null)
+  const [sortCol, setSortCol]           = useState<SortCol>('call_start_time')
+  const [sortDir, setSortDir]           = useState<SortDir>('desc')
   const [page, setPage]             = useState(0)
   const [selected, setSelected]     = useState<CallRecord | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [exporting, setExporting]   = useState(false)
 
   // Debounce search
   useEffect(() => {
@@ -154,14 +166,14 @@ export function CallRecordsPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  useEffect(() => { fetchRecords() }, [zone, status, sat, q1Filter, hasRecording, callbackOnly, minDuration, page, debouncedSearch])
+  useEffect(() => { fetchRecords() }, [zone, status, sat, q1Filter, q2Filter, q3Filter, q4Filter, hasRecording, callbackOnly, minDuration, dateFrom, dateTo, page, debouncedSearch, sortCol, sortDir])
 
   async function fetchRecords() {
     setLoading(true)
     let q = supabase
       .from('call_records')
       .select('*', { count: 'exact' })
-      .order('call_start_time', { ascending: false, nullsFirst: false })
+      .order(sortCol, { ascending: sortDir === 'asc', nullsFirst: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (zone === 'Critical Zones') q = q.in('zone', ['BTAD', 'Barak Valley'])
@@ -175,11 +187,22 @@ export function CallRecordsPage() {
     if (q1Filter === 'Yes') q = q.eq('q1_answer', 'yes')
     else if (q1Filter === 'No') q = q.eq('q1_answer', 'no')
 
+    if (q2Filter === 'Yes') q = q.eq('q2_answer', 'yes')
+    else if (q2Filter === 'No') q = q.eq('q2_answer', 'no')
+
+    if (q3Filter === 'Yes') q = q.eq('q3_answer', 'yes')
+    else if (q3Filter === 'No') q = q.eq('q3_answer', 'no')
+
+    if (q4Filter === 'Yes') q = q.eq('q4_answer', 'yes')
+    else if (q4Filter === 'No') q = q.eq('q4_answer', 'no')
+
     if (hasRecording === true)  q = q.not('call_recording_url', 'is', null)
     if (hasRecording === false) q = q.is('call_recording_url', null)
 
     if (callbackOnly) q = q.eq('callback_requested', true)
     if (minDuration)  q = q.gte('call_duration', minDuration)
+    if (dateFrom) q = q.gte('call_start_time', dateFrom)
+    if (dateTo)   q = q.lte('call_start_time', dateTo + 'T23:59:59')
 
     if (debouncedSearch.trim()) {
       const s = debouncedSearch.trim()
@@ -211,14 +234,44 @@ export function CallRecordsPage() {
 
   function resetFilters() {
     setZone('All Zones'); setStatus('Completed'); setSat('All')
-    setQ1Filter('All'); setHasRecording(null); setCallbackOnly(false)
-    setMinDuration(null); setSearch(''); setPage(0); setActivePreset(null)
-    setSelected(null)
+    setQ1Filter('All'); setQ2Filter('All'); setQ3Filter('All'); setQ4Filter('All')
+    setHasRecording(null); setCallbackOnly(false)
+    setMinDuration(null); setDateFrom(''); setDateTo('')
+    setSearch(''); setPage(0); setActivePreset(null); setSelected(null)
+  }
+
+  function handleSort(col: SortCol) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('desc') }
+    setPage(0)
+  }
+
+  async function exportCSV() {
+    setExporting(true)
+    try {
+      await downloadFilteredCallsCSV(
+        {
+          zone: zone === 'All Zones' ? undefined : zone,
+          sat: sat === 'All' ? undefined : sat,
+          q1: q1Filter === 'All' ? undefined : q1Filter,
+          hasRecording,
+          callbackOnly: callbackOnly ? true : undefined,
+          minDuration,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+        },
+        [zone !== 'All Zones' && zone, sat !== 'All' && sat].filter(Boolean).join('_') || 'Filtered'
+      )
+    } finally {
+      setExporting(false)
+    }
   }
 
   const activeFilterCount = [
     zone !== 'All Zones', status !== 'Completed', sat !== 'All',
-    q1Filter !== 'All', hasRecording !== null, callbackOnly, minDuration !== null,
+    q1Filter !== 'All', q2Filter !== 'All', q3Filter !== 'All', q4Filter !== 'All',
+    hasRecording !== null, callbackOnly, minDuration !== null,
+    dateFrom !== '', dateTo !== '',
     debouncedSearch.trim() !== '',
   ].filter(Boolean).length
 
@@ -258,18 +311,29 @@ export function CallRecordsPage() {
       </div>
 
       {/* ── Stats bar ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Showing',        val: total.toLocaleString(),       color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200' },
-          { label: 'With Recording', val: '8,782',                      color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200' },
-          { label: 'Survey Usable',  val: '9,224',                      color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-          { label: 'Active Filters', val: activeFilterCount > 0 ? `${activeFilterCount} active` : 'Default', color: activeFilterCount > 0 ? 'text-amber-700' : 'text-gray-500', bg: activeFilterCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200' },
-        ].map(c => (
-          <div key={c.label} className={`rounded-xl border p-3 ${c.bg}`}>
-            <div className={`text-lg font-bold ${c.color}`}>{c.val}</div>
-            <div className="text-xs text-gray-500">{c.label}</div>
-          </div>
-        ))}
+      <div className="flex gap-3 items-stretch">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+          {[
+            { label: 'Matching Records', val: total.toLocaleString(),       color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200' },
+            { label: 'With Recording',   val: '8,782',                      color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200' },
+            { label: 'Survey Usable',    val: '9,224',                      color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+            { label: 'Active Filters',   val: activeFilterCount > 0 ? `${activeFilterCount} active` : 'Default', color: activeFilterCount > 0 ? 'text-amber-700' : 'text-gray-500', bg: activeFilterCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200' },
+          ].map(c => (
+            <div key={c.label} className={`rounded-xl border p-3 ${c.bg}`}>
+              <div className={`text-lg font-bold ${c.color}`}>{c.val}</div>
+              <div className="text-xs text-gray-500">{c.label}</div>
+            </div>
+          ))}
+        </div>
+        {/* Export CSV button */}
+        <button
+          onClick={exportCSV}
+          disabled={exporting || total === 0}
+          className="flex-shrink-0 flex flex-col items-center justify-center gap-1 px-4 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[80px]"
+        >
+          <span className="text-lg">{exporting ? '⟳' : '↓'}</span>
+          <span className="text-xs font-semibold text-emerald-700">{exporting ? 'Exporting…' : 'Export CSV'}</span>
+        </button>
       </div>
 
       {/* ── Filters ─────────────────────────────────────────────────────── */}
@@ -320,45 +384,72 @@ export function CallRecordsPage() {
 
         {/* Expanded filters */}
         {showFilters && (
-          <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-100 items-end">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1 font-medium">Q1 Daily Water</label>
-              <div className="flex gap-1">
-                {Q1_OPTS.map(o => (
-                  <button key={o} onClick={() => { setQ1Filter(o); setPage(0); setActivePreset(null) }}
-                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${q1Filter === o ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                    {o}
-                  </button>
-                ))}
-              </div>
+          <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+            {/* Survey answer filters */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {([
+                ['Q1 Daily Water',    q1Filter, setQ1Filter],
+                ['Q2 Water Quality',  q2Filter, setQ2Filter],
+                ['Q3 Quantity',       q3Filter, setQ3Filter],
+                ['Q4 Timing',         q4Filter, setQ4Filter],
+              ] as [string, string, (v: string) => void][]).map(([lbl, val, setter]) => (
+                <div key={lbl}>
+                  <label className="block text-xs text-gray-500 mb-1 font-medium">{lbl}</label>
+                  <div className="flex gap-1">
+                    {Q_OPTS.map(o => (
+                      <button key={o} onClick={() => { setter(o); setPage(0); setActivePreset(null) }}
+                        className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${val === o ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                        {o}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1 font-medium">Recording</label>
-              <div className="flex gap-1">
-                {([['All', null], ['Has', true], ['None', false]] as [string, boolean | null][]).map(([label, val]) => (
-                  <button key={label} onClick={() => { setHasRecording(val); setPage(0); setActivePreset(null) }}
-                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${hasRecording === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                    {label}
-                  </button>
-                ))}
+
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-medium">Recording</label>
+                <div className="flex gap-1">
+                  {([['All', null], ['Has', true], ['None', false]] as [string, boolean | null][]).map(([label, val]) => (
+                    <button key={label} onClick={() => { setHasRecording(val); setPage(0); setActivePreset(null) }}
+                      className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${hasRecording === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1 font-medium">Min Duration</label>
-              <div className="flex gap-1">
-                {([['Any', null], ['>1min', 60], ['>3min', 180], ['>5min', 300]] as [string, number | null][]).map(([label, val]) => (
-                  <button key={label} onClick={() => { setMinDuration(val); setPage(0); setActivePreset(null) }}
-                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${minDuration === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                    {label}
-                  </button>
-                ))}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-medium">Min Duration</label>
+                <div className="flex gap-1">
+                  {([['Any', null], ['>1min', 60], ['>3min', 180], ['>5min', 300]] as [string, number | null][]).map(([label, val]) => (
+                    <button key={label} onClick={() => { setMinDuration(val); setPage(0); setActivePreset(null) }}
+                      className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${minDuration === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
+              <label className="flex items-center gap-2 cursor-pointer pb-0.5">
+                <input type="checkbox" checked={callbackOnly} onChange={e => { setCallbackOnly(e.target.checked); setPage(0); setActivePreset(null) }}
+                  className="rounded border-gray-300 text-blue-600" />
+                <span className="text-xs text-gray-600 font-medium">Callback Requested only</span>
+              </label>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={callbackOnly} onChange={e => { setCallbackOnly(e.target.checked); setPage(0); setActivePreset(null) }}
-                className="rounded border-gray-300 text-blue-600" />
-              <span className="text-xs text-gray-600 font-medium">Callback Requested only</span>
-            </label>
+
+            {/* Date range */}
+            <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+              <span className="text-xs text-gray-500 font-medium flex-shrink-0">Date range:</span>
+              <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0) }}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-300" />
+              <span className="text-xs text-gray-400">to</span>
+              <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0) }}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-300" />
+              {(dateFrom || dateTo) && (
+                <button onClick={() => { setDateFrom(''); setDateTo(''); setPage(0) }}
+                  className="text-xs text-gray-400 hover:text-gray-600">clear</button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -391,13 +482,13 @@ export function CallRecordsPage() {
                 <thead>
                   <tr>
                     <th className="th">Call ID</th>
-                    <th className="th hidden sm:table-cell">Date</th>
-                    <th className="th hidden sm:table-cell">District</th>
-                    <th className="th hidden lg:table-cell">Summary (preview)</th>
+                    <SortTh col="call_start_time" label="Date" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
+                    <SortTh col="district" label="District" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
+                    <th className="th hidden lg:table-cell">Summary</th>
                     <th className="th text-center">Status</th>
                     <th className="th text-center">Q5</th>
                     <th className="th text-center hidden md:table-cell">Q1</th>
-                    <th className="th text-right hidden md:table-cell">Duration</th>
+                    <SortTh col="call_duration" label="Dur." sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="text-right hidden md:table-cell" />
                     <th className="th text-center">🎙️</th>
                   </tr>
                 </thead>
@@ -650,6 +741,27 @@ function AudioPlayer({ url, duration }: { url: string; duration: number | null }
         </div>
       </div>
     </div>
+  )
+}
+
+// ─── Sortable header ──────────────────────────────────────────────────────────
+function SortTh({ col, label, sortCol, sortDir, onSort, className = '' }: {
+  col: SortCol; label: string; sortCol: SortCol; sortDir: SortDir
+  onSort: (c: SortCol) => void; className?: string
+}) {
+  const active = sortCol === col
+  return (
+    <th
+      className={`th cursor-pointer select-none hover:bg-gray-50 transition-colors ${className}`}
+      onClick={() => onSort(col)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        <span className={`text-xs ${active ? 'text-blue-500' : 'text-gray-300'}`}>
+          {active ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+        </span>
+      </span>
+    </th>
   )
 }
 
