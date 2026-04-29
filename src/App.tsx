@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Header }            from './components/Header'
-import { OverviewPage }      from './pages/OverviewPage'
-import { CallAnalysisPage }  from './pages/CallAnalysisPage'
-import { CallRecordsPage }   from './pages/CallRecordsPage'
-import { SurveyResultsPage } from './pages/SurveyResultsPage'
-import { SchemePage }        from './pages/SchemePage'
-import { GeographicPage }    from './pages/GeographicPage'
+import { supabase }           from './lib/supabase'
+import type { Session }       from '@supabase/supabase-js'
+import { Header }             from './components/Header'
+import { LoginPage }          from './pages/LoginPage'
+import { OverviewPage }       from './pages/OverviewPage'
+import { CallAnalysisPage }   from './pages/CallAnalysisPage'
+import { CallRecordsPage }    from './pages/CallRecordsPage'
+import { SurveyResultsPage }  from './pages/SurveyResultsPage'
+import { SchemePage }         from './pages/SchemePage'
+import { GeographicPage }     from './pages/GeographicPage'
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
 type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic'
@@ -21,7 +24,7 @@ const NAV: NavGroup[] = [
     label: 'Dashboard',
     icon: '◈',
     items: [
-      { id: 'overview',   label: 'Overview',        description: 'KPIs, BSI gauge, funnel' },
+      { id: 'overview',   label: 'Overview',        description: 'KPIs, BSI score, priorities' },
     ],
   },
   {
@@ -66,16 +69,29 @@ const PAGE_META: Record<PageId, { title: string; sub: string }> = {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
+  const [session, setSession]   = useState<Session | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [page, setPage]               = useState<PageId>('overview')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
+
+  // ── Auth state ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setAuthLoading(false)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   function navigate(id: PageId) {
     setPage(id)
     if (window.innerWidth < 768) setSidebarOpen(false)
   }
 
-  // Listen for navigation events dispatched from child pages (e.g. OverviewPage nav cards)
   useEffect(() => {
     function onNav(e: Event) { navigate((e as CustomEvent).detail as PageId) }
     window.addEventListener('navigate', onNav)
@@ -90,10 +106,32 @@ export default function App() {
     })
   }
 
+  // ── Loading splash ────────────────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-600/30">
+            <span className="text-white text-xl font-black">A</span>
+          </div>
+          <p className="text-slate-400 text-sm animate-pulse">Loading dashboard…</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Login gate ────────────────────────────────────────────────────────────
+  if (!session) return <LoginPage />
+
+  const userEmail = session.user?.email
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top header */}
-      <Header pageTitle={PAGE_META[page].title} onNavigate={(id) => navigate(id as PageId)} />
+      <Header
+        pageTitle={PAGE_META[page].title}
+        onNavigate={(id) => navigate(id as PageId)}
+        userEmail={userEmail}
+      />
 
       <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 56px)' }}>
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
@@ -128,7 +166,6 @@ export default function App() {
 
               return (
                 <div key={group.label} className="mb-1">
-                  {/* Group header — shown when sidebar open AND group has >1 item */}
                   {sidebarOpen && group.items.length > 1 && (
                     <button
                       onClick={() => toggleGroup(group.label)}
@@ -144,14 +181,12 @@ export default function App() {
                     </button>
                   )}
 
-                  {/* Section label for single-item groups when sidebar open */}
                   {sidebarOpen && group.items.length === 1 && (
                     <p className="px-2 pt-1 pb-0.5 text-xs font-semibold uppercase tracking-wider text-slate-600">
                       {group.label}
                     </p>
                   )}
 
-                  {/* Nav items */}
                   {(isExpanded || !sidebarOpen) && group.items.map((item) => {
                     const active = page === item.id
                     return (
@@ -180,25 +215,34 @@ export default function App() {
             })}
           </nav>
 
-          {/* Sidebar footer */}
+          {/* User info + logout */}
           {sidebarOpen ? (
-            <div className="p-3 border-t border-slate-800">
+            <div className="p-3 border-t border-slate-800 space-y-2">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                <p className="text-xs text-slate-500">Live · April 2026 · Assam</p>
+                <p className="text-xs text-slate-500 truncate">{userEmail}</p>
               </div>
-              <p className="text-xs text-slate-700 mt-1">45,863 calls · 31 districts</p>
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="w-full text-xs text-slate-500 hover:text-red-400 hover:bg-red-500/10 px-2 py-1.5 rounded-lg transition-colors text-left flex items-center gap-2"
+              >
+                <span>⎋</span> Sign Out
+              </button>
             </div>
           ) : (
-            <div className="p-2 border-t border-slate-800 flex justify-center">
+            <div className="p-2 border-t border-slate-800 flex flex-col items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <button
+                onClick={() => supabase.auth.signOut()}
+                title="Sign out"
+                className="text-slate-600 hover:text-red-400 text-xs transition-colors"
+              >⎋</button>
             </div>
           )}
         </aside>
 
         {/* ── Main content ──────────────────────────────────────────────── */}
         <main className="flex-1 overflow-y-auto">
-          {/* Page subtitle bar */}
           <div className="bg-white border-b border-gray-100 px-6 py-2 flex items-center justify-between">
             <p className="text-xs text-gray-400">{PAGE_META[page].sub}</p>
             <nav className="hidden sm:flex items-center gap-1.5 text-xs text-gray-400">
@@ -208,7 +252,6 @@ export default function App() {
             </nav>
           </div>
 
-          {/* Page body */}
           <div className="px-5 sm:px-6 py-6 max-w-7xl mx-auto w-full">
             {page === 'overview'   && <OverviewPage />}
             {page === 'calls'      && <CallAnalysisPage />}
