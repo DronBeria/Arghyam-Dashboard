@@ -1,39 +1,108 @@
 import {
-  KPI_HEADLINE, KPI_QUESTIONS, SCHEME_COVERAGE,
-  ZONE_SCORES,
+  KPI_HEADLINE, KPI_QUESTIONS, SCHEME_COVERAGE, ZONE_SCORES,
 } from '../data/csatData'
 import {
   RadialBarChart, RadialBar, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ReferenceLine,
 } from 'recharts'
-import { StatusBadge } from '../components/StatusBadge'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const TOTAL_CALLS   = 45863
 const CONSENTED     = 12583
 const USABLE        = 9224
 const COMPLETED_ALL = 1578
-const STATE_BSI     = KPI_HEADLINE.stateBSI   // 0–1 internally
-const STATE_BSI_5   = +(STATE_BSI * 5).toFixed(2)  // display: 2.20 / 5.0
-const TARGET_BSI_5  = (0.70 * 5).toFixed(2)        // "3.50"
+const STATE_BSI     = KPI_HEADLINE.stateBSI
+const STATE_BSI_5   = +(STATE_BSI * 5).toFixed(2)
+const TARGET_5      = 3.50
+const GAP_5         = +(TARGET_5 - STATE_BSI_5).toFixed(2)
 
-// Gauge still uses 0–100 internally; only labels/text are shown as /5
 const BSI_GAUGE = [
-  { name: 'BSI',          value: +(STATE_BSI * 100).toFixed(2), fill: '#f59e0b' },
-  { name: 'Gap',          value: +(70 - STATE_BSI * 100).toFixed(2), fill: '#d1fae5' },
-  { name: 'Above target', value: 30, fill: '#f3f4f6' },
+  { name: 'BSI',  value: +(STATE_BSI * 100).toFixed(1), fill: '#f59e0b' },
+  { name: 'Gap',  value: +(70 - STATE_BSI * 100).toFixed(1), fill: '#fef3c7' },
+  { name: 'Rest', value: 30, fill: '#f1f5f9' },
 ]
-
-const Q_CHART = [...KPI_QUESTIONS]
-  .sort((a, b) => b.yesPct - a.yesPct)
-  .map(q => ({
-    name: q.id, label: q.label, pct: q.yesPct, base: q.base,
-    color: q.status === 'Good' ? '#10b981' : q.status === 'Critical' ? '#ef4444' : '#f59e0b',
-  }))
 
 const ZONES_RANKED = ZONE_SCORES
   .filter(z => z.bsi !== null && z.zone !== 'Assam (State)')
   .sort((a, b) => (b.bsi ?? 0) - (a.bsi ?? 0))
+
+// Service area cards — plain language, like the reference dashboard
+const SERVICE_AREAS = [
+  {
+    id: 'daily',
+    title: 'Gets Water Every Day',
+    sub: 'Last 7 days · daily supply regularity',
+    yesN: 2855, noN: 6369, base: 9224,
+    pct: 30.95,
+    status: 'Critical',
+    statusLabel: 'Critical',
+    weight: '0.75 / 5',
+    insight: 'Biggest gap — 69% of households report irregular supply',
+    borderColor: 'border-l-red-500',
+    barColor: 'bg-red-500',
+    bgColor: 'bg-red-50',
+    badgeBg: 'bg-red-100 text-red-700 border-red-200',
+  },
+  {
+    id: 'quality',
+    title: 'Happy with Water Quality',
+    sub: 'Cleanliness and potability',
+    yesN: 3293, noN: 1260, base: 4553,
+    pct: 72.33,
+    status: 'Good',
+    statusLabel: 'Good',
+    weight: '1.5 / 5',
+    insight: 'Only metric above 70% target — quality perception is positive',
+    borderColor: 'border-l-emerald-500',
+    barColor: 'bg-emerald-500',
+    bgColor: 'bg-emerald-50',
+    badgeBg: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  },
+  {
+    id: 'quantity',
+    title: 'Satisfied with Water Quantity',
+    sub: 'Sufficient supply volume',
+    yesN: 2953, noN: 1792, base: 4745,
+    pct: 62.23,
+    status: 'Moderate',
+    statusLabel: 'Needs Attention',
+    weight: '1.5 / 5',
+    insight: '38% report insufficient water volume — high-weight metric',
+    borderColor: 'border-l-amber-500',
+    barColor: 'bg-amber-500',
+    bgColor: 'bg-amber-50',
+    badgeBg: 'bg-amber-100 text-amber-700 border-amber-200',
+  },
+  {
+    id: 'timing',
+    title: 'Water Comes at a Fixed Time',
+    sub: 'Predictability and scheduling',
+    yesN: 1222, noN: 920, base: 2142,
+    pct: 57.05,
+    status: 'Moderate',
+    statusLabel: 'Needs Attention',
+    weight: '0.75 / 5',
+    insight: 'Predictability remains below target — scheduling improvements needed',
+    borderColor: 'border-l-amber-400',
+    barColor: 'bg-amber-400',
+    bgColor: 'bg-amber-50',
+    badgeBg: 'bg-amber-100 text-amber-700 border-amber-200',
+  },
+  {
+    id: 'overall',
+    title: 'Overall Satisfaction',
+    sub: 'Q5 — 3-way: Happy / Neutral / Sad',
+    yesN: 2233, noN: 2051, base: 4284,
+    pct: 52.12,
+    status: 'Moderate',
+    statusLabel: 'Needs Attention',
+    weight: '0.5 / 5',
+    insight: '24.8% expressed dissatisfaction; 23.1% neutral — improvement possible',
+    borderColor: 'border-l-amber-500',
+    barColor: 'bg-amber-500',
+    bgColor: 'bg-amber-50',
+    badgeBg: 'bg-amber-100 text-amber-700 border-amber-200',
+  },
+]
 
 function fmt(n: number) { return n.toLocaleString() }
 
@@ -41,366 +110,344 @@ function nav(page: string) {
   window.dispatchEvent(new CustomEvent('navigate', { detail: page }))
 }
 
-// Section card wrapper — clickable with hover state
-function SectionCard({
-  children, page, className = '',
-}: {
-  children: React.ReactNode
-  page?: string
-  className?: string
-}) {
-  if (!page) {
-    return <div className={`bg-white rounded-xl border border-gray-200 p-5 shadow-sm ${className}`}>{children}</div>
-  }
-  return (
-    <div
-      onClick={() => nav(page)}
-      className={`bg-white rounded-xl border border-gray-200 p-5 shadow-sm cursor-pointer
-        hover:border-blue-300 hover:shadow-md transition-all group ${className}`}
-    >
-      {children}
-    </div>
-  )
-}
-
-// Section header row with optional "View →" link
-function SectionHeader({
-  title, sub, page,
-}: {
-  title: string
-  sub: string
-  page?: string
-}) {
-  return (
-    <div className="flex items-start justify-between mb-3">
-      <div>
-        <p className="text-sm font-semibold text-gray-700">{title}</p>
-        <p className="text-xs text-gray-400">{sub}</p>
-      </div>
-      {page && (
-        <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium flex items-center gap-0.5 flex-shrink-0 mt-0.5">
-          View detail →
-        </span>
-      )}
-    </div>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function OverviewPage() {
   return (
     <div className="space-y-5">
 
-      {/* ── Status flags ──────────────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-          🚨 Q1 Daily Supply: 30.95% — critical gap
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-          ⚠️ 507 of 615 valid schemes non-functional
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-          📍 2 zones Critical · 0 zones meet 3.50/5 target
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-          Phase 1 complete · Phase 2 re-calling recommended
-        </span>
+      {/* ── 1. Alert banner ────────────────────────────────────────────── */}
+      <div className="bg-red-600 rounded-xl px-4 py-3 flex flex-wrap gap-x-6 gap-y-1 items-center">
+        <span className="text-white text-xs font-semibold uppercase tracking-wider flex-shrink-0">🚨 Action Required</span>
+        <span className="text-red-100 text-xs">Only 30.95% households get water every day</span>
+        <span className="text-red-200 text-xs hidden sm:inline">·</span>
+        <span className="text-red-100 text-xs">507 of 615 valid schemes are non-functional</span>
+        <span className="text-red-200 text-xs hidden sm:inline">·</span>
+        <span className="text-red-100 text-xs">BTAD and Barak Valley are Critical zones</span>
       </div>
 
-      {/* ── Headline KPIs ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-        {[
-          { label: 'Total Calls',      value: fmt(TOTAL_CALLS),            sub: fmt(2373) + ' IMIS schemes',                  t: 'border-blue-400',    text: 'text-blue-700',    page: 'calls'     },
-          { label: 'State BSI',        value: STATE_BSI_5 + ' / 5.0',      sub: 'Moderate · target ≥ ' + TARGET_BSI_5,        t: 'border-amber-400',   text: 'text-amber-700',   page: 'geographic' },
-          { label: 'Q5 Satisfied',     value: KPI_HEADLINE.satisfied + '%', sub: '2,233 of 4,284 who reached Q5',             t: 'border-amber-400',   text: 'text-amber-700',   page: 'survey'    },
-          { label: 'Functional Schms', value: KPI_HEADLINE.functionalSchemes + '%', sub: '108 of 615 valid schemes',           t: 'border-red-400',     text: 'text-red-700',     page: 'schemes'   },
-          { label: 'Consent Rate',     value: ((CONSENTED / TOTAL_CALLS) * 100).toFixed(1) + '%', sub: fmt(CONSENTED) + ' agreed', t: 'border-slate-400', text: 'text-slate-700', page: 'calls'     },
-          { label: 'Usable Calls',     value: fmt(USABLE),                  sub: ((USABLE / TOTAL_CALLS) * 100).toFixed(1) + '% of total · BSI base', t: 'border-emerald-400', text: 'text-emerald-700', page: 'calls' },
-        ].map(c => (
-          <div
-            key={c.label}
-            onClick={() => nav(c.page)}
-            className={`bg-white rounded-xl border border-gray-100 border-t-4 ${c.t} p-4 shadow-sm
-              hover:shadow-md hover:border-blue-200 cursor-pointer transition-all group`}
-          >
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 leading-tight">{c.label}</p>
-            <p className={`text-xl font-bold ${c.text} leading-tight`}>{c.value}</p>
-            <p className="text-xs text-gray-400 mt-1 leading-snug">{c.sub}</p>
-            <p className="text-xs text-blue-400 group-hover:text-blue-600 mt-1">View →</p>
-          </div>
-        ))}
-      </div>
+      {/* ── 2. State BSI Hero ──────────────────────────────────────────── */}
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
 
-      {/* ── BSI · Survey KPIs · Call Funnel ───────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Score */}
+          <div className="flex items-center gap-6">
+            {/* Radial gauge */}
+            <div className="relative w-28 h-16 flex-shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart cx="50%" cy="90%" innerRadius="55%" outerRadius="100%"
+                  startAngle={180} endAngle={0} data={BSI_GAUGE}>
+                  <RadialBar dataKey="value" cornerRadius={3} />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="absolute bottom-0 left-0 right-0 text-center">
+                <span className="text-amber-400 text-xs font-bold">{STATE_BSI_5}</span>
+              </div>
+            </div>
 
-        {/* BSI Gauge */}
-        <SectionCard page="geographic">
-          <SectionHeader
-            title="State BSI Score"
-            sub={`Composite 0–5.0 · Good ≥ ${TARGET_BSI_5}`}
-            page="geographic"
-          />
-          <div className="h-36 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadialBarChart cx="50%" cy="85%" innerRadius="60%" outerRadius="100%"
-                startAngle={180} endAngle={0} data={BSI_GAUGE}>
-                <RadialBar dataKey="value" cornerRadius={4} />
-              </RadialBarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="text-center -mt-8">
-            <span className="text-3xl font-bold text-amber-600">{STATE_BSI_5}</span>
-            <span className="text-sm text-amber-400 ml-1">/ 5.0</span>
-            <p className="text-xs text-amber-600 font-medium mt-0.5">
-              Moderate · {((0.70 - STATE_BSI) * 5).toFixed(2)} below {TARGET_BSI_5} target
-            </p>
-          </div>
-          <div className="mt-2 w-full flex justify-between text-xs text-gray-400">
-            <span>0</span>
-            <span className="text-emerald-600 font-semibold">{TARGET_BSI_5} target</span>
-            <span>5.0</span>
-          </div>
-          <div className="mt-3 w-full space-y-1.5 pt-3 border-t border-gray-100">
-            {[
-              { label: 'Quality (Q2)',  val: 0.8905, max: 1.5 },
-              { label: 'Quantity (Q3)', val: 0.8158, max: 1.5 },
-              { label: 'Daily (Q1)',    val: 0.2803, max: 0.75 },
-            ].map(c => {
-              const fp = (c.val / c.max) * 100
-              return (
-                <div key={c.label}>
-                  <div className="flex justify-between text-xs mb-0.5">
-                    <span className="text-gray-500">{c.label}</span>
-                    <span className={`font-mono ${fp < 45 ? 'text-red-500' : fp < 65 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {c.val.toFixed(3)}/{c.max}
+            <div>
+              <p className="text-slate-400 text-xs font-medium uppercase tracking-widest mb-1">
+                State Beneficiary Satisfaction Index
+              </p>
+              <div className="flex items-end gap-3">
+                <span className="text-5xl font-black text-amber-400 leading-none">{STATE_BSI_5}</span>
+                <div>
+                  <span className="text-slate-400 text-lg">/ 5.0</span>
+                  <div className="mt-1">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      ⚠ NEEDS ATTENTION · {GAP_5} below target
                     </span>
                   </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${fp < 45 ? 'bg-red-400' : fp < 65 ? 'bg-amber-400' : 'bg-emerald-400'}`}
-                      style={{ width: `${fp}%` }} />
+                </div>
+              </div>
+              <p className="text-slate-400 text-xs mt-2">Target ≥ 3.50 (Good) · Assam Jal Jeevan Mission · Phase 1 · April 2026</p>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="lg:flex-1 space-y-2">
+            <div className="flex justify-between text-xs text-slate-400 mb-1">
+              <span>0</span>
+              <span className="text-emerald-400">3.50 target</span>
+              <span>5.0</span>
+            </div>
+            <div className="h-3 bg-slate-700 rounded-full overflow-hidden relative">
+              <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(STATE_BSI_5 / 5) * 100}%` }} />
+              <div className="absolute top-0 h-full w-px bg-emerald-400/60" style={{ left: '70%' }} />
+            </div>
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              {[
+                { label: 'Water Quality',  val: '0.891', sub: 'of 1.5',  pct: 59.4, color: 'text-emerald-400' },
+                { label: 'Water Quantity', val: '0.816', sub: 'of 1.5',  pct: 54.4, color: 'text-amber-400'   },
+                { label: 'Daily Supply',   val: '0.280', sub: 'of 0.75', pct: 37.4, color: 'text-red-400'     },
+              ].map(c => (
+                <div key={c.label} className="bg-slate-700/50 rounded-lg p-2">
+                  <div className={`text-sm font-bold ${c.color}`}>{c.val}<span className="text-xs text-slate-500 ml-1">{c.sub}</span></div>
+                  <div className="text-xs text-slate-500">{c.label}</div>
+                  <div className="h-1 bg-slate-600 rounded-full mt-1 overflow-hidden">
+                    <div className={`h-full rounded-full ${c.color.replace('text-', 'bg-')}`} style={{ width: `${c.pct}%` }} />
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Engagement funnel */}
+          <div className="lg:w-52 flex-shrink-0 bg-slate-700/50 rounded-xl p-4 space-y-3">
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Survey Reach</p>
+            {[
+              { label: 'Called',      n: TOTAL_CALLS,   pct: 100,   color: 'bg-blue-400'    },
+              { label: 'Consented',   n: CONSENTED,     pct: 27.4,  color: 'bg-indigo-400'  },
+              { label: 'Gave Data',   n: USABLE,        pct: 20.1,  color: 'bg-emerald-400' },
+              { label: 'Completed',   n: COMPLETED_ALL, pct: 3.4,   color: 'bg-emerald-600' },
+            ].map(s => (
+              <div key={s.label} className="space-y-0.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-300">{s.label}</span>
+                  <span className="text-slate-400 font-mono">{fmt(s.n)}</span>
+                </div>
+                <div className="h-1.5 bg-slate-600 rounded-full overflow-hidden">
+                  <div className={`h-full ${s.color} rounded-full`} style={{ width: `${s.pct}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. Service Area Breakdown ──────────────────────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-bold text-gray-800">How Did Citizens Rate Each Service Area?</h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Satisfaction Key:&nbsp;
+              <span className="text-emerald-600 font-semibold">Good</span> (≥70% Yes) &nbsp;
+              <span className="text-amber-600 font-semibold">Needs Attention</span> (40–70%) &nbsp;
+              <span className="text-red-600 font-semibold">Critical</span> (&lt;40%)
+            </p>
+          </div>
+          <button onClick={() => nav('survey')}
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors">
+            Full Survey →
+          </button>
+        </div>
+
+        <div className="space-y-2.5">
+          {SERVICE_AREAS.map(q => (
+            <div
+              key={q.id}
+              onClick={() => nav('survey')}
+              className={`bg-white rounded-xl border border-gray-200 border-l-4 ${q.borderColor} p-4 shadow-sm
+                hover:shadow-md hover:border-r-blue-200 cursor-pointer transition-all group`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-1">
+                    <p className="text-sm font-semibold text-gray-800">{q.title}</p>
+                    <span className="text-xs text-gray-400 hidden sm:inline">{q.sub}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-2">
+                    <span className="font-bold text-gray-700">{fmt(q.yesN)}</span> of{' '}
+                    <span className="font-semibold">{fmt(q.base)}</span> households said "Yes" —{' '}
+                    <span className={`font-bold ${q.pct >= 70 ? 'text-emerald-600' : q.pct >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {q.pct.toFixed(1)}%
+                    </span>
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${q.barColor} rounded-full transition-all`} style={{ width: `${q.pct}%` }} />
+                    </div>
+                    <div className="h-3 w-px bg-gray-200 flex-shrink-0" style={{ marginLeft: `calc(${70}% - 100%)` }} />
+                    <span className="text-xs text-gray-400 flex-shrink-0 w-24 hidden md:block">{q.insight}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 md:hidden">{q.insight}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${q.badgeBg}`}>
+                    {q.statusLabel}
+                  </span>
+                  <span className="text-xs text-gray-300 group-hover:text-blue-400">→</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 4. Zone Rankings + Scheme Coverage ────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        {/* Zone Rankings */}
+        <div
+          onClick={() => nav('geographic')}
+          className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-bold text-gray-800">Zone BSI Rankings</p>
+              <p className="text-xs text-gray-400">Scale 0–5.0 · Target ≥ 3.50 · 0 of 6 qualify</p>
+            </div>
+            <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">View map →</span>
+          </div>
+          <div className="space-y-2">
+            {ZONES_RANKED.map((z, i) => {
+              const bsi5 = (z.bsi! * 5).toFixed(2)
+              const isCrit = z.status === 'Critical'
+              return (
+                <div key={z.zone} className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400 w-4 font-mono">{i + 1}</span>
+                  <span className="text-xs font-medium text-gray-700 w-24 truncate">{z.zone}</span>
+                  <div className="flex-1 h-4 bg-gray-100 rounded overflow-hidden">
+                    <div
+                      className={`h-full rounded ${isCrit ? 'bg-red-400' : 'bg-amber-400'}`}
+                      style={{ width: `${(z.bsi! / 1.0) * 100}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs font-bold font-mono w-16 text-right ${isCrit ? 'text-red-600' : 'text-amber-700'}`}>
+                    {bsi5}/5
+                  </span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${isCrit ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                    {isCrit ? 'Critical' : 'Needs Attention'}
+                  </span>
                 </div>
               )
             })}
           </div>
-        </SectionCard>
-
-        {/* Survey KPIs */}
-        <SectionCard page="survey">
-          <SectionHeader
-            title="Survey KPIs — % Yes"
-            sub="Each question has an independent respondent base"
-            page="survey"
-          />
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={Q_CHART} margin={{ top: 4, right: 12, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 10 }} unit="%" />
-                <Tooltip
-                  contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }}
-                  formatter={(v: number, _: string, p: { payload?: { label?: string; base?: number } }) => [
-                    `${v.toFixed(1)}%  (n = ${p.payload?.base?.toLocaleString()})`,
-                    p.payload?.label ?? '',
-                  ]}
-                />
-                <ReferenceLine y={70} stroke="#10b981" strokeDasharray="4 2"
-                  label={{ value: '70% target', fill: '#10b981', fontSize: 9, position: 'insideTopRight' }} />
-                <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
-                  {Q_CHART.map((e, i) => <Cell key={i} fill={e.color} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-2 pt-2 border-t border-gray-100 space-y-0.5">
-            {Q_CHART.map(q => (
-              <div key={q.name} className="flex justify-between text-xs text-gray-400">
-                <span><span className="font-mono font-bold text-gray-600">{q.name}</span> {q.label}</span>
-                <span>n = {fmt(q.base)}</span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        {/* Call Funnel */}
-        <SectionCard page="calls">
-          <SectionHeader
-            title="Call Funnel"
-            sub={`All % of ${fmt(TOTAL_CALLS)} total calls`}
-            page="calls"
-          />
-          <div className="space-y-3">
-            {[
-              { label: 'Total Dialled',   val: TOTAL_CALLS,   pct: 100,                                                 color: 'bg-blue-500'    },
-              { label: 'Consented',       val: CONSENTED,     pct: +((CONSENTED / TOTAL_CALLS) * 100).toFixed(1),      color: 'bg-indigo-400'  },
-              { label: 'Usable (Q1)',     val: USABLE,        pct: +((USABLE / TOTAL_CALLS) * 100).toFixed(1),         color: 'bg-emerald-500' },
-              { label: 'All 5 complete',  val: COMPLETED_ALL, pct: +((COMPLETED_ALL / TOTAL_CALLS) * 100).toFixed(1), color: 'bg-emerald-700' },
-            ].map((s, i, arr) => (
-              <div key={s.label}>
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span className="font-medium">{s.label}</span>
-                  <span className="font-mono text-gray-500">{fmt(s.val)} <span className="text-gray-400">({s.pct}%)</span></span>
-                </div>
-                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full ${s.color} rounded-full`} style={{ width: `${s.pct}%` }} />
-                </div>
-                {i < arr.length - 1 && (
-                  <p className="text-xs text-gray-400 mt-0.5 text-right">
-                    ↓ {((arr[i+1].val / s.val) * 100).toFixed(1)}% carried forward
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      </div>
-
-      {/* ── Zone Rankings · Scheme Coverage ───────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-        {/* Zone Rankings */}
-        <SectionCard page="geographic">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold text-gray-700">Zone BSI Rankings</p>
-              <p className="text-xs text-gray-400">Scale 0–5.0 · Target ≥ {TARGET_BSI_5} · No zone qualifies yet</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-full font-medium">
-                0 / 6 meet target
-              </span>
-              <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">View →</span>
-            </div>
-          </div>
-          <div className="space-y-2.5">
-            {ZONES_RANKED.map((z, i) => (
-              <div key={z.zone} className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 font-mono w-4 flex-shrink-0">{i + 1}</span>
-                <span className="text-xs font-medium text-gray-700 w-24 truncate flex-shrink-0">{z.zone}</span>
-                <div className="flex-1 h-5 bg-gray-100 rounded overflow-hidden">
-                  <div className={`h-full rounded ${z.status === 'Critical' ? 'bg-red-400' : 'bg-amber-400'}`}
-                    style={{ width: `${(z.bsi! / 1.0) * 100}%` }} />
-                </div>
-                <span className={`text-xs font-bold font-mono w-16 text-right flex-shrink-0 ${z.status === 'Critical' ? 'text-red-600' : 'text-amber-700'}`}>
-                  {(z.bsi! * 5).toFixed(2)}/5
-                </span>
-                <div className="flex-shrink-0"><StatusBadge status={z.status} /></div>
-              </div>
-            ))}
-          </div>
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3">
-            <span className="text-xs text-gray-400 w-4"></span>
-            <span className="text-xs font-semibold text-blue-600 w-24 flex-shrink-0">State Avg</span>
-            <div className="flex-1 h-5 bg-blue-50 rounded overflow-hidden border border-blue-100">
-              <div className="h-full bg-blue-300 rounded" style={{ width: `${(0.4406 / 1.0) * 100}%` }} />
+            <span className="text-xs w-4" />
+            <span className="text-xs font-semibold text-blue-700 w-24">State Avg</span>
+            <div className="flex-1 h-4 bg-blue-50 rounded overflow-hidden border border-blue-100">
+              <div className="h-full bg-blue-400 rounded" style={{ width: `${(STATE_BSI / 1.0) * 100}%` }} />
             </div>
-            <span className="text-xs font-bold font-mono w-16 text-right text-blue-600">{STATE_BSI_5}/5</span>
-            <div className="flex-shrink-0"><StatusBadge status="Moderate" /></div>
+            <span className="text-xs font-bold font-mono w-16 text-right text-blue-700">{STATE_BSI_5}/5</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">Needs Att.</span>
           </div>
-        </SectionCard>
+        </div>
 
         {/* Scheme Coverage */}
-        <SectionCard page="schemes">
-          <div className="flex items-start justify-between mb-4">
+        <div
+          onClick={() => nav('schemes')}
+          className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-semibold text-gray-700">Scheme Coverage</p>
-              <p className="text-xs text-gray-400">{fmt(SCHEME_COVERAGE.total)} total IMIS schemes</p>
+              <p className="text-sm font-bold text-gray-800">Scheme Coverage</p>
+              <p className="text-xs text-gray-400">{fmt(SCHEME_COVERAGE.total)} IMIS schemes · Phase 1</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-full font-medium">
-                {SCHEME_COVERAGE.functionalRate}% functional
-              </span>
-              <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">View →</span>
-            </div>
+            <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">View detail →</span>
           </div>
-
-          <div className="grid grid-cols-3 gap-2 text-center mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             {[
-              { label: 'Valid',   n: SCHEME_COVERAGE.valid,   pct: SCHEME_COVERAGE.validPct,   color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-              { label: 'Flagged', n: SCHEME_COVERAGE.flagged, pct: SCHEME_COVERAGE.flaggedPct, color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200'     },
-              { label: 'No Data', n: SCHEME_COVERAGE.noData,  pct: SCHEME_COVERAGE.noDataPct,  color: 'text-gray-500',    bg: 'bg-gray-50 border-gray-200'       },
+              { label: 'Valid',     n: SCHEME_COVERAGE.valid,   pct: SCHEME_COVERAGE.validPct,   color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+              { label: 'Flagged',  n: SCHEME_COVERAGE.flagged, pct: SCHEME_COVERAGE.flaggedPct, color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200'     },
+              { label: 'No Data',  n: SCHEME_COVERAGE.noData,  pct: SCHEME_COVERAGE.noDataPct,  color: 'text-gray-500',    bg: 'bg-gray-50 border-gray-200'       },
             ].map(s => (
-              <div key={s.label} className={`rounded-xl border p-2.5 ${s.bg}`}>
-                <div className={`text-lg font-bold ${s.color}`}>{fmt(s.n)}</div>
+              <div key={s.label} className={`rounded-lg border p-2.5 text-center ${s.bg}`}>
+                <div className={`text-xl font-black ${s.color}`}>{fmt(s.n)}</div>
                 <div className={`text-xs font-semibold ${s.color}`}>{s.label}</div>
                 <div className="text-xs text-gray-400">{s.pct}%</div>
               </div>
             ))}
           </div>
-
-          <div className="h-3 rounded-full overflow-hidden flex mb-1">
-            <div className="bg-emerald-400 h-full" style={{ width: `${SCHEME_COVERAGE.validPct}%` }} />
-            <div className="bg-amber-400 h-full"   style={{ width: `${SCHEME_COVERAGE.flaggedPct}%` }} />
-            <div className="bg-gray-300 h-full"    style={{ width: `${SCHEME_COVERAGE.noDataPct}%` }} />
+          <div className="h-2.5 rounded-full overflow-hidden flex mb-2">
+            <div className="bg-emerald-400" style={{ width: `${SCHEME_COVERAGE.validPct}%` }} />
+            <div className="bg-amber-400" style={{ width: `${SCHEME_COVERAGE.flaggedPct}%` }} />
+            <div className="bg-gray-200 flex-1" />
           </div>
-          <div className="flex justify-between text-xs text-gray-400 mb-3">
-            <span className="text-emerald-600">■ Valid {SCHEME_COVERAGE.validPct}%</span>
-            <span className="text-amber-600">■ Flagged {SCHEME_COVERAGE.flaggedPct}%</span>
-            <span>■ No data {SCHEME_COVERAGE.noDataPct}%</span>
-          </div>
-
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-            <p className="text-xs font-semibold text-gray-700 mb-2">Of {fmt(SCHEME_COVERAGE.valid)} valid schemes:</p>
-            <div className="h-3 rounded-full overflow-hidden flex mb-1.5">
-              <div className="bg-emerald-500 h-full" style={{ width: `${SCHEME_COVERAGE.functionalRate}%` }} />
-              <div className="bg-red-400 h-full flex-1" />
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs font-semibold text-gray-700">Of {fmt(SCHEME_COVERAGE.valid)} valid schemes:</p>
+              <span className="text-xs bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold">
+                Critical
+              </span>
             </div>
-            <div className="flex justify-between text-xs">
+            <div className="h-2.5 rounded-full overflow-hidden flex">
+              <div className="bg-emerald-500" style={{ width: `${SCHEME_COVERAGE.functionalRate}%` }} />
+              <div className="bg-red-400 flex-1" />
+            </div>
+            <div className="flex justify-between text-xs mt-1.5">
               <span className="text-emerald-700 font-semibold">✓ {fmt(SCHEME_COVERAGE.functional)} functional ({SCHEME_COVERAGE.functionalRate}%)</span>
               <span className="text-red-600 font-semibold">✗ {fmt(SCHEME_COVERAGE.nonFunctional)} failing</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Q1 ≥50% AND Q2 ≥70% AND Q3 ≥70%</p>
           </div>
-        </SectionCard>
+        </div>
       </div>
 
-      {/* ── Q5 Satisfaction split ──────────────────────────────────────── */}
-      <SectionCard page="survey">
-        <SectionHeader
-          title="Q5 — Overall Satisfaction"
-          sub="4,284 respondents · 3-way split"
-          page="survey"
-        />
-        <div className="grid grid-cols-3 gap-4">
+      {/* ── 5. What Needs Attention ────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+        <p className="text-sm font-bold text-gray-800 mb-1">What Needs Attention — Phase 2 Priorities</p>
+        <p className="text-xs text-gray-400 mb-4">Based on Phase 1 findings · Araghyam recommendation</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { label: 'Satisfied',    pct: 52.1, n: 2233, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', bar: 'bg-emerald-500' },
-            { label: 'Neutral',      pct: 23.1, n: 990,  color: 'text-slate-600',   bg: 'bg-slate-50 border-slate-200',     bar: 'bg-slate-400'   },
-            { label: 'Dissatisfied', pct: 24.8, n: 1061, color: 'text-red-700',     bg: 'bg-red-50 border-red-200',         bar: 'bg-red-500'     },
-          ].map(s => (
-            <div key={s.label} className={`rounded-xl border p-4 ${s.bg}`}>
-              <div className={`text-3xl font-bold ${s.color}`}>{s.pct}%</div>
-              <div className={`text-xs font-semibold ${s.color} mt-1`}>{s.label}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{fmt(s.n)} respondents</div>
-              <div className="h-1.5 bg-white/60 rounded-full overflow-hidden mt-2">
-                <div className={`h-full ${s.bar} rounded-full`} style={{ width: `${s.pct}%` }} />
+            {
+              priority: '01',
+              issue: 'Daily Supply Regularity',
+              detail: '69% of 9,224 surveyed households report irregular water supply — highest-impact problem',
+              action: 'Target: Q1 improvement in Phase 2 re-calls',
+              color: 'border-red-200 bg-red-50',
+              badge: 'bg-red-100 text-red-700',
+              num: 'text-red-300',
+              page: 'calls',
+            },
+            {
+              priority: '02',
+              issue: 'Non-Functional Schemes',
+              detail: '507 of 615 valid schemes (82.4%) fail the functionality test — scheme infrastructure crisis',
+              action: 'Target: Re-inspect flagged 1,426 schemes',
+              color: 'border-amber-200 bg-amber-50',
+              badge: 'bg-amber-100 text-amber-700',
+              num: 'text-amber-300',
+              page: 'schemes',
+            },
+            {
+              priority: '03',
+              issue: 'Critical Zones: BTAD & Barak Valley',
+              detail: 'BTAD (1.92/5.0) and Barak Valley (1.89/5.0) are the two lowest-performing regions',
+              action: 'Target: Zone-specific re-call campaigns in Phase 2',
+              color: 'border-orange-200 bg-orange-50',
+              badge: 'bg-orange-100 text-orange-700',
+              num: 'text-orange-300',
+              page: 'geographic',
+            },
+          ].map(a => (
+            <div
+              key={a.priority}
+              onClick={() => nav(a.page)}
+              className={`rounded-xl border-2 p-4 cursor-pointer hover:shadow-md transition-all group ${a.color}`}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <span className={`text-3xl font-black ${a.num} leading-none`}>{a.priority}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${a.badge}`}>Action Required</span>
               </div>
+              <p className="text-sm font-bold text-gray-800 mb-1">{a.issue}</p>
+              <p className="text-xs text-gray-600 leading-relaxed mb-2">{a.detail}</p>
+              <p className="text-xs text-gray-500 font-medium">{a.action}</p>
+              <p className="text-xs text-blue-500 group-hover:text-blue-700 mt-2">Explore →</p>
             </div>
           ))}
         </div>
-      </SectionCard>
+      </div>
 
-      {/* ── Navigate to deeper views ───────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <p className="text-sm font-semibold text-gray-700 mb-1">Explore in Detail</p>
-        <p className="text-xs text-gray-400 mb-3">Click any section above or use these shortcuts</p>
+      {/* ── 6. Explore navigation ─────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-blue-100 p-5">
+        <p className="text-sm font-bold text-gray-800 mb-1">Explore Full Data</p>
+        <p className="text-xs text-gray-400 mb-4">Click any section above or jump directly to a detailed view</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
-            { page: 'calls',      icon: '📞', label: 'Call Analysis',    sub: 'Funnel, attempts, repeat' },
-            { page: 'records',    icon: '🎙️', label: 'Call Records',     sub: '8,782 calls + recordings' },
-            { page: 'survey',     icon: '📋', label: 'Survey Results',   sub: 'Q1–Q5 breakdown' },
-            { page: 'schemes',    icon: '🏗️', label: 'Scheme Coverage',  sub: 'Functional analysis' },
-            { page: 'geographic', icon: '🗺️', label: 'Zone & Districts', sub: 'BSI by geography' },
+            { page: 'calls',      icon: '📞', label: 'Call Analysis',    sub: 'Funnel, attempts, repeat callers',   color: 'hover:border-blue-400 hover:bg-blue-50'    },
+            { page: 'records',    icon: '🎙️', label: 'Call Records',     sub: '105,512 raw calls + 8,782 recordings', color: 'hover:border-purple-400 hover:bg-purple-50' },
+            { page: 'survey',     icon: '📋', label: 'Survey Results',   sub: 'Q1–Q5 full breakdown + Q5 split',    color: 'hover:border-emerald-400 hover:bg-emerald-50' },
+            { page: 'schemes',    icon: '🏗️', label: 'Scheme Coverage',  sub: 'Functional analysis · 2,373 schemes', color: 'hover:border-amber-400 hover:bg-amber-50'  },
+            { page: 'geographic', icon: '🗺️', label: 'Zone & Districts', sub: 'BSI by zone + 31 districts',         color: 'hover:border-red-400 hover:bg-red-50'       },
           ].map(n => (
             <button
               key={n.page}
               onClick={() => nav(n.page)}
-              className="flex flex-col items-start gap-1 p-3.5 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors group text-left"
+              className={`flex flex-col items-start gap-1.5 p-4 rounded-xl border border-gray-200 bg-white transition-all group text-left shadow-sm hover:shadow-md ${n.color}`}
             >
-              <span className="text-xl">{n.icon}</span>
-              <span className="text-xs font-semibold text-gray-700 group-hover:text-blue-700">{n.label}</span>
-              <span className="text-xs text-gray-400">{n.sub}</span>
+              <span className="text-2xl">{n.icon}</span>
+              <span className="text-xs font-bold text-gray-800 group-hover:text-gray-900 leading-tight">{n.label}</span>
+              <span className="text-xs text-gray-400 leading-tight">{n.sub}</span>
             </button>
           ))}
         </div>
