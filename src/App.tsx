@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
-import { supabase }           from './lib/supabase'
-import type { Session }       from '@supabase/supabase-js'
-import { Header }             from './components/Header'
-import { LoginPage }          from './pages/LoginPage'
-import { OverviewPage }       from './pages/OverviewPage'
-import { CallAnalysisPage }   from './pages/CallAnalysisPage'
-import { CallRecordsPage }    from './pages/CallRecordsPage'
-import { SurveyResultsPage }  from './pages/SurveyResultsPage'
-import { SchemePage }         from './pages/SchemePage'
-import { GeographicPage }          from './pages/GeographicPage'
-import { DataVerificationPage }    from './pages/DataVerificationPage'
+import { supabase } from './lib/supabase'
+import type { Session } from '@supabase/supabase-js'
+import { Header } from './components/Header'
+import { LoginPage } from './pages/LoginPage'
+import { OverviewPage } from './pages/OverviewPage'
+import { CallAnalysisPage } from './pages/CallAnalysisPage'
+import { CallRecordsPage } from './pages/CallRecordsPage'
+import { SurveyResultsPage } from './pages/SurveyResultsPage'
+import { SchemePage } from './pages/SchemePage'
+import { GeographicPage } from './pages/GeographicPage'
+import { DataVerificationPage } from './pages/DataVerificationPage'
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
 type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'verification'
@@ -25,29 +25,29 @@ const NAV: NavGroup[] = [
     label: 'Dashboard',
     icon: '◈',
     items: [
-      { id: 'overview',   label: 'Overview',        description: 'KPIs, BSI score, priorities' },
+      { id: 'overview', label: 'Overview', description: 'KPIs, BSI score, priorities' },
     ],
   },
   {
     label: 'Call Data',
     icon: '📞',
     items: [
-      { id: 'calls',   label: 'Call Analysis',   description: 'Summary, attempts, repeat callers' },
-      { id: 'records', label: 'Call Records',    description: 'Browse individual calls + recordings' },
+      { id: 'calls', label: 'Call Analysis', description: 'Summary, attempts, repeat callers' },
+      { id: 'records', label: 'Call Records', description: 'Browse individual calls + recordings' },
     ],
   },
   {
     label: 'Survey',
     icon: '📋',
     items: [
-      { id: 'survey',     label: 'Survey Results',  description: 'Q1–Q5 KPIs, Q5 split, funnel' },
+      { id: 'survey', label: 'Survey Results', description: 'Q1–Q5 KPIs, Q5 split, funnel' },
     ],
   },
   {
     label: 'Schemes',
     icon: '🏗️',
     items: [
-      { id: 'schemes',    label: 'Scheme Coverage', description: 'Valid, flagged, functional rate' },
+      { id: 'schemes', label: 'Scheme Coverage', description: 'Valid, flagged, functional rate' },
     ],
   },
   {
@@ -67,20 +67,20 @@ const NAV: NavGroup[] = [
 ]
 
 const PAGE_META: Record<PageId, { title: string; sub: string }> = {
-  overview:   { title: 'Dashboard Overview',     sub: 'State-level KPIs at a glance' },
-  calls:      { title: 'Call Analysis',           sub: 'Breakdown of 45,863 calls' },
-  records:    { title: 'Call Records',            sub: 'Browse, filter and play individual calls' },
-  survey:     { title: 'Survey Results',          sub: 'Q1–Q5 satisfaction indicators' },
-  schemes:    { title: 'Scheme Coverage',         sub: '2,373 IMIS schemes analysed' },
-  geographic:   { title: 'Zone & District Scores',  sub: 'BSI by geography across Assam' },
-  verification: { title: 'Data Verification',       sub: 'Sanity check audit — raw data vs dashboard' },
+  overview: { title: 'Dashboard Overview', sub: 'State-level KPIs at a glance' },
+  calls: { title: 'Call Analysis', sub: 'Breakdown of 45,863 calls' },
+  records: { title: 'Call Records', sub: 'Browse, filter and play individual calls' },
+  survey: { title: 'Survey Results', sub: 'Q1–Q5 satisfaction indicators' },
+  schemes: { title: 'Scheme Coverage', sub: '2,373 IMIS schemes analysed' },
+  geographic: { title: 'Zone & District Scores', sub: 'BSI by geography across Assam' },
+  verification: { title: 'Data Verification', sub: 'Sanity check audit — raw data vs dashboard' },
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [session, setSession]   = useState<Session | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
-  const [page, setPage]               = useState<PageId>('overview')
+  const [page, setPage] = useState<PageId>('overview')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
 
@@ -142,29 +142,31 @@ export default function App() {
         userEmail={userEmail}
       />
 
-      <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 56px)' }}>
+      <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className={`${sidebarOpen ? 'w-60' : 'w-14'} flex-shrink-0 bg-slate-900 flex flex-col transition-all duration-200 overflow-hidden`}>
 
           {/* Logo + collapse toggle */}
-          <div className={`flex items-center border-b border-slate-800 ${sidebarOpen ? 'justify-between px-3 py-3' : 'justify-center py-3'}`}>
+          <div className={`flex items-center border-b border-slate-800 ${sidebarOpen ? 'justify-between px-4 py-4' : 'justify-center py-4'}`}>
             {sidebarOpen && (
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xs font-bold">A</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
+                  <span className="text-white text-sm font-black">A</span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-white leading-none truncate">Araghyam</p>
-                  <p className="text-xs text-slate-500 leading-none mt-0.5 truncate">CSAT AI · Phase 1</p>
+                  <p className="text-xs font-bold text-white leading-none truncate tracking-tight">CSAT AI</p>
+                  <p className="text-[10px] text-slate-500 leading-none mt-1 truncate uppercase tracking-widest font-medium">Phase 1</p>
                 </div>
               </div>
             )}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-slate-500 hover:text-slate-200 transition-colors p-1 rounded"
+              className="text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-all p-1.5 rounded-lg"
               title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
-              <span className="text-xs">{sidebarOpen ? '◂' : '▸'}</span>
+              <svg className={`w-4 h-4 transition-transform duration-300 ${sidebarOpen ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
             </button>
           </div>
 
@@ -178,9 +180,8 @@ export default function App() {
                   {sidebarOpen && group.items.length > 1 && (
                     <button
                       onClick={() => toggleGroup(group.label)}
-                      className={`w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors ${
-                        hasActiveItem ? 'text-blue-400' : 'text-slate-500 hover:text-slate-300'
-                      }`}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-lg transition-colors ${hasActiveItem ? 'text-blue-400' : 'text-slate-500 hover:text-slate-300'
+                        }`}
                     >
                       <span className="flex items-center gap-2">
                         <span className="text-sm">{group.icon}</span>
@@ -203,11 +204,10 @@ export default function App() {
                         key={item.id}
                         onClick={() => navigate(item.id)}
                         title={!sidebarOpen ? item.label : undefined}
-                        className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-all ${
-                          active
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
-                        } ${sidebarOpen && group.items.length > 1 ? 'pl-4' : ''}`}
+                        className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-all ${active
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                          } ${sidebarOpen && group.items.length > 1 ? 'pl-4' : ''}`}
                       >
                         <span className={`text-base flex-shrink-0 ${active ? 'opacity-100' : 'opacity-70'}`}>{group.icon}</span>
                         {sidebarOpen && (
@@ -225,36 +225,51 @@ export default function App() {
           </nav>
 
           {/* User info + sign out */}
-          {sidebarOpen ? (
-            <div className="p-3 border-t border-slate-800 space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                <p className="text-xs text-slate-500 truncate">{userEmail}</p>
+          <div className="mt-auto border-t border-slate-800/50 bg-slate-900/50 backdrop-blur-sm">
+            {sidebarOpen ? (
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-3 px-1">
+                  <div className="relative">
+                    <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 text-[10px] font-bold">
+                      {userEmail?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-slate-200 truncate leading-none">{userEmail?.split('@')[0]}</p>
+                    <p className="text-[9px] text-slate-500 truncate mt-1 uppercase tracking-tighter font-medium">Administrator</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="w-full text-xs font-bold text-red-400 hover:text-white hover:bg-red-500 border border-red-500/20 hover:border-red-500 px-3 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 group"
+                >
+                  <svg className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Sign Out
+                </button>
               </div>
-              <button
-                onClick={() => supabase.auth.signOut()}
-                className="w-full text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 px-3 py-2 rounded-lg transition-all text-left flex items-center gap-2"
-              >
-                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div className="p-2 border-t border-slate-800 flex flex-col items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <button
-                onClick={() => supabase.auth.signOut()}
-                title="Sign out"
-                className="text-red-500/60 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg transition-all"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="p-2 flex flex-col items-center gap-3">
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 text-[10px] font-bold">
+                    {userEmail?.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border-2 border-slate-900" />
+                </div>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  title="Sign out"
+                  className="w-8 h-8 flex items-center justify-center text-red-500/60 hover:text-white hover:bg-red-500 rounded-lg transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
         </aside>
 
         {/* ── Main content ──────────────────────────────────────────────── */}
@@ -269,12 +284,12 @@ export default function App() {
           </div>
 
           <div className="px-5 sm:px-6 py-6 max-w-7xl mx-auto w-full">
-            {page === 'overview'   && <OverviewPage />}
-            {page === 'calls'      && <CallAnalysisPage />}
-            {page === 'records'    && <CallRecordsPage />}
-            {page === 'survey'     && <SurveyResultsPage />}
-            {page === 'schemes'    && <SchemePage />}
-            {page === 'geographic'   && <GeographicPage />}
+            {page === 'overview' && <OverviewPage />}
+            {page === 'calls' && <CallAnalysisPage />}
+            {page === 'records' && <CallRecordsPage />}
+            {page === 'survey' && <SurveyResultsPage />}
+            {page === 'schemes' && <SchemePage />}
+            {page === 'geographic' && <GeographicPage />}
             {page === 'verification' && <DataVerificationPage />}
           </div>
 
