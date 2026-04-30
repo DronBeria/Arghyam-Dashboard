@@ -164,7 +164,7 @@ export default function App() {
         </div>
 
         {/* Sidebar Nav */}
-        <nav className="flex-1 py-4 overflow-hidden space-y-1 px-3">
+        <nav className="flex-1 py-4 overflow-y-auto space-y-1 px-3 min-h-0">
           {NAV.map((group) => {
             const isExpanded = expandedGroups.has(group.label) || group.items.length === 1
             const hasActiveItem = group.items.some(i => i.id === page)
