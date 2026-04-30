@@ -8,10 +8,11 @@ import { CallAnalysisPage }   from './pages/CallAnalysisPage'
 import { CallRecordsPage }    from './pages/CallRecordsPage'
 import { SurveyResultsPage }  from './pages/SurveyResultsPage'
 import { SchemePage }         from './pages/SchemePage'
-import { GeographicPage }     from './pages/GeographicPage'
+import { GeographicPage }          from './pages/GeographicPage'
+import { DataVerificationPage }    from './pages/DataVerificationPage'
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
-type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic'
+type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'verification'
 
 interface NavGroup {
   label: string
@@ -56,6 +57,13 @@ const NAV: NavGroup[] = [
       { id: 'geographic', label: 'Zone & Districts', description: 'BSI by zone + 31 districts' },
     ],
   },
+  {
+    label: 'Audit',
+    icon: '🔍',
+    items: [
+      { id: 'verification', label: 'Data Verification', description: 'Sanity checks, bot errors, proof' },
+    ],
+  },
 ]
 
 const PAGE_META: Record<PageId, { title: string; sub: string }> = {
@@ -64,7 +72,8 @@ const PAGE_META: Record<PageId, { title: string; sub: string }> = {
   records:    { title: 'Call Records',            sub: 'Browse, filter and play individual calls' },
   survey:     { title: 'Survey Results',          sub: 'Q1–Q5 satisfaction indicators' },
   schemes:    { title: 'Scheme Coverage',         sub: '2,373 IMIS schemes analysed' },
-  geographic: { title: 'Zone & District Scores',  sub: 'BSI by geography across Assam' },
+  geographic:   { title: 'Zone & District Scores',  sub: 'BSI by geography across Assam' },
+  verification: { title: 'Data Verification',       sub: 'Sanity check audit — raw data vs dashboard' },
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -265,7 +274,8 @@ export default function App() {
             {page === 'records'    && <CallRecordsPage />}
             {page === 'survey'     && <SurveyResultsPage />}
             {page === 'schemes'    && <SchemePage />}
-            {page === 'geographic' && <GeographicPage />}
+            {page === 'geographic'   && <GeographicPage />}
+            {page === 'verification' && <DataVerificationPage />}
           </div>
 
           <footer className="text-center text-xs text-gray-400 py-4 border-t border-gray-200 mx-5">
