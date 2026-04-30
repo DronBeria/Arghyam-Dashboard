@@ -1,40 +1,24 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-type Mode = 'signin' | 'magic'
-
 const STATS = [
-  { val: '45,863', label: 'Calls Analysed',    icon: '📞' },
-  { val: '9,224',  label: 'Surveys Completed', icon: '✅' },
-  { val: '31',     label: 'Districts Covered', icon: '🗺️' },
-  { val: '2.20/5', label: 'State BSI Score',   icon: '📊' },
+  { val: '45,863', label: 'Calls Analysed', icon: '📞' },
+  { val: '9,224', label: 'Surveys Completed', icon: '✅' },
+  { val: '31', label: 'Districts Covered', icon: '🗺️' },
+  { val: '2.20/5', label: 'State BSI Score', icon: '📊' },
 ]
 
 export function LoginPage() {
-  const [mode, setMode]           = useState<Mode>('signin')
-  const [email, setEmail]         = useState('')
-  const [password, setPassword]   = useState('')
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState('')
-  const [magicSent, setMagicSent] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true); setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) setError(error.message)
-    setLoading(false)
-  }
-
-  async function handleMagicLink(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true); setError('')
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin },
-    })
-    if (error) setError(error.message)
-    else setMagicSent(true)
     setLoading(false)
   }
 
@@ -102,105 +86,59 @@ export function LoginPage() {
           <h2 className="text-2xl font-black text-gray-900 mb-1">Sign in</h2>
           <p className="text-gray-400 text-sm mb-8">Access the JJM CSAT dashboard</p>
 
-          {/* Mode tabs */}
-          <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-6">
-            {([['signin', 'Password'], ['magic', 'Magic Link']] as [Mode, string][]).map(([m, label]) => (
-              <button
-                key={m}
-                onClick={() => { setMode(m); setError(''); setMagicSent(false) }}
-                className={`flex-1 text-xs font-semibold py-2.5 rounded-lg transition-all ${
-                  mode === m
-                    ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {magicSent ? (
-            <div className="text-center py-10 space-y-3">
-              <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto text-3xl">
-                📧
-              </div>
-              <p className="text-gray-800 font-bold">Check your inbox</p>
-              <p className="text-gray-500 text-sm">
-                Magic link sent to{' '}
-                <span className="text-blue-600 font-medium">{email}</span>
-              </p>
-              <button
-                onClick={() => { setMagicSent(false); setEmail('') }}
-                className="text-xs text-gray-400 hover:text-gray-600 underline"
-              >
-                Use a different email
-              </button>
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@araghyam.org"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
+                  placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                  transition-all"
+              />
             </div>
-          ) : (
-            <form onSubmit={mode === 'signin' ? handleSignIn : handleMagicLink} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@araghyam.org"
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
-                    placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                    transition-all"
-                />
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                Password
+              </label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
+                  placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                  transition-all"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-600 text-xs flex items-start gap-2">
+                <span className="flex-shrink-0 mt-0.5">⚠</span>
+                <span>{error}</span>
               </div>
+            )}
 
-              {mode === 'signin' && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
-                      placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                      transition-all"
-                  />
-                </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 text-white font-semibold
+                text-sm py-3 rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 mt-1"
+            >
+              {loading ? (
+                <><span className="animate-spin text-base">⟳</span> Signing in…</>
+              ) : (
+                'Sign In'
               )}
-
-              {error && (
-                <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-600 text-xs flex items-start gap-2">
-                  <span className="flex-shrink-0 mt-0.5">⚠</span>
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 text-white font-semibold
-                  text-sm py-3 rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 mt-1"
-              >
-                {loading ? (
-                  <><span className="animate-spin text-base">⟳</span> Signing in…</>
-                ) : mode === 'signin' ? (
-                  'Sign In'
-                ) : (
-                  'Send Magic Link'
-                )}
-              </button>
-
-              {mode === 'magic' && (
-                <p className="text-center text-xs text-gray-400 pt-1">
-                  We'll email a one-click login link. No password needed.
-                </p>
-              )}
-            </form>
-          )}
+            </button>
+          </form>
 
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-center text-xs text-gray-300">
