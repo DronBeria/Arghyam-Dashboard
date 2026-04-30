@@ -135,9 +135,9 @@ export default function App() {
   const userEmail = session.user?.email
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
+    <div className="flex h-screen overflow-hidden bg-slate-100">
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} sticky top-0 h-screen flex-shrink-0 bg-slate-900 flex flex-col transition-all duration-300 z-40 shadow-2xl shadow-slate-900/50`}>
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} h-full flex-shrink-0 bg-slate-900 flex flex-col transition-all duration-300 z-40 shadow-2xl shadow-slate-900/50`}>
 
         {/* Logo + collapse toggle */}
         <div className={`flex items-center border-b border-white/5 ${sidebarOpen ? 'justify-between px-5 py-5' : 'justify-center py-5'}`}>
@@ -164,7 +164,7 @@ export default function App() {
         </div>
 
         {/* Sidebar Nav */}
-        <nav className="flex-1 py-4 overflow-y-auto space-y-1 px-3">
+        <nav className="flex-1 py-4 overflow-hidden space-y-1 px-3">
           {NAV.map((group) => {
             const isExpanded = expandedGroups.has(group.label) || group.items.length === 1
             const hasActiveItem = group.items.some(i => i.id === page)
@@ -267,15 +267,15 @@ export default function App() {
       </aside>
 
       {/* ── Content Area ──────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Header
           pageTitle={PAGE_META[page].title}
           onNavigate={(id) => navigate(id as PageId)}
           userEmail={userEmail}
         />
-        <main className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           {/* Breadcrumbs / Subbar */}
-          <div className="bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between sticky top-16 z-30 backdrop-blur-md bg-white/80">
+          <div className="bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md bg-white/80">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{PAGE_META[page].sub}</p>
             <nav className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-slate-900">
               {PAGE_META[page].title}
