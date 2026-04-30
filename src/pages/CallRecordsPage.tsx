@@ -42,10 +42,20 @@ interface CallRecord {
   satisfaction: string | null
 }
 
-const ZONES = ['All Zones', 'Critical Zones', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC']
-const STATUSES = ['All', 'Completed', 'Unanswered', 'Pending']
+const ZONES = ['All Zones', 'Critical Zones', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC', 'DHAC']
+const DISTRICTS = [
+  'All Districts',
+  'Bajali','Baksa','Barpeta','Biswanath','Bongaigaon','Cachar','Charaideo',
+  'Chirang','Darrang','Dhemaji','Dhubri','Dibrugarh','Dima Hasao','Goalpara',
+  'Golaghat','Hailakandi','Hojai','Jorhat','Kamrup','Kamrup Metro','Karbi Anglong',
+  'Kokrajhar','Lakhimpur','Majuli','Morigaon','Nagaon','Nalbari','Sivasagar',
+  'Sonitpur','South Salmara Mancachar','Sribhumi','Tamulpur','Tinsukia',
+  'Udalguri','West Karbi Anglong',
+]
 const SATISFACTIONS = ['All', 'Satisfied', 'Neutral', 'Dissatisfied', 'No Q5']
 const Q_OPTS = ['All', 'Yes', 'No']
+const ATTEMPT_OPTS = ['All', '1', '2', '3', '4', '5']
+const EARLY_END_REASONS = ['All', 'unclear_responses', 'user_busy', 'user_refused', 'call_disconnected', 'off_topic_repeated']
 const PAGE_SIZE = 50
 
 type SortCol = 'call_start_time' | 'call_duration' | 'contact_attempts' | 'district' | 'zone'
@@ -59,7 +69,6 @@ interface Preset {
   desc: string
   filters: {
     zone?: string
-    status?: string
     sat?: string
     q1?: string
     hasRecording?: boolean | null
@@ -74,49 +83,49 @@ const QUICK_FILTERS: Preset[] = [
     label: 'Dissatisfied + Recording',
     icon: '😞',
     desc: 'Completed calls where Q5=Dissatisfied and recording exists',
-    filters: { status: 'Completed', sat: 'Dissatisfied', hasRecording: true },
+    filters: { sat: 'Dissatisfied', hasRecording: true },
   },
   {
     id: 'no_daily_water',
     label: 'No Daily Water (Q1=No)',
     icon: '🚱',
     desc: 'Households reporting water did not come every day',
-    filters: { q1: 'No', status: 'All' },
+    filters: { q1: 'No' },
   },
   {
     id: 'critical_zones',
     label: 'Critical Zones',
     icon: '🔴',
     desc: 'BTAD and Barak Valley — lowest BSI regions',
-    filters: { zone: 'Critical Zones', status: 'All' },
+    filters: { zone: 'Critical Zones' },
   },
   {
     id: 'callbacks',
     label: 'Callback Requested',
     icon: '📲',
     desc: 'Callers who asked to be called back',
-    filters: { callbackOnly: true, status: 'All' },
+    filters: { callbackOnly: true },
   },
   {
     id: 'long_calls',
     label: 'Long Calls (>3 min)',
     icon: '⏱️',
     desc: 'High-engagement calls with rich data',
-    filters: { minDuration: 180, status: 'Completed' },
+    filters: { minDuration: 180 },
   },
   {
     id: 'with_recordings',
     label: 'Has Recording',
     icon: '🎙️',
     desc: 'All completed calls with an audio recording',
-    filters: { hasRecording: true, status: 'Completed' },
+    filters: { hasRecording: true },
   },
   {
     id: 'neutral_calls',
     label: 'Neutral Satisfaction',
     icon: '😐',
     desc: 'Q5 answered as Neutral — borderline cases',
-    filters: { sat: 'Neutral', status: 'Completed' },
+    filters: { sat: 'Neutral' },
   },
 ]
 
@@ -140,25 +149,30 @@ export function CallRecordsPage() {
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [zone, setZone]             = useState('All Zones')
-  const [status, setStatus]         = useState('Completed')
-  const [sat, setSat]               = useState('All')
-  const [q1Filter, setQ1Filter]     = useState('All')
-  const [q2Filter, setQ2Filter]     = useState('All')
-  const [q3Filter, setQ3Filter]     = useState('All')
-  const [q4Filter, setQ4Filter]     = useState('All')
-  const [hasRecording, setHasRecording] = useState<boolean | null>(null)
-  const [callbackOnly, setCallbackOnly] = useState(false)
-  const [minDuration, setMinDuration]   = useState<number | null>(null)
-  const [dateFrom, setDateFrom]         = useState('')
-  const [dateTo, setDateTo]             = useState('')
-  const [activePreset, setActivePreset] = useState<string | null>(null)
-  const [sortCol, setSortCol]           = useState<SortCol>('call_start_time')
-  const [sortDir, setSortDir]           = useState<SortDir>('desc')
-  const [page, setPage]             = useState(0)
-  const [selected, setSelected]     = useState<CallRecord | null>(null)
+  const [zone, setZone]               = useState('All Zones')
+  const [district, setDistrict]       = useState('All Districts')
+  const [sat, setSat]                 = useState('All')
+  const [q1Filter, setQ1Filter]       = useState('All')
+  const [q2Filter, setQ2Filter]       = useState('All')
+  const [q3Filter, setQ3Filter]       = useState('All')
+  const [q4Filter, setQ4Filter]       = useState('All')
+  const [hasRecording, setHasRecording]   = useState<boolean | null>(null)
+  const [callbackOnly, setCallbackOnly]   = useState(false)
+  const [consentedOnly, setConsentedOnly] = useState(false)
+  const [usableOnly, setUsableOnly]       = useState(false)
+  const [minDuration, setMinDuration]     = useState<number | null>(null)
+  const [maxDuration, setMaxDuration]     = useState<number | null>(null)
+  const [attemptFilter, setAttemptFilter] = useState('All')
+  const [earlyEndFilter, setEarlyEndFilter] = useState('All')
+  const [dateFrom, setDateFrom]           = useState('')
+  const [dateTo, setDateTo]               = useState('')
+  const [activePreset, setActivePreset]   = useState<string | null>(null)
+  const [sortCol, setSortCol]             = useState<SortCol>('call_start_time')
+  const [sortDir, setSortDir]             = useState<SortDir>('desc')
+  const [page, setPage]               = useState(0)
+  const [selected, setSelected]       = useState<CallRecord | null>(null)
   const [showFilters, setShowFilters] = useState(false)
-  const [exporting, setExporting]   = useState(false)
+  const [exporting, setExporting]     = useState(false)
 
   // Debounce search
   useEffect(() => {
@@ -166,7 +180,7 @@ export function CallRecordsPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  useEffect(() => { fetchRecords() }, [zone, status, sat, q1Filter, q2Filter, q3Filter, q4Filter, hasRecording, callbackOnly, minDuration, dateFrom, dateTo, page, debouncedSearch, sortCol, sortDir])
+  useEffect(() => { fetchRecords() }, [zone, district, sat, q1Filter, q2Filter, q3Filter, q4Filter, hasRecording, callbackOnly, consentedOnly, usableOnly, minDuration, maxDuration, attemptFilter, earlyEndFilter, dateFrom, dateTo, page, debouncedSearch, sortCol, sortDir])
 
   async function fetchRecords() {
     setLoading(true)
@@ -179,7 +193,7 @@ export function CallRecordsPage() {
     if (zone === 'Critical Zones') q = q.in('zone', ['BTAD', 'Barak Valley'])
     else if (zone !== 'All Zones') q = q.eq('zone', zone)
 
-    if (status !== 'All') q = q.eq('contact_status', status)
+    if (district !== 'All Districts') q = q.ilike('district', district)
 
     if (sat === 'No Q5') q = q.is('q5_answer', null)
     else if (sat !== 'All') q = q.eq('satisfaction', sat)
@@ -199,8 +213,16 @@ export function CallRecordsPage() {
     if (hasRecording === true)  q = q.not('call_recording_url', 'is', null)
     if (hasRecording === false) q = q.is('call_recording_url', null)
 
-    if (callbackOnly) q = q.eq('callback_requested', true)
-    if (minDuration)  q = q.gte('call_duration', minDuration)
+    if (callbackOnly)  q = q.eq('callback_requested', true)
+    if (consentedOnly) q = q.eq('consented', true)
+    if (usableOnly)    q = q.eq('is_usable', true)
+
+    if (minDuration) q = q.gte('call_duration', minDuration)
+    if (maxDuration) q = q.lte('call_duration', maxDuration)
+
+    if (attemptFilter !== 'All') q = q.eq('contact_attempts', parseInt(attemptFilter))
+    if (earlyEndFilter !== 'All') q = q.eq('early_end_reason', earlyEndFilter)
+
     if (dateFrom) q = q.gte('call_start_time', dateFrom)
     if (dateTo)   q = q.lte('call_start_time', dateTo + 'T23:59:59')
 
@@ -215,28 +237,23 @@ export function CallRecordsPage() {
   }
 
   function applyPreset(p: Preset) {
-    if (activePreset === p.id) {
-      // Toggle off — reset to defaults
-      resetFilters()
-      return
-    }
+    if (activePreset === p.id) { resetFilters(); return }
     setActivePreset(p.id)
     setZone(p.filters.zone ?? 'All Zones')
-    setStatus(p.filters.status ?? 'Completed')
     setSat(p.filters.sat ?? 'All')
     setQ1Filter(p.filters.q1 ?? 'All')
     setHasRecording(p.filters.hasRecording ?? null)
     setCallbackOnly(p.filters.callbackOnly ?? false)
     setMinDuration(p.filters.minDuration ?? null)
-    setPage(0)
-    setSelected(null)
+    setPage(0); setSelected(null)
   }
 
   function resetFilters() {
-    setZone('All Zones'); setStatus('Completed'); setSat('All')
+    setZone('All Zones'); setDistrict('All Districts'); setSat('All')
     setQ1Filter('All'); setQ2Filter('All'); setQ3Filter('All'); setQ4Filter('All')
-    setHasRecording(null); setCallbackOnly(false)
-    setMinDuration(null); setDateFrom(''); setDateTo('')
+    setHasRecording(null); setCallbackOnly(false); setConsentedOnly(false); setUsableOnly(false)
+    setMinDuration(null); setMaxDuration(null); setAttemptFilter('All'); setEarlyEndFilter('All')
+    setDateFrom(''); setDateTo('')
     setSearch(''); setPage(0); setActivePreset(null); setSelected(null)
   }
 
@@ -268,9 +285,11 @@ export function CallRecordsPage() {
   }
 
   const activeFilterCount = [
-    zone !== 'All Zones', status !== 'Completed', sat !== 'All',
+    zone !== 'All Zones', district !== 'All Districts', sat !== 'All',
     q1Filter !== 'All', q2Filter !== 'All', q3Filter !== 'All', q4Filter !== 'All',
-    hasRecording !== null, callbackOnly, minDuration !== null,
+    hasRecording !== null, callbackOnly, consentedOnly, usableOnly,
+    minDuration !== null, maxDuration !== null,
+    attemptFilter !== 'All', earlyEndFilter !== 'All',
     dateFrom !== '', dateTo !== '',
     debouncedSearch.trim() !== '',
   ].filter(Boolean).length
@@ -315,7 +334,7 @@ export function CallRecordsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
           {[
             { label: 'Matching Records', val: total.toLocaleString(),       color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200' },
-            { label: 'With Recording',   val: '8,782',                      color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200' },
+            { label: 'Total in DB',      val: '45,863',                     color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200' },
             { label: 'Survey Usable',    val: '9,224',                      color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
             { label: 'Active Filters',   val: activeFilterCount > 0 ? `${activeFilterCount} active` : 'Default', color: activeFilterCount > 0 ? 'text-amber-700' : 'text-gray-500', bg: activeFilterCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200' },
           ].map(c => (
@@ -351,16 +370,16 @@ export function CallRecordsPage() {
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Zone</label>
-            <select value={zone} onChange={e => { setZone(e.target.value); setPage(0); setActivePreset(null) }}
+            <select value={zone} onChange={e => { setZone(e.target.value); setDistrict('All Districts'); setPage(0); setActivePreset(null) }}
               className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
               {ZONES.map(z => <option key={z}>{z}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1 font-medium">Status</label>
-            <select value={status} onChange={e => { setStatus(e.target.value); setPage(0); setActivePreset(null) }}
+            <label className="block text-xs text-gray-500 mb-1 font-medium">District</label>
+            <select value={district} onChange={e => { setDistrict(e.target.value); setPage(0); setActivePreset(null) }}
               className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
-              {STATUSES.map(s => <option key={s}>{s}</option>)}
+              {DISTRICTS.map(d => <option key={d}>{d}</option>)}
             </select>
           </div>
           <div>
@@ -420,21 +439,62 @@ export function CallRecordsPage() {
                 </div>
               </div>
               <div>
+                <label className="block text-xs text-gray-500 mb-1 font-medium">Attempt #</label>
+                <div className="flex gap-1">
+                  {ATTEMPT_OPTS.map(o => (
+                    <button key={o} onClick={() => { setAttemptFilter(o); setPage(0); setActivePreset(null) }}
+                      className={`px-2.5 py-1.5 text-xs rounded-lg border transition-colors ${attemptFilter === o ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                      {o}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
                 <label className="block text-xs text-gray-500 mb-1 font-medium">Min Duration</label>
                 <div className="flex gap-1">
-                  {([['Any', null], ['>1min', 60], ['>3min', 180], ['>5min', 300]] as [string, number | null][]).map(([label, val]) => (
+                  {([['Any', null], ['>30s', 30], ['>1min', 60], ['>3min', 180], ['>5min', 300]] as [string, number | null][]).map(([label, val]) => (
                     <button key={label} onClick={() => { setMinDuration(val); setPage(0); setActivePreset(null) }}
-                      className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${minDuration === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                      className={`px-2.5 py-1.5 text-xs rounded-lg border transition-colors ${minDuration === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
                       {label}
                     </button>
                   ))}
                 </div>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer pb-0.5">
-                <input type="checkbox" checked={callbackOnly} onChange={e => { setCallbackOnly(e.target.checked); setPage(0); setActivePreset(null) }}
-                  className="rounded border-gray-300 text-blue-600" />
-                <span className="text-xs text-gray-600 font-medium">Callback Requested only</span>
-              </label>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-medium">Max Duration</label>
+                <div className="flex gap-1">
+                  {([['Any', null], ['<10s', 10], ['<30s', 30], ['<1min', 60]] as [string, number | null][]).map(([label, val]) => (
+                    <button key={label} onClick={() => { setMaxDuration(val); setPage(0); setActivePreset(null) }}
+                      className={`px-2.5 py-1.5 text-xs rounded-lg border transition-colors ${maxDuration === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-medium">Early End Reason</label>
+                <select value={earlyEndFilter} onChange={e => { setEarlyEndFilter(e.target.value); setPage(0); setActivePreset(null) }}
+                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none bg-white">
+                  {EARLY_END_REASONS.map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-wrap gap-3 items-center pb-0.5">
+                {[
+                  ['Consented only', consentedOnly, setConsentedOnly],
+                  ['Usable (Q1 answered)', usableOnly, setUsableOnly],
+                  ['Callback requested', callbackOnly, setCallbackOnly],
+                ].map(([label, val, setter]) => (
+                  <label key={String(label)} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={val as boolean}
+                      onChange={e => { (setter as (v: boolean) => void)(e.target.checked); setPage(0); setActivePreset(null) }}
+                      className="rounded border-gray-300 text-blue-600" />
+                    <span className="text-xs text-gray-600 font-medium">{String(label)}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* Date range */}
@@ -538,24 +598,11 @@ export function CallRecordsPage() {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState({ zone }: { zone: string }) {
-  const isNonUpperAssam = zone !== 'All Zones' && zone !== 'Upper Assam' && zone !== 'Critical Zones'
   return (
     <div className="flex flex-col items-center justify-center h-56 gap-3 text-center px-6">
       <span className="text-4xl">📭</span>
-      {isNonUpperAssam ? (
-        <>
-          <p className="text-sm font-medium text-gray-600">No records for {zone}</p>
-          <p className="text-xs text-gray-400 max-w-xs">
-            Only Upper Assam data has been imported so far (105,512 rows from "Upper Assam Test Batch.xlsx").
-            Other zone data will appear once their batch files are imported.
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="text-sm font-medium text-gray-600">No records match these filters</p>
-          <p className="text-xs text-gray-400">Try adjusting the filters above, or use Reset to return to defaults.</p>
-        </>
-      )}
+      <p className="text-sm font-medium text-gray-600">No records match{zone !== 'All Zones' ? ` in ${zone}` : ''}</p>
+      <p className="text-xs text-gray-400">Try adjusting the filters above, or use Reset to return to defaults.</p>
     </div>
   )
 }
