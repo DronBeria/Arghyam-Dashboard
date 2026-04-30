@@ -215,18 +215,21 @@ export default function App() {
             })}
           </nav>
 
-          {/* User info + logout */}
+          {/* User info + sign out */}
           {sidebarOpen ? (
             <div className="p-3 border-t border-slate-800 space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
                 <p className="text-xs text-slate-500 truncate">{userEmail}</p>
               </div>
               <button
                 onClick={() => supabase.auth.signOut()}
-                className="w-full text-xs text-slate-500 hover:text-red-400 hover:bg-red-500/10 px-2 py-1.5 rounded-lg transition-colors text-left flex items-center gap-2"
+                className="w-full text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 px-3 py-2 rounded-lg transition-all text-left flex items-center gap-2"
               >
-                <span>⎋</span> Sign Out
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Sign Out
               </button>
             </div>
           ) : (
@@ -235,8 +238,12 @@ export default function App() {
               <button
                 onClick={() => supabase.auth.signOut()}
                 title="Sign out"
-                className="text-slate-600 hover:text-red-400 text-xs transition-colors"
-              >⎋</button>
+                className="text-red-500/60 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg transition-all"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
             </div>
           )}
         </aside>

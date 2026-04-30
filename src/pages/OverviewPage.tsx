@@ -87,9 +87,9 @@ export function OverviewPage() {
           {/* Component mini-bars */}
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: 'Water Quality',  scored: 0.891, max: 1.5, color: 'bg-emerald-500', text: 'text-emerald-700' },
-              { label: 'Water Quantity', scored: 0.816, max: 1.5, color: 'bg-amber-500',   text: 'text-amber-700'   },
-              { label: 'Daily Supply',   scored: 0.280, max: 0.75, color: 'bg-red-500',    text: 'text-red-700'     },
+              { label: 'Water Quality',  scored: 0.8905, max: 1.5,  color: 'bg-emerald-500', text: 'text-emerald-700' },
+              { label: 'Water Quantity', scored: 0.8158, max: 1.5,  color: 'bg-amber-500',   text: 'text-amber-700'   },
+              { label: 'Daily Supply',   scored: 0.2803, max: 0.75, color: 'bg-red-500',    text: 'text-red-700'     },
             ].map(c => (
               <div key={c.label} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
                 <div className={`text-sm font-bold ${c.text}`}>{c.scored.toFixed(3)}</div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CALL_SUMMARY, CALL_ATTEMPTS, REPEAT_CALLERS } from '../data/csatData'
+import { CALL_SUMMARY, CALL_ATTEMPTS, REPEAT_CALLERS, QUESTION_FUNNEL } from '../data/csatData'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
@@ -7,7 +7,7 @@ import {
 
 function fmt(n: number) { return n.toLocaleString() }
 
-type Tab = 'summary' | 'attempts' | 'repeat'
+type Tab = 'summary' | 'attempts' | 'repeat' | 'funnel'
 
 // Derived from CALL_ATTEMPTS source — consent/satisfied pcts verified against Excel
 const ATTEMPT_CHART = [
@@ -45,9 +45,10 @@ export function CallAnalysisPage() {
       {/* Tab bar */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
         {([
-          { id: 'summary',  label: 'Call Summary',   icon: '📊' },
-          { id: 'attempts', label: 'Call Attempts',  icon: '🔄' },
-          { id: 'repeat',   label: 'Repeat Callers', icon: '↩️' },
+          { id: 'summary',  label: 'Call Summary',     icon: '📊' },
+          { id: 'attempts', label: 'Call Attempts',   icon: '🔄' },
+          { id: 'repeat',   label: 'Repeat Callers',  icon: '↩️' },
+          { id: 'funnel',   label: 'Question Funnel', icon: '🔻' },
         ] as { id: Tab; label: string; icon: string }[]).map(t => (
           <button
             key={t.id}
@@ -67,6 +68,7 @@ export function CallAnalysisPage() {
       {tab === 'summary'  && <CallSummaryTab />}
       {tab === 'attempts' && <AttemptsTab />}
       {tab === 'repeat'   && <RepeatTab />}
+      {tab === 'funnel'   && <QuestionFunnelTab />}
     </div>
   )
 }
@@ -447,6 +449,130 @@ function RepeatTab() {
         <strong>Key insight:</strong> Repeat callers yield nearly double the data at 37.1% usable rate vs 20.0% for first-time calls.
         Phase 2 should prioritize re-contacting non-responding households from Phase 1.
       </div>
+    </div>
+  )
+}
+
+// ─── Question Funnel ──────────────────────────────────────────────────────────
+
+function QuestionFunnelTab() {
+  const BASE_CONSENTED = 12583
+  const BASE_USABLE    = 9224
+
+  return (
+    <div className="space-y-4">
+
+      {/* Context header */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Consented base (Q2–Q5)', val: '12,583', sub: 'Agreed to survey',    color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200'   },
+          { label: 'Usable base (Q1)',        val: '9,224',  sub: 'Answered Q1',          color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'       },
+          { label: 'Q5 respondents',          val: '4,284',  sub: '34.1% of consented',   color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200'     },
+          { label: 'Completed all 5',         val: '1,578',  sub: '3.4% of all calls',    color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
+        ].map(k => (
+          <div key={k.label} className={`rounded-xl border p-3.5 ${k.bg}`}>
+            <p className={`text-xl font-black leading-none ${k.color}`}>{k.val}</p>
+            <p className="text-xs text-gray-500 mt-1 font-medium">{k.label}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{k.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Per-question visual bars */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <h3 className="text-sm font-bold text-gray-800 mb-1">Response Drop-off by Question</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          Q1 base = 9,224 usable calls · Q2–Q5 base = 12,583 consented · Questions are not strictly sequential
+        </p>
+        <div className="space-y-4">
+          {QUESTION_FUNNEL.map(q => {
+            const yesPctColor = q.yesPct >= 70 ? 'text-emerald-700' : q.yesPct >= 50 ? 'text-amber-700' : 'text-red-600'
+            const yesBarColor = q.yesPct >= 70 ? 'bg-emerald-500' : q.yesPct >= 50 ? 'bg-amber-400' : 'bg-red-400'
+            const base = q.q === 'Q1' ? BASE_USABLE : BASE_CONSENTED
+            const responsePct = +((q.answered / base) * 100).toFixed(1)
+
+            return (
+              <div key={q.q}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-bold font-mono text-gray-400 w-5">{q.q}</span>
+                    <span className="text-xs font-semibold text-gray-700">{q.label}</span>
+                    <span className="text-xs text-gray-300 italic hidden sm:inline">"{q.label === 'Water Daily' ? 'Did water come every day in last 7 days?' : q.label === 'Water Quality' ? 'Is the water clean enough?' : q.label === 'Water Quantity' ? 'Is there enough water?' : q.label === 'Consistent Timing' ? 'Does it arrive at a fixed time?' : 'Are you satisfied with your supply?'}"</span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-xs text-gray-400 font-mono">{q.answered.toLocaleString()} answered</span>
+                    <span className={`text-sm font-black ${yesPctColor}`}>{(q.yesPct * 100).toFixed(1)}%</span>
+                  </div>
+                </div>
+
+                {/* Response rate bar */}
+                <div className="mb-1">
+                  <div className="flex justify-between text-xs text-gray-400 mb-0.5">
+                    <span>Response rate: {responsePct}% of {q.q === 'Q1' ? '9,224 usable' : '12,583 consented'}</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-slate-300 rounded-full" style={{ width: `${Math.min(responsePct, 100)}%` }} />
+                  </div>
+                </div>
+
+                {/* Yes/No split bar */}
+                <div className="h-4 rounded-full overflow-hidden flex">
+                  <div className={`h-full ${yesBarColor}`} style={{ width: `${q.yesPct * 100}%` }} />
+                  <div className="h-full bg-red-200 flex-1" />
+                </div>
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-emerald-700 font-medium">Yes: {q.yesCount.toLocaleString()}</span>
+                  <span className="text-red-500">No: {q.noCount.toLocaleString()}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Full table */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-800">Question Response Detail</h3>
+          <p className="text-xs text-gray-400">All 5 questions · Yes/No counts · % of base</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="th">Q</th>
+                <th className="th">Indicator</th>
+                <th className="th text-right">Answered</th>
+                <th className="th text-right hidden sm:table-cell">Yes n</th>
+                <th className="th text-right hidden sm:table-cell">No n</th>
+                <th className="th text-right">Yes %</th>
+                <th className="th hidden lg:table-cell">Data Base</th>
+              </tr>
+            </thead>
+            <tbody>
+              {QUESTION_FUNNEL.map(q => {
+                const yesPctColor = q.yesPct >= 70 ? 'text-emerald-700' : q.yesPct >= 50 ? 'text-amber-700' : 'text-red-600'
+                return (
+                  <tr key={q.q} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                    <td className="td font-mono text-xs font-bold text-gray-500">{q.q}</td>
+                    <td className="td font-medium text-gray-800">{q.label}</td>
+                    <td className="td-mono text-right">{q.answered.toLocaleString()}</td>
+                    <td className="td-mono text-right text-emerald-700 hidden sm:table-cell">{q.yesCount.toLocaleString()}</td>
+                    <td className="td-mono text-right text-red-500 hidden sm:table-cell">{q.noCount.toLocaleString()}</td>
+                    <td className={`td-mono text-right font-bold ${yesPctColor}`}>{(q.yesPct * 100).toFixed(2)}%</td>
+                    <td className="td text-xs text-gray-400 hidden lg:table-cell">{q.base}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">
+          Q5 note: 8,299 of 12,583 consented respondents did not answer Q5 (unknown / not captured).
+          Only 4,284 (34.1%) gave a Q5 response — this is the base for all satisfaction figures.
+        </div>
+      </div>
+
     </div>
   )
 }
