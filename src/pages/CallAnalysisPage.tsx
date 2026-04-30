@@ -9,27 +9,31 @@ function fmt(n: number) { return n.toLocaleString() }
 
 type Tab = 'summary' | 'attempts' | 'repeat'
 
+// Derived from CALL_ATTEMPTS source — consent/satisfied pcts verified against Excel
 const ATTEMPT_CHART = [
   { attempt: '1st', consent: 28, satisfied: 52.3, calls: 39633 },
-  { attempt: '2nd', consent: 25, satisfied: 51.7, calls: 4413  },
-  { attempt: '3rd', consent: 23, satisfied: 47.5, calls: 1258  },
-  { attempt: '4th', consent: 22, satisfied: 38.5, calls: 389   },
-  { attempt: '5th', consent: 23, satisfied: 63.0, calls: 170   },
+  { attempt: '2nd', consent: 25, satisfied: 51.7, calls: 4224  },
+  { attempt: '3rd', consent: 23, satisfied: 47.5, calls: 1220  },
+  { attempt: '4th', consent: 22, satisfied: 38.5, calls: 479   },
+  { attempt: '5th', consent: 23, satisfied: 63.0, calls: 307   },
 ]
 
 const FUNNEL_STEPS = [
-  { label: 'Total Dialled',      val: 45863, pct: 100,  color: 'bg-blue-500',    textColor: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200'    },
+  { label: 'Total Dialled',      val: 45863, pct: 100,  color: 'bg-blue-500',    textColor: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200'     },
   { label: 'Consented (Yes)',    val: 12583, pct: 27.4, color: 'bg-indigo-500',  textColor: 'text-indigo-700',  bg: 'bg-indigo-50 border-indigo-200' },
-  { label: 'Usable (Q1+ answ.)',  val: 9224,  pct: 20.1, color: 'bg-emerald-500', textColor: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200'},
+  { label: 'Usable (Q1+ answ.)', val: 9224,  pct: 20.1, color: 'bg-emerald-500', textColor: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200'},
   { label: 'All Questions Done', val: 1578,  pct: 3.4,  color: 'bg-emerald-700', textColor: 'text-emerald-800', bg: 'bg-emerald-100 border-emerald-300'},
 ]
 
+// Derived from CALL_SUMMARY — explicitly refused: 31,710 of which 897 were usable
+// 31,710 − 897 = 30,813 clean refused; no response: 1,208; unknown: 362
+// Total: 12,583 + 897 + 30,813 + 1,208 + 362 = 45,863 ✓
 const OUTCOME_BREAKDOWN = [
-  { label: 'Answered – Consented',       val: 12583, pct: 27.4, color: 'bg-emerald-400' },
-  { label: 'Answered – Refused (usable)',val: 897,   pct: 2.0,  color: 'bg-amber-400'   },
-  { label: 'Answered – Refused (clean)', val: 6786,  pct: 14.8, color: 'bg-orange-400'  },
-  { label: 'Not Answered / Busy',        val: 16812, pct: 36.7, color: 'bg-red-300'      },
-  { label: 'Out of Service / Invalid',   val: 8785,  pct: 19.2, color: 'bg-gray-300'     },
+  { label: 'Answered – Consented',        val: 12583, pct: 27.4, color: 'bg-emerald-400' },
+  { label: 'Answered – Refused (usable)', val: 897,   pct: 2.0,  color: 'bg-amber-400'   },
+  { label: 'Answered – Refused (clean)',  val: 30813, pct: 67.2, color: 'bg-orange-400'  },
+  { label: 'No Response (blank)',          val: 1208,  pct: 2.6,  color: 'bg-red-300'     },
+  { label: 'Unknown / Invalid',            val: 362,   pct: 0.8,  color: 'bg-gray-300'    },
 ]
 
 export function CallAnalysisPage() {
@@ -87,14 +91,10 @@ function CallSummaryTab() {
 
         {/* Funnel steps */}
         <div className="flex items-end gap-2 mb-6">
-          {FUNNEL_STEPS.map((s, i) => {
+          {FUNNEL_STEPS.map((s) => {
             const height = Math.max(16, (s.pct / 100) * 88)
             return (
               <div key={s.label} className="flex-1 flex flex-col items-center gap-2">
-                {/* Drop arrow between steps */}
-                {i > 0 && (
-                  <div className="absolute" />
-                )}
                 <div className="text-center">
                   <p className={`text-base font-black ${s.textColor}`}>{fmt(s.val)}</p>
                   <p className="text-xs text-gray-400 font-medium">{s.pct}%</p>
@@ -119,7 +119,7 @@ function CallSummaryTab() {
           </div>
           <div className="text-center">
             <p className="text-sm font-black text-amber-600">79.9%</p>
-            <p className="text-xs text-gray-400">Did not complete Q1</p>
+            <p className="text-xs text-gray-400">Did not answer Q1</p>
           </div>
           <div className="text-center">
             <p className="text-sm font-black text-gray-500">96.6%</p>
