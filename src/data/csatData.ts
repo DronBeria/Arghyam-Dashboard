@@ -148,7 +148,7 @@ export const DISTRICT_SCORES = [
   { district: 'Dhubri',                  zone: 'Lower Assam',  validSchemes: 36,  usableCalls: 318,  bsi: 0.5213, quality: 1.039, quantity: 0.906, status: 'Good' },
   { district: 'Goalpara',                zone: 'Lower Assam',  validSchemes: 34,  usableCalls: 262,  bsi: 0.4882, quality: 0.981, quantity: 0.873, status: 'Moderate' },
   { district: 'Bajali',                  zone: 'Lower Assam',  validSchemes: 15,  usableCalls: 154,  bsi: 0.4865, quality: 0.947, quantity: 0.840, status: 'Moderate' },
-  { district: 'Kamrup',                  zone: 'Lower Assam',  validSchemes: 32,  usableCalls: 278,  bsi: 0.4835, quality: 0.992, quantity: 0.871, status: 'Moderate' },
+  { district: 'Kamrup',                  zone: 'Lower Assam',  validSchemes: 35,  usableCalls: 278,  bsi: 0.4835, quality: 0.992, quantity: 0.871, status: 'Moderate' },
   { district: 'Barpeta',                 zone: 'Lower Assam',  validSchemes: 44,  usableCalls: 391,  bsi: 0.4429, quality: 0.923, quantity: 0.827, status: 'Moderate' },
   { district: 'Nalbari',                 zone: 'Lower Assam',  validSchemes: 8,   usableCalls: 75,   bsi: 0.3855, quality: 0.756, quantity: 0.747, status: 'Critical' },
   { district: 'South Salmara Mancachar', zone: 'Lower Assam',  validSchemes: 1,   usableCalls: 9,    bsi: 0.3794, quality: 0.750, quantity: 0.583, status: 'Critical' },
