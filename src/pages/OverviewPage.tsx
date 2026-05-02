@@ -1,312 +1,490 @@
-import { KPI_HEADLINE, ZONE_SCORES, SCHEME_COVERAGE } from '../data/csatData'
+import { useState, useMemo } from 'react'
+import { KPI_HEADLINE, ZONE_SCORES, DISTRICT_SCORES, SCHEME_COVERAGE } from '../data/csatData'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface ScopeData {
+  label:        string
+  bsi:          number
+  bsi5:         string
+  status:       string
+  usableCalls:  number | null
+  validSchemes: number | null
+  quality:      number | null   // out of 1.5
+  quantity:     number | null   // out of 1.5
+  daily:        number | null   // out of 0.75
+  zone:         string | null
+}
+
+// ─── Static derived values ────────────────────────────────────────────────────
 const STATE_BSI   = KPI_HEADLINE.stateBSI
 const STATE_BSI_5 = +(STATE_BSI * 5).toFixed(2)
 const TARGET_5    = 3.50
-const GAP_5       = +(TARGET_5 - STATE_BSI_5).toFixed(2)
+const ZONE_LIST   = ZONE_SCORES.filter(z => z.bsi !== null && z.zone !== 'Assam (State)').map(z => z.zone)
+const DISTRICT_LIST = DISTRICT_SCORES.map(d => d.district)
 
-const ZONES_RANKED = ZONE_SCORES
-  .filter(z => z.bsi !== null && z.zone !== 'Assam (State)')
-  .sort((a, b) => (b.bsi ?? 0) - (a.bsi ?? 0))
-
-const SERVICE_AREAS = [
-  { id: 'daily',    q: 'Q1', title: 'Daily Water Supply',      yesN: 2855,  base: 9224, pct: 30.95, status: 'Critical',  bar: 'bg-red-500',     badge: 'bg-red-100 text-red-700',     border: 'border-l-red-500'    },
-  { id: 'quality',  q: 'Q2', title: 'Water Quality',           yesN: 3293,  base: 4553, pct: 72.33, status: 'Good',      bar: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700', border: 'border-l-emerald-500' },
-  { id: 'quantity', q: 'Q3', title: 'Water Quantity',          yesN: 2953,  base: 4745, pct: 62.23, status: 'Moderate',  bar: 'bg-amber-500',   badge: 'bg-amber-100 text-amber-700',  border: 'border-l-amber-500'  },
-  { id: 'timing',   q: 'Q4', title: 'Fixed Supply Timing',     yesN: 1222,  base: 2142, pct: 57.05, status: 'Moderate',  bar: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-700',  border: 'border-l-amber-400'  },
-  { id: 'overall',  q: 'Q5', title: 'Overall Satisfaction',    yesN: 2233,  base: 4284, pct: 52.12, status: 'Moderate',  bar: 'bg-amber-500',   badge: 'bg-amber-100 text-amber-700',  border: 'border-l-amber-500'  },
+// Q percentages for state scope (from raw call counts — most accurate)
+const STATE_Q = [
+  { q: 'Q1', label: 'Daily Supply',       pct: 30.95, max: 100, status: 'Critical' },
+  { q: 'Q2', label: 'Water Quality',       pct: 72.33, max: 100, status: 'Good'     },
+  { q: 'Q3', label: 'Water Quantity',      pct: 62.23, max: 100, status: 'Moderate' },
+  { q: 'Q4', label: 'Consistent Timing',   pct: 57.05, max: 100, status: 'Moderate' },
+  { q: 'Q5', label: 'Overall Satisfaction',pct: 52.12, max: 100, status: 'Moderate' },
 ]
+
+function statusColor(s: string) {
+  if (s === 'Good')     return { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500', text: 'text-emerald-700' }
+  if (s === 'Critical') return { badge: 'bg-red-100 text-red-700 border-red-200',             bar: 'bg-red-500',     text: 'text-red-700'     }
+  if (s === 'No Data')  return { badge: 'bg-gray-100 text-gray-500 border-gray-200',          bar: 'bg-gray-300',    text: 'text-gray-500'    }
+  return                       { badge: 'bg-amber-100 text-amber-700 border-amber-200',        bar: 'bg-amber-500',   text: 'text-amber-700'   }
+}
 
 function fmt(n: number) { return n.toLocaleString() }
 function nav(page: string) { window.dispatchEvent(new CustomEvent('navigate', { detail: page })) }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function OverviewPage() {
+  const [scopeType, setScopeType] = useState<'state' | 'zone' | 'district'>('state')
+  const [scopeValue, setScopeValue] = useState('')
+
+  // Derive all data from current scope
+  const scope = useMemo<ScopeData>(() => {
+    if (scopeType === 'zone' && scopeValue) {
+      const z = ZONE_SCORES.find(z => z.zone === scopeValue)
+      if (!z) return stateScope()
+      const schemes = DISTRICT_SCORES.filter(d => d.zone === scopeValue).reduce((s, d) => s + d.validSchemes, 0)
+      return {
+        label: z.zone, bsi: z.bsi ?? 0, bsi5: ((z.bsi ?? 0) * 5).toFixed(2),
+        status: z.status ?? 'No Data', usableCalls: z.usableCalls, validSchemes: schemes,
+        quality: z.quality, quantity: z.quantity, daily: z.daily, zone: z.zone,
+      }
+    }
+    if (scopeType === 'district' && scopeValue) {
+      const d = DISTRICT_SCORES.find(d => d.district === scopeValue)
+      if (!d) return stateScope()
+      return {
+        label: d.district, bsi: d.bsi, bsi5: (d.bsi * 5).toFixed(2),
+        status: d.status, usableCalls: d.usableCalls, validSchemes: d.validSchemes,
+        quality: d.quality, quantity: d.quantity, daily: null, zone: d.zone,
+      }
+    }
+    return stateScope()
+  }, [scopeType, scopeValue])
+
+  // Districts shown in breakdown — reactive to scope
+  const breakdownRows = useMemo(() => {
+    if (scopeType === 'zone' && scopeValue) {
+      return DISTRICT_SCORES.filter(d => d.zone === scopeValue).sort((a, b) => b.bsi - a.bsi)
+    }
+    if (scopeType === 'district' && scopeValue) {
+      const d = DISTRICT_SCORES.find(d => d.district === scopeValue)
+      return d ? DISTRICT_SCORES.filter(x => x.zone === d.zone).sort((a, b) => b.bsi - a.bsi) : []
+    }
+    return ZONE_SCORES.filter(z => z.bsi !== null && z.zone !== 'Assam (State)').sort((a, b) => (b.bsi ?? 0) - (a.bsi ?? 0))
+  }, [scopeType, scopeValue])
+
+  const isScoped = scopeType !== 'state'
+  const sc = statusColor(scope.status)
+  const gap5 = +(TARGET_5 - +scope.bsi5).toFixed(2)
+
+  // Build Q bars — component-derived for zone/district, direct % for state
+  const qBars = useMemo(() => {
+    if (scopeType === 'state') return STATE_Q
+    if (!scope.quality && !scope.quantity) return []
+    const rows = [
+      { q: 'Q2', label: 'Water Quality',  pct: scope.quality ? +(scope.quality / 1.5 * 100).toFixed(1) : null, max: 100 },
+      { q: 'Q3', label: 'Water Quantity', pct: scope.quantity ? +(scope.quantity / 1.5 * 100).toFixed(1) : null, max: 100 },
+      { q: 'Q1', label: 'Daily Supply',   pct: scope.daily    ? +(scope.daily / 0.75 * 100).toFixed(1) : null,  max: 100 },
+    ]
+    return rows.filter(r => r.pct !== null).map(r => ({
+      ...r, pct: r.pct!, status: r.pct! >= 70 ? 'Good' : r.pct! >= 40 ? 'Moderate' : 'Critical',
+    }))
+  }, [scope, scopeType])
+
+  function handleScopeTypeChange(t: 'state' | 'zone' | 'district') {
+    setScopeType(t)
+    setScopeValue(t === 'zone' ? ZONE_LIST[0] : t === 'district' ? DISTRICT_LIST[0] : '')
+  }
+
   return (
     <div className="space-y-4">
 
-      {/* ── 1. Top KPI strip ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'State BSI Score',   val: `${STATE_BSI_5}/5.0`, sub: `${GAP_5} below target`,     color: 'text-amber-600',   bg: 'bg-amber-50  border-amber-200',  icon: '📊' },
-          { label: 'Calls Dialled',     val: '45,863',              sub: 'Assam · April 2026',         color: 'text-blue-700',    bg: 'bg-blue-50   border-blue-200',   icon: '📞' },
-          { label: 'Surveys Completed', val: '9,224',               sub: 'Usable Q1+ responses',       color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: '✅' },
-          { label: 'Satisfied (Q5)',    val: '52.1%',               sub: '24.8% dissatisfied',         color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200', icon: '😊' },
-        ].map(k => (
-          <div key={k.label} className={`rounded-xl border p-4 ${k.bg}`}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className={`text-2xl font-black leading-none ${k.color}`}>{k.val}</p>
-                <p className="text-xs text-gray-500 mt-1">{k.label}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{k.sub}</p>
-              </div>
-              <span className="text-xl">{k.icon}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* ── Scope selector ──────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium flex-shrink-0">
+          <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">◎</span>
+          Viewing:
+        </div>
 
-      {/* ── 2. BSI Score card + alert ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Scope type pills */}
+        <div className="flex gap-1 p-0.5 bg-gray-100 rounded-lg">
+          {(['state', 'zone', 'district'] as const).map(t => (
+            <button key={t} onClick={() => handleScopeTypeChange(t)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
+                scopeType === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              {t === 'state' ? 'All Assam' : t}
+            </button>
+          ))}
+        </div>
 
-        {/* BSI Progress */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-bold text-gray-800">Beneficiary Satisfaction Index (BSI)</p>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-              ⚠ Needs Attention
+        {/* Value dropdown */}
+        {scopeType === 'zone' && (
+          <select value={scopeValue} onChange={e => setScopeValue(e.target.value)}
+            className="px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+            {ZONE_LIST.map(z => <option key={z}>{z}</option>)}
+          </select>
+        )}
+        {scopeType === 'district' && (
+          <select value={scopeValue} onChange={e => setScopeValue(e.target.value)}
+            className="px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+            {DISTRICT_LIST.map(d => <option key={d}>{d}</option>)}
+          </select>
+        )}
+
+        {/* Breadcrumb label */}
+        <div className="flex items-center gap-2 ml-auto">
+          {isScoped && (
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${sc.badge}`}>
+              {scope.status}
             </span>
-          </div>
-          <p className="text-xs text-gray-400 mb-4">Phase 1 · Assam JJM · Target ≥ 3.50 (Good)</p>
-
-          {/* Main score bar */}
-          <div className="mb-4">
-            <div className="flex items-end gap-2 mb-2">
-              <span className="text-4xl font-black text-amber-600">{STATE_BSI_5}</span>
-              <span className="text-lg text-gray-400 mb-1">/ 5.0</span>
-              <span className="text-xs text-gray-400 mb-1.5 ml-1">({GAP_5} gap to target)</span>
-            </div>
-            <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
-              <div className="absolute inset-0 flex">
-                <div className="h-full bg-red-200" style={{ width: '40%' }} />
-                <div className="h-full bg-amber-200" style={{ width: '30%' }} />
-                <div className="h-full bg-emerald-200 flex-1" />
-              </div>
-              <div className="absolute inset-y-0 left-0 h-full bg-amber-500 rounded-full"
-                style={{ width: `${(STATE_BSI_5 / 5) * 100}%` }} />
-              <div className="absolute top-0 bottom-0 w-0.5 bg-emerald-600" style={{ left: '70%' }} />
-            </div>
-            <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>0 Critical</span>
-              <span className="text-emerald-600 font-medium">3.50 Target ↑</span>
-              <span>5.0 Perfect</span>
-            </div>
-          </div>
-
-          {/* Component mini-bars */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'Water Quality',  scored: 0.8905, max: 1.5,  color: 'bg-emerald-500', text: 'text-emerald-700' },
-              { label: 'Water Quantity', scored: 0.8158, max: 1.5,  color: 'bg-amber-500',   text: 'text-amber-700'   },
-              { label: 'Daily Supply',   scored: 0.2803, max: 0.75, color: 'bg-red-500',    text: 'text-red-700'     },
-            ].map(c => (
-              <div key={c.label} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                <div className={`text-sm font-bold ${c.text}`}>{c.scored.toFixed(3)}</div>
-                <div className="text-xs text-gray-400 mb-1.5">{c.label} <span className="text-gray-300">/ {c.max}</span></div>
-                <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div className={`h-full ${c.color} rounded-full`} style={{ width: `${(c.scored / c.max) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Alert + Survey Reach */}
-        <div className="space-y-3">
-          {/* Alert */}
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <p className="text-xs font-bold text-red-700 uppercase tracking-wide mb-2">Key Concerns</p>
-            <div className="space-y-2">
-              {[
-                { icon: '🚱', text: 'Only 31% get water daily' },
-                { icon: '🔧', text: '82% of schemes non-functional' },
-                { icon: '🔴', text: 'BTAD & Barak Valley critical' },
-              ].map(a => (
-                <div key={a.text} className="flex items-center gap-2">
-                  <span className="text-sm">{a.icon}</span>
-                  <span className="text-xs text-red-700 font-medium">{a.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Survey reach */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-700 mb-3">Survey Reach Funnel</p>
-            <div className="space-y-2">
-              {[
-                { label: 'Called',    n: 45863, pct: 100,  color: 'bg-blue-500'    },
-                { label: 'Consented', n: 12583, pct: 27.4, color: 'bg-indigo-400'  },
-                { label: 'Usable',    n: 9224,  pct: 20.1, color: 'bg-emerald-500' },
-                { label: 'Completed', n: 1578,  pct: 3.4,  color: 'bg-emerald-700' },
-              ].map(s => (
-                <div key={s.label}>
-                  <div className="flex justify-between text-xs mb-0.5">
-                    <span className="text-gray-600 font-medium">{s.label}</span>
-                    <span className="text-gray-500 font-mono">{fmt(s.n)}</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full ${s.color} rounded-full`} style={{ width: `${s.pct}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
+          <span className="text-xs text-gray-400">
+            {scopeType === 'state' ? '45,863 calls · 35 districts · 7 zones'
+             : scopeType === 'zone' ? `${scope.usableCalls ? fmt(scope.usableCalls) : '—'} usable calls · ${scope.validSchemes ?? '—'} valid schemes`
+             : `${scope.usableCalls ? fmt(scope.usableCalls) : '—'} usable calls · ${scope.validSchemes ?? '—'} valid schemes · ${scope.zone}`}
+          </span>
         </div>
       </div>
 
-      {/* ── 3. Service Areas ───────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-bold text-gray-800">Service Area Satisfaction</p>
-            <p className="text-xs text-gray-400">Q1–Q5 · Good ≥70% · Moderate 40–70% · Critical &lt;40%</p>
-          </div>
-          <button onClick={() => nav('survey')}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-100 hover:border-blue-300 px-3 py-1.5 rounded-lg transition-colors">
-            Full Survey →
-          </button>
+      {/* ── KPI strip ───────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-3">
+        {/* BSI */}
+        <div className={`rounded-xl border p-4 ${sc.badge.includes('emerald') ? 'bg-emerald-50 border-emerald-200' : sc.badge.includes('red') ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+          <p className={`text-3xl font-black leading-none ${sc.text}`}>{scope.bsi5}<span className="text-base font-semibold text-gray-400">/5</span></p>
+          <p className="text-xs font-semibold text-gray-600 mt-1">BSI Score</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {gap5 > 0 ? `${gap5} below 3.50 target` : 'Meets target ✓'}
+          </p>
         </div>
-        <div className="divide-y divide-gray-50">
-          {SERVICE_AREAS.map(q => {
-            const pctColor = q.pct >= 70 ? 'text-emerald-700' : q.pct >= 40 ? 'text-amber-700' : 'text-red-700'
-            return (
-              <div key={q.id} onClick={() => nav('survey')}
-                className={`flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50/60 cursor-pointer transition-colors group border-l-4 ${q.border}`}>
-                <span className="text-xs font-bold text-gray-400 font-mono w-6 flex-shrink-0">{q.q}</span>
-                <div className="w-36 flex-shrink-0">
-                  <p className="text-xs font-semibold text-gray-800 leading-tight">{q.title}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{fmt(q.yesN)} / {fmt(q.base)} said Yes</p>
-                </div>
-                <div className="flex-1">
-                  <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="absolute inset-y-0 left-0 h-full rounded-full transition-all" style={{ width: `${q.pct}%`, backgroundColor: q.bar.replace('bg-', '') === q.bar ? undefined : undefined }} >
-                      <div className={`w-full h-full ${q.bar} rounded-full`} />
-                    </div>
-                    <div className="absolute top-0 bottom-0 w-px bg-gray-400/40" style={{ left: '70%' }} />
-                  </div>
-                </div>
-                <span className={`text-sm font-black w-12 text-right flex-shrink-0 ${pctColor}`}>{q.pct.toFixed(1)}%</span>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full w-28 text-center flex-shrink-0 ${q.badge}`}>{q.status}</span>
-                <span className="text-gray-300 group-hover:text-blue-400 flex-shrink-0 text-xs">→</span>
-              </div>
-            )
-          })}
+
+        {/* Calls / Schemes */}
+        <div className="rounded-xl border p-4 bg-blue-50 border-blue-200">
+          <p className="text-3xl font-black leading-none text-blue-700">
+            {scopeType === 'state' ? '9,224' : scope.usableCalls ? fmt(scope.usableCalls) : '—'}
+          </p>
+          <p className="text-xs font-semibold text-gray-600 mt-1">Usable Calls</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {scopeType === 'state' ? '45,863 dialled · 27.4% consented'
+             : `${scope.validSchemes ?? '—'} valid schemes in scope`}
+          </p>
+        </div>
+
+        {/* Q5 Satisfaction */}
+        <div className="rounded-xl border p-4 bg-purple-50 border-purple-200">
+          <p className="text-3xl font-black leading-none text-purple-700">
+            {scopeType === 'state' ? '52.1%' : scope.quality ? `${(scope.quality / 1.5 * 100).toFixed(1)}%` : '—'}
+          </p>
+          <p className="text-xs font-semibold text-gray-600 mt-1">
+            {scopeType === 'state' ? 'Q5 Satisfied' : 'Water Quality'}
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {scopeType === 'state' ? '24.8% dissatisfied · 23.1% neutral'
+             : scope.quantity ? `Quantity: ${(scope.quantity / 1.5 * 100).toFixed(1)}%` : '—'}
+          </p>
         </div>
       </div>
 
-      {/* ── 4. Zone Rankings + Scheme Coverage ────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* ── BSI gauge + Service areas ───────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
-        {/* Zone Rankings */}
-        <div onClick={() => nav('geographic')}
-          className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group">
+        {/* BSI gauge */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-bold text-gray-800">Zone BSI Rankings</p>
-              <p className="text-xs text-gray-400">0 of 6 zones reach 3.50 target</p>
+              <p className="text-sm font-bold text-gray-800">BSI Score</p>
+              <p className="text-xs text-gray-400">{scope.label} · Target ≥ 3.50</p>
             </div>
-            <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">View map →</span>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${sc.badge}`}>
+              {scope.status}
+            </span>
           </div>
-          <div className="space-y-2.5">
-            {ZONES_RANKED.map((z, i) => {
-              const bsi5 = (z.bsi! * 5).toFixed(2)
-              const isCrit = z.status === 'Critical'
-              const barPct = (z.bsi! / 0.7) * 100  // normalize against target
-              return (
-                <div key={z.zone} className="flex items-center gap-2.5">
-                  <span className="text-xs text-gray-300 font-mono w-4 flex-shrink-0">{i + 1}</span>
-                  <span className="text-xs font-medium text-gray-700 w-28 truncate flex-shrink-0">{z.zone}</span>
-                  <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${isCrit ? 'bg-red-400' : 'bg-amber-400'}`}
-                      style={{ width: `${Math.min(barPct, 100)}%` }} />
+
+          {/* Score bar */}
+          <div className="mb-4">
+            <div className="flex items-end gap-2 mb-2">
+              <span className={`text-4xl font-black ${sc.text}`}>{scope.bsi5}</span>
+              <span className="text-base text-gray-400 mb-0.5">/ 5.0</span>
+            </div>
+            <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div className="absolute inset-0 flex">
+                <div className="h-full bg-red-100"   style={{ width: '40%' }} />
+                <div className="h-full bg-amber-100" style={{ width: '30%' }} />
+                <div className="h-full bg-emerald-100 flex-1" />
+              </div>
+              <div className={`absolute inset-y-0 left-0 h-full ${sc.bar} rounded-full transition-all duration-500`}
+                style={{ width: `${(+scope.bsi5 / 5) * 100}%` }} />
+              <div className="absolute top-0 bottom-0 w-0.5 bg-emerald-500/60" style={{ left: '70%' }} />
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>0</span>
+              <span className="text-emerald-600 font-medium">3.50 ↑</span>
+              <span>5.0</span>
+            </div>
+          </div>
+
+          {/* Component contributions */}
+          {(scope.quality || scope.quantity) && (
+            <div className="space-y-2 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-400 font-medium">BSI components</p>
+              {[
+                { label: 'Quality', val: scope.quality, max: 1.5, color: 'bg-emerald-400' },
+                { label: 'Quantity', val: scope.quantity, max: 1.5, color: 'bg-blue-400' },
+                ...(scope.daily ? [{ label: 'Daily Supply', val: scope.daily, max: 0.75, color: 'bg-red-400' }] : []),
+              ].map(c => c.val && (
+                <div key={c.label} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-20 flex-shrink-0">{c.label}</span>
+                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${c.color} rounded-full`} style={{ width: `${(c.val / c.max) * 100}%` }} />
                   </div>
-                  <span className={`text-xs font-bold font-mono w-14 text-right flex-shrink-0 ${isCrit ? 'text-red-600' : 'text-amber-600'}`}>
-                    {bsi5}/5
+                  <span className="text-xs font-mono text-gray-500 w-12 text-right">{c.val}/{c.max}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* State-level note */}
+          {scopeType !== 'state' && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-400">
+                {scopeType === 'district' ? 'Q4 & Q5 not available at district level' : 'Q4 & Q5 not available at zone level'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Service area bars */}
+        <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-gray-800">Service Area Performance</p>
+              <p className="text-xs text-gray-400">
+                {scopeType === 'state'
+                  ? 'Q1–Q5 · from call responses · Good ≥70%'
+                  : 'Q1–Q3 derived from BSI components · Good ≥70%'}
+              </p>
+            </div>
+            {scopeType === 'state' && (
+              <button onClick={() => nav('survey')}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                Full results →
+              </button>
+            )}
+          </div>
+          <div className="divide-y divide-gray-50">
+            {qBars.map(q => {
+              const c = statusColor(q.status)
+              const noPct = +(100 - q.pct).toFixed(2)
+              return (
+                <div key={q.q} className="flex items-center gap-3 px-5 py-3">
+                  <span className="text-xs font-bold text-gray-400 font-mono w-6 flex-shrink-0">{q.q}</span>
+                  <span className="text-xs font-semibold text-gray-700 w-32 flex-shrink-0">{q.label}</span>
+                  <div className="flex-1">
+                    {/* Full 100% bar: yes + no */}
+                    <div className="relative h-2.5 rounded-full overflow-hidden flex">
+                      <div className={`h-full ${c.bar}`} style={{ width: `${q.pct}%` }} />
+                      <div className="h-full bg-gray-200 flex-1" />
+                      <div className="absolute top-0 bottom-0 w-px bg-white/60" style={{ left: '70%' }} />
+                    </div>
+                    <div className="flex justify-between text-[10px] mt-0.5 text-gray-400">
+                      <span className={`font-semibold ${c.text}`}>Yes {q.pct}%</span>
+                      <span>No {noPct}%</span>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border w-20 text-center flex-shrink-0 ${c.badge}`}>
+                    {q.status}
                   </span>
                 </div>
               )
             })}
-          </div>
-        </div>
-
-        {/* Scheme Coverage */}
-        <div onClick={() => nav('schemes')}
-          className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-bold text-gray-800">Scheme Coverage</p>
-              <p className="text-xs text-gray-400">{fmt(SCHEME_COVERAGE.total)} IMIS schemes surveyed</p>
-            </div>
-            <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">View detail →</span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {[
-              { label: 'Valid',    n: SCHEME_COVERAGE.valid,   pct: SCHEME_COVERAGE.validPct,   color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' },
-              { label: 'Flagged', n: SCHEME_COVERAGE.flagged, pct: SCHEME_COVERAGE.flaggedPct, color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-100'     },
-              { label: 'No Data', n: SCHEME_COVERAGE.noData,  pct: SCHEME_COVERAGE.noDataPct,  color: 'text-gray-500',    bg: 'bg-gray-50 border-gray-100'       },
-            ].map(s => (
-              <div key={s.label} className={`rounded-lg border p-3 text-center ${s.bg}`}>
-                <div className={`text-lg font-black ${s.color}`}>{fmt(s.n)}</div>
-                <div className={`text-xs font-semibold ${s.color}`}>{s.label}</div>
-                <div className="text-xs text-gray-400">{s.pct}%</div>
-              </div>
-            ))}
-          </div>
-          <div className="h-2 rounded-full overflow-hidden flex">
-            <div className="bg-emerald-400" style={{ width: `${SCHEME_COVERAGE.validPct}%` }} />
-            <div className="bg-amber-400" style={{ width: `${SCHEME_COVERAGE.flaggedPct}%` }} />
-            <div className="bg-gray-200 flex-1" />
-          </div>
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-center justify-between text-xs mb-1.5">
-              <span className="text-gray-600 font-medium">Of {fmt(SCHEME_COVERAGE.valid)} valid schemes</span>
-              <span className="text-red-600 font-bold">{SCHEME_COVERAGE.nonFunctional} failing</span>
-            </div>
-            <div className="h-2.5 rounded-full overflow-hidden flex">
-              <div className="bg-emerald-500" style={{ width: `${SCHEME_COVERAGE.functionalRate}%` }} />
-              <div className="bg-red-400 flex-1" />
-            </div>
-            <div className="flex justify-between text-xs mt-1.5">
-              <span className="text-emerald-700">{SCHEME_COVERAGE.functionalRate}% functional</span>
-              <span className="text-red-600">{100 - SCHEME_COVERAGE.functionalRate}% non-functional</span>
-            </div>
+            {qBars.length === 0 && (
+              <div className="px-5 py-6 text-center text-xs text-gray-400">No component data for this scope</div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── 5. Phase 2 Priorities ──────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <p className="text-sm font-bold text-gray-800 mb-1">Phase 2 Action Priorities</p>
-        <p className="text-xs text-gray-400 mb-4">Based on Phase 1 data · Araghyam recommendations</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { n: '1', title: 'Fix Daily Supply',     detail: '69% of surveyed households report irregular water — the biggest single gap in the BSI score.', tag: 'Critical', color: 'bg-red-50 border-red-200', badge: 'bg-red-100 text-red-700', num: 'text-red-300', page: 'calls' },
-            { n: '2', title: 'Repair Non-Functional Schemes', detail: '507 of 615 valid schemes (82%) fail functionality — infrastructure must be addressed before Phase 2 surveys.', tag: 'High Priority', color: 'bg-amber-50 border-amber-200', badge: 'bg-amber-100 text-amber-700', num: 'text-amber-300', page: 'schemes' },
-            { n: '3', title: 'Target Critical Zones', detail: 'BTAD (1.92/5) and Barak Valley (1.89/5) need dedicated intervention campaigns before Phase 2.', tag: 'High Priority', color: 'bg-orange-50 border-orange-200', badge: 'bg-orange-100 text-orange-700', num: 'text-orange-300', page: 'geographic' },
-          ].map(a => (
-            <div key={a.n} onClick={() => nav(a.page)}
-              className={`rounded-xl border p-4 cursor-pointer hover:shadow-md transition-all group ${a.color}`}>
-              <div className="flex items-start justify-between mb-2.5">
-                <span className={`text-4xl font-black leading-none ${a.num}`}>{a.n}</span>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${a.badge}`}>{a.tag}</span>
-              </div>
-              <p className="text-sm font-bold text-gray-800 mb-1">{a.title}</p>
-              <p className="text-xs text-gray-500 leading-relaxed">{a.detail}</p>
-              <p className="text-xs text-blue-500 group-hover:text-blue-700 mt-3 font-medium">View data →</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── 6. Quick navigation ────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {[
-          { page: 'calls',      icon: '📞', label: 'Call Analysis',   color: 'hover:border-blue-300    hover:bg-blue-50/40'    },
-          { page: 'records',    icon: '🎙️', label: 'Call Records',    color: 'hover:border-purple-300  hover:bg-purple-50/40'  },
-          { page: 'survey',     icon: '📋', label: 'Survey Results',  color: 'hover:border-emerald-300 hover:bg-emerald-50/40' },
-          { page: 'schemes',    icon: '🏗️', label: 'Scheme Coverage', color: 'hover:border-amber-300   hover:bg-amber-50/40'   },
-          { page: 'geographic', icon: '🗺️', label: 'Zone & Districts',color: 'hover:border-red-300     hover:bg-red-50/40'     },
-        ].map(n => (
-          <button key={n.page} onClick={() => nav(n.page)}
-            className={`flex items-center gap-2.5 p-3.5 rounded-xl border border-gray-200 bg-white transition-all text-left shadow-sm hover:shadow ${n.color}`}>
-            <span className="text-xl flex-shrink-0">{n.icon}</span>
-            <span className="text-xs font-semibold text-gray-700 leading-tight">{n.label}</span>
+      {/* ── Zone / District breakdown ────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold text-gray-800">
+              {scopeType === 'state' ? 'Zone Rankings'
+               : scopeType === 'zone'  ? `Districts in ${scopeValue}`
+               : `Other districts in ${DISTRICT_SCORES.find(d => d.district === scopeValue)?.zone ?? ''}`}
+            </p>
+            <p className="text-xs text-gray-400">
+              {scopeType === 'state' ? 'No zone meets the 3.50 target · sorted best to worst'
+               : 'Sorted by BSI · click a district to drill down'}
+            </p>
+          </div>
+          <button onClick={() => nav('geographic')}
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+            Full map →
           </button>
-        ))}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/60">
+                <th className="th text-left">{scopeType === 'state' ? 'Zone' : 'District'}</th>
+                <th className="th text-right">BSI /5</th>
+                <th className="th text-right hidden sm:table-cell">Quality</th>
+                <th className="th text-right hidden sm:table-cell">Quantity</th>
+                {scopeType !== 'district' && <th className="th text-right hidden md:table-cell">Usable Calls</th>}
+                {scopeType !== 'state' && <th className="th text-right hidden md:table-cell">Valid Schemes</th>}
+                <th className="th text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {breakdownRows.map((row: any) => {
+                const bsi5 = ((row.bsi ?? 0) * 5).toFixed(2)
+                const rc = statusColor(row.status ?? 'Moderate')
+                const isSelected = scopeType === 'district' && row.district === scopeValue
+                return (
+                  <tr key={row.zone ?? row.district}
+                    onClick={() => {
+                      if (row.district) {
+                        setScopeType('district')
+                        setScopeValue(row.district)
+                      }
+                    }}
+                    className={`border-b border-gray-50 last:border-0 transition-colors ${
+                      row.district ? 'cursor-pointer hover:bg-blue-50/40' : ''
+                    } ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : ''}`}>
+                    <td className="td">
+                      <span className="font-semibold text-gray-800 text-xs">{row.zone ?? row.district}</span>
+                      {isSelected && <span className="ml-2 text-[10px] text-blue-500 font-bold">← selected</span>}
+                    </td>
+                    <td className="td-mono text-right">
+                      <span className={`font-black text-sm ${rc.text}`}>{bsi5}</span>
+                    </td>
+                    <td className="td-mono text-right text-xs text-gray-500 hidden sm:table-cell">
+                      {row.quality ? (row.quality / 1.5 * 100).toFixed(1) + '%' : '—'}
+                    </td>
+                    <td className="td-mono text-right text-xs text-gray-500 hidden sm:table-cell">
+                      {row.quantity ? (row.quantity / 1.5 * 100).toFixed(1) + '%' : '—'}
+                    </td>
+                    {scopeType !== 'district' && (
+                      <td className="td-mono text-right text-xs text-gray-400 hidden md:table-cell">
+                        {row.usableCalls ? fmt(row.usableCalls) : '—'}
+                      </td>
+                    )}
+                    {scopeType !== 'state' && (
+                      <td className="td-mono text-right text-xs text-gray-400 hidden md:table-cell">
+                        {row.validSchemes ?? '—'}
+                      </td>
+                    )}
+                    <td className="td text-center">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${rc.badge}`}>
+                        {row.status ?? 'Moderate'}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* ── Scheme coverage + Call consent breakdown ────────────────────── */}
+      {scopeType === 'state' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Scheme coverage */}
+          <div onClick={() => nav('schemes')}
+            className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-bold text-gray-800">Scheme Coverage</p>
+                <p className="text-xs text-gray-400">{fmt(SCHEME_COVERAGE.total)} IMIS schemes total · sums to 100%</p>
+              </div>
+              <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">Details →</span>
+            </div>
+            {/* Stacked 100% bar */}
+            <div className="h-3 rounded-full overflow-hidden flex mb-2">
+              <div className="bg-emerald-400 h-full" style={{ width: `${SCHEME_COVERAGE.validPct}%` }} />
+              <div className="bg-amber-400 h-full"   style={{ width: `${SCHEME_COVERAGE.flaggedPct}%` }} />
+              <div className="bg-gray-200 h-full flex-1" />
+            </div>
+            <div className="flex justify-between text-xs">
+              {[
+                { label: 'Valid (≥6 calls)', n: SCHEME_COVERAGE.valid,   pct: SCHEME_COVERAGE.validPct,   color: 'text-emerald-700', dot: 'bg-emerald-400' },
+                { label: 'Flagged (1–5)',    n: SCHEME_COVERAGE.flagged, pct: SCHEME_COVERAGE.flaggedPct, color: 'text-amber-700',   dot: 'bg-amber-400'   },
+                { label: 'No data',          n: SCHEME_COVERAGE.noData,  pct: SCHEME_COVERAGE.noDataPct,  color: 'text-gray-400',    dot: 'bg-gray-300'    },
+              ].map(s => (
+                <div key={s.label} className="flex items-start gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${s.dot} flex-shrink-0 mt-0.5`} />
+                  <div>
+                    <p className={`font-bold ${s.color}`}>{s.pct}%</p>
+                    <p className="text-gray-400 text-[10px]">{s.label}</p>
+                    <p className="text-gray-500 text-[10px]">{fmt(s.n)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 pt-2 border-t border-gray-100 flex justify-between text-xs">
+              <span className="text-gray-500">Of 615 valid schemes:</span>
+              <span className="text-emerald-700 font-bold">17.6% functional</span>
+              <span className="text-red-600 font-bold">82.4% non-functional</span>
+            </div>
+          </div>
+
+          {/* Call consent breakdown */}
+          <div onClick={() => nav('calls')}
+            className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-bold text-gray-800">Call Consent Breakdown</p>
+                <p className="text-xs text-gray-400">45,863 total calls · sums to 100%</p>
+              </div>
+              <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">Call analysis →</span>
+            </div>
+            {/* Stacked 100% consent bar */}
+            <div className="h-3 rounded-full overflow-hidden flex mb-2">
+              <div className="bg-indigo-500 h-full" style={{ width: '27.4%' }} />
+              <div className="bg-red-400 h-full"    style={{ width: '69.1%' }} />
+              <div className="bg-amber-300 h-full"  style={{ width: '2.6%'  }} />
+              <div className="bg-gray-300 h-full flex-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              {[
+                { label: 'Consented',       pct: '27.4%', n: '12,583', dot: 'bg-indigo-500', color: 'text-indigo-700' },
+                { label: 'Refused',         pct: '69.1%', n: '31,710', dot: 'bg-red-400',    color: 'text-red-600'   },
+                { label: 'No response',     pct: '2.6%',  n: '1,208',  dot: 'bg-amber-300',  color: 'text-amber-600' },
+                { label: 'Unknown/invalid', pct: '0.8%',  n: '362',    dot: 'bg-gray-300',   color: 'text-gray-500'  },
+              ].map(s => (
+                <div key={s.label} className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${s.dot} flex-shrink-0`} />
+                  <span className="text-gray-500">{s.label}</span>
+                  <span className={`font-bold ${s.color} ml-auto`}>{s.pct}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2">27.4 + 69.1 + 2.6 + 0.8 = 100% ✓</p>
+          </div>
+        </div>
+      )}
 
     </div>
   )
+}
+
+function stateScope(): ScopeData {
+  const state = ZONE_SCORES.find(z => z.zone === 'Assam (State)')!
+  return {
+    label: 'All Assam', bsi: STATE_BSI, bsi5: STATE_BSI_5.toFixed(2),
+    status: 'Moderate', usableCalls: 9224, validSchemes: SCHEME_COVERAGE.valid,
+    quality: state.quality, quantity: state.quantity, daily: state.daily, zone: null,
+  }
 }
