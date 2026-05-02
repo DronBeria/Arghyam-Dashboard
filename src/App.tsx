@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { CommandPalette } from './components/CommandPalette'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 import { Header } from './components/Header'
@@ -83,6 +84,7 @@ export default function App() {
   const [page, setPage] = useState<PageId>('overview')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   // ── Auth state ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -105,6 +107,18 @@ export default function App() {
     function onNav(e: Event) { navigate((e as CustomEvent).detail as PageId) }
     window.addEventListener('navigate', onNav)
     return () => window.removeEventListener('navigate', onNav)
+  }, [])
+
+  // Global Ctrl+K shortcut
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen(v => !v)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
   function toggleGroup(label: string) {
@@ -136,6 +150,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#0f172a' }}>
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <aside className={`${sidebarOpen ? 'w-56' : 'w-[52px]'} h-full flex-shrink-0 flex flex-col transition-all duration-200 z-40 border-r border-white/[0.06]`}
         style={{ background: '#0f172a' }}>
@@ -250,7 +265,19 @@ export default function App() {
               <span className="text-slate-300">/</span>
               <span className="text-slate-600 font-semibold">{PAGE_META[page].title}</span>
             </div>
-            <p className="panel-label hidden sm:block">{PAGE_META[page].sub}</p>
+            <div className="flex items-center gap-3">
+              <p className="panel-label hidden sm:block">{PAGE_META[page].sub}</p>
+              <button
+                onClick={() => setPaletteOpen(true)}
+                className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors text-slate-400 hover:text-slate-600"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <span className="text-[10px] font-semibold hidden md:block">Search</span>
+                <kbd className="text-[9px] font-mono bg-slate-100 border border-slate-200 px-1 rounded hidden md:block">⌘K</kbd>
+              </button>
+            </div>
           </div>
 
           <div className="px-6 py-6 max-w-7xl mx-auto w-full">

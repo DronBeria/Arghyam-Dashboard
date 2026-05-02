@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { KPI_HEADLINE, ZONE_SCORES, DISTRICT_SCORES, SCHEME_COVERAGE } from '../data/csatData'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,13 +22,31 @@ const TARGET_5    = 3.50
 const ZONE_LIST   = ZONE_SCORES.filter(z => z.bsi !== null && z.zone !== 'Assam (State)').map(z => z.zone)
 const DISTRICT_LIST = DISTRICT_SCORES.map(d => d.district)
 
+// ── Insight generator ─────────────────────────────────────────────────────────
+function insight(scopeType: string, scopeValue: string, scope: { bsi5: string; status: string; usableCalls: number | null; validSchemes: number | null; quality: number | null; quantity: number | null }) {
+  const gap = (3.50 - parseFloat(scope.bsi5)).toFixed(2)
+  if (scopeType === 'state') return {
+    bsi:     `${gap} below target · no zone meets the ≥3.50 benchmark`,
+    calls:   `27.4% consented · 72.6% refused or no response`,
+    quality: `52.1% satisfied · 24.8% dissatisfied · 23.1% neutral`,
+  }
+  const bsiNum = parseFloat(scope.bsi5)
+  return {
+    bsi:     bsiNum >= 3.5 ? `Meets target ≥3.50` : `${gap} below target · ${scope.status}`,
+    calls:   `${(scope.validSchemes ?? 0)} valid schemes · ${(scope.usableCalls ?? 0).toLocaleString()} calls counted in BSI`,
+    quality: scope.quality
+      ? `Quality ${(scope.quality / 1.5 * 100).toFixed(1)}% · Quantity ${scope.quantity ? (scope.quantity / 1.5 * 100).toFixed(1) : '?'}%`
+      : 'Scope data from valid scheme average',
+  }
+}
+
 // Q percentages for state scope (from raw call counts — most accurate)
 const STATE_Q = [
-  { q: 'Q1', label: 'Daily Supply',       pct: 30.95, max: 100, status: 'Critical' },
-  { q: 'Q2', label: 'Water Quality',       pct: 72.33, max: 100, status: 'Good'     },
-  { q: 'Q3', label: 'Water Quantity',      pct: 62.23, max: 100, status: 'Moderate' },
-  { q: 'Q4', label: 'Consistent Timing',   pct: 57.05, max: 100, status: 'Moderate' },
-  { q: 'Q5', label: 'Overall Satisfaction',pct: 52.12, max: 100, status: 'Moderate' },
+  { q: 'Q1', label: 'Daily Supply',        pct: 30.95, max: 100, status: 'Critical', insight: 'Only 1 in 3 households · biggest single gap in the BSI' },
+  { q: 'Q2', label: 'Water Quality',        pct: 72.33, max: 100, status: 'Good',     insight: 'Above 70% benchmark · strongest indicator across Assam' },
+  { q: 'Q3', label: 'Water Quantity',       pct: 62.23, max: 100, status: 'Moderate', insight: 'Sufficient for 3 in 5 · supply reaching but volume lacking' },
+  { q: 'Q4', label: 'Consistent Timing',    pct: 57.05, max: 100, status: 'Moderate', insight: 'Only 2,142 of 12,583 answered · low engagement with this Q' },
+  { q: 'Q5', label: 'Overall Satisfaction', pct: 52.12, max: 100, status: 'Moderate', insight: '24.8% dissatisfied · 23.1% neutral · 4,284 total respondents' },
 ]
 
 function statusColor(s: string) {
@@ -45,6 +63,17 @@ function nav(page: string) { window.dispatchEvent(new CustomEvent('navigate', { 
 export function OverviewPage() {
   const [scopeType, setScopeType] = useState<'state' | 'zone' | 'district'>('state')
   const [scopeValue, setScopeValue] = useState('')
+
+  // Listen for scope changes from command palette
+  useEffect(() => {
+    function onSetScope(e: Event) {
+      const { type, value } = (e as CustomEvent).detail as { type: 'zone' | 'district'; value: string }
+      setScopeType(type)
+      setScopeValue(value)
+    }
+    window.addEventListener('setScope', onSetScope)
+    return () => window.removeEventListener('setScope', onSetScope)
+  }, [])
 
   // Derive all data from current scope
   const scope = useMemo<ScopeData>(() => {
@@ -85,6 +114,7 @@ export function OverviewPage() {
   const isScoped = scopeType !== 'state'
   const sc = statusColor(scope.status)
   const gap5 = +(TARGET_5 - +scope.bsi5).toFixed(2)
+  const ins = insight(scopeType, scopeValue, scope)
 
   // Build Q bars — component-derived for zone/district, direct % for state
   const qBars = useMemo(() => {
@@ -156,29 +186,35 @@ export function OverviewPage() {
           {
             value: scope.bsi5 + '/5',
             label: 'BSI Score',
-            sub: gap5 > 0 ? `${gap5} below 3.50 target` : 'Meets target',
+            insight: ins.bsi,
             accent: scope.status === 'Good' ? 'border-l-emerald-500' : scope.status === 'Critical' ? 'border-l-red-500' : 'border-l-amber-500',
             valueColor: sc.text,
+            badge: scope.status,
           },
           {
             value: scopeType === 'state' ? '9,224' : scope.usableCalls ? fmt(scope.usableCalls) : '—',
             label: 'Usable Calls',
-            sub: scopeType === 'state' ? '45,863 dialled · 27.4% consent rate' : `${scope.validSchemes ?? '—'} valid schemes`,
+            insight: ins.calls,
             accent: 'border-l-blue-500',
             valueColor: 'text-slate-900',
+            badge: scopeType === 'state' ? '45,863 dialled' : `${scope.validSchemes ?? '—'} valid schemes`,
           },
           {
             value: scopeType === 'state' ? '52.1%' : scope.quality ? `${(scope.quality / 1.5 * 100).toFixed(1)}%` : '—',
-            label: scopeType === 'state' ? 'Overall Satisfied (Q5)' : 'Water Quality Score',
-            sub: scopeType === 'state' ? '23.1% neutral · 24.8% dissatisfied' : scope.quantity ? `Quantity: ${(scope.quantity / 1.5 * 100).toFixed(1)}%` : '',
+            label: scopeType === 'state' ? 'Q5 Satisfied' : 'Water Quality',
+            insight: ins.quality,
             accent: 'border-l-violet-500',
             valueColor: 'text-slate-900',
+            badge: scopeType === 'state' ? '4,284 responded' : '',
           },
         ].map(k => (
           <div key={k.label} className={`card p-4 border-l-4 ${k.accent}`}>
-            <p className={`stat-value ${k.valueColor}`}>{k.value}</p>
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <p className={`stat-value ${k.valueColor}`}>{k.value}</p>
+              {k.badge && <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded mt-1 flex-shrink-0 hidden sm:block">{k.badge}</span>}
+            </div>
             <p className="stat-label">{k.label}</p>
-            <p className="stat-sub">{k.sub}</p>
+            <p className="stat-sub leading-snug">{k.insight}</p>
           </div>
         ))}
       </div>
@@ -270,28 +306,32 @@ export function OverviewPage() {
             )}
           </div>
           <div className="divide-y divide-gray-50">
-            {qBars.map(q => {
+            {qBars.map((q: any) => {
               const c = statusColor(q.status)
               const noPct = +(100 - q.pct).toFixed(2)
               return (
-                <div key={q.q} className="flex items-center gap-3 px-5 py-3">
-                  <span className="text-xs font-bold text-gray-400 font-mono w-6 flex-shrink-0">{q.q}</span>
-                  <span className="text-xs font-semibold text-gray-700 w-32 flex-shrink-0">{q.label}</span>
-                  <div className="flex-1">
-                    {/* Full 100% bar: yes + no */}
-                    <div className="relative h-2.5 rounded-full overflow-hidden flex">
-                      <div className={`h-full ${c.bar}`} style={{ width: `${q.pct}%` }} />
-                      <div className="h-full bg-gray-200 flex-1" />
-                      <div className="absolute top-0 bottom-0 w-px bg-white/60" style={{ left: '70%' }} />
+                <div key={q.q} className="px-5 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-slate-400 font-mono w-6 flex-shrink-0">{q.q}</span>
+                    <span className="text-[12px] font-semibold text-slate-700 w-32 flex-shrink-0 truncate">{q.label}</span>
+                    <div className="flex-1">
+                      <div className="relative h-2 rounded-full overflow-hidden flex">
+                        <div className={`h-full ${c.bar}`} style={{ width: `${q.pct}%` }} />
+                        <div className="h-full bg-slate-100 flex-1" />
+                        <div className="absolute top-0 bottom-0 w-px bg-slate-300" style={{ left: '70%' }} />
+                      </div>
+                      <div className="flex justify-between text-[10px] mt-0.5 text-slate-400">
+                        <span className={`font-semibold ${c.text}`}>Yes {q.pct}%</span>
+                        <span>No {noPct}%</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-[10px] mt-0.5 text-gray-400">
-                      <span className={`font-semibold ${c.text}`}>Yes {q.pct}%</span>
-                      <span>No {noPct}%</span>
-                    </div>
+                    <span className={`badge ${q.status === 'Good' ? 'badge-good' : q.status === 'Critical' ? 'badge-critical' : 'badge-moderate'} w-20 text-center flex-shrink-0`}>
+                      {q.status}
+                    </span>
                   </div>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border w-20 text-center flex-shrink-0 ${c.badge}`}>
-                    {q.status}
-                  </span>
+                  {q.insight && (
+                    <p className="text-[10px] text-slate-400 mt-1 ml-9 leading-snug italic">{q.insight}</p>
+                  )}
                 </div>
               )
             })}
