@@ -109,19 +109,13 @@ export function OverviewPage() {
     <div className="space-y-4">
 
       {/* ── Scope selector ──────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium flex-shrink-0">
-          <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px]">◎</span>
-          Viewing:
-        </div>
+      <div className="card p-3 flex flex-wrap items-center gap-3">
+        <span className="panel-label flex-shrink-0">Scope</span>
 
-        {/* Scope type pills */}
-        <div className="flex gap-1 p-0.5 bg-gray-100 rounded-lg">
+        <div className="tab-bar">
           {(['state', 'zone', 'district'] as const).map(t => (
             <button key={t} onClick={() => handleScopeTypeChange(t)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize ${
-                scopeType === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}>
+              className={scopeType === t ? 'tab-item-active' : 'tab-item'}>
               {t === 'state' ? 'All Assam' : t}
             </button>
           ))}
@@ -158,53 +152,48 @@ export function OverviewPage() {
 
       {/* ── KPI strip ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">
-        {/* BSI */}
-        <div className={`rounded-xl border p-4 ${sc.badge.includes('emerald') ? 'bg-emerald-50 border-emerald-200' : sc.badge.includes('red') ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
-          <p className={`text-3xl font-black leading-none ${sc.text}`}>{scope.bsi5}<span className="text-base font-semibold text-gray-400">/5</span></p>
-          <p className="text-xs font-semibold text-gray-600 mt-1">BSI Score</p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {gap5 > 0 ? `${gap5} below 3.50 target` : 'Meets target ✓'}
-          </p>
-        </div>
-
-        {/* Calls / Schemes */}
-        <div className="rounded-xl border p-4 bg-blue-50 border-blue-200">
-          <p className="text-3xl font-black leading-none text-blue-700">
-            {scopeType === 'state' ? '9,224' : scope.usableCalls ? fmt(scope.usableCalls) : '—'}
-          </p>
-          <p className="text-xs font-semibold text-gray-600 mt-1">Usable Calls</p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {scopeType === 'state' ? '45,863 dialled · 27.4% consented'
-             : `${scope.validSchemes ?? '—'} valid schemes in scope`}
-          </p>
-        </div>
-
-        {/* Q5 Satisfaction */}
-        <div className="rounded-xl border p-4 bg-purple-50 border-purple-200">
-          <p className="text-3xl font-black leading-none text-purple-700">
-            {scopeType === 'state' ? '52.1%' : scope.quality ? `${(scope.quality / 1.5 * 100).toFixed(1)}%` : '—'}
-          </p>
-          <p className="text-xs font-semibold text-gray-600 mt-1">
-            {scopeType === 'state' ? 'Q5 Satisfied' : 'Water Quality'}
-          </p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {scopeType === 'state' ? '24.8% dissatisfied · 23.1% neutral'
-             : scope.quantity ? `Quantity: ${(scope.quantity / 1.5 * 100).toFixed(1)}%` : '—'}
-          </p>
-        </div>
+        {[
+          {
+            value: scope.bsi5 + '/5',
+            label: 'BSI Score',
+            sub: gap5 > 0 ? `${gap5} below 3.50 target` : 'Meets target',
+            accent: scope.status === 'Good' ? 'border-l-emerald-500' : scope.status === 'Critical' ? 'border-l-red-500' : 'border-l-amber-500',
+            valueColor: sc.text,
+          },
+          {
+            value: scopeType === 'state' ? '9,224' : scope.usableCalls ? fmt(scope.usableCalls) : '—',
+            label: 'Usable Calls',
+            sub: scopeType === 'state' ? '45,863 dialled · 27.4% consent rate' : `${scope.validSchemes ?? '—'} valid schemes`,
+            accent: 'border-l-blue-500',
+            valueColor: 'text-slate-900',
+          },
+          {
+            value: scopeType === 'state' ? '52.1%' : scope.quality ? `${(scope.quality / 1.5 * 100).toFixed(1)}%` : '—',
+            label: scopeType === 'state' ? 'Overall Satisfied (Q5)' : 'Water Quality Score',
+            sub: scopeType === 'state' ? '23.1% neutral · 24.8% dissatisfied' : scope.quantity ? `Quantity: ${(scope.quantity / 1.5 * 100).toFixed(1)}%` : '',
+            accent: 'border-l-violet-500',
+            valueColor: 'text-slate-900',
+          },
+        ].map(k => (
+          <div key={k.label} className={`card p-4 border-l-4 ${k.accent}`}>
+            <p className={`stat-value ${k.valueColor}`}>{k.value}</p>
+            <p className="stat-label">{k.label}</p>
+            <p className="stat-sub">{k.sub}</p>
+          </div>
+        ))}
       </div>
 
       {/* ── BSI gauge + Service areas ───────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* BSI gauge */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+        <div className="lg:col-span-2 card p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-bold text-gray-800">BSI Score</p>
-              <p className="text-xs text-gray-400">{scope.label} · Target ≥ 3.50</p>
+              <p className="panel-title">BSI Score</p>
+              <p className="panel-sub mt-0.5">{scope.label} · Target ≥ 3.50 / 5.0</p>
             </div>
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${sc.badge}`}>
+            <span className={`badge ${scope.status === 'Good' ? 'badge-good' : scope.status === 'Critical' ? 'badge-critical' : scope.status === 'No Data' ? 'badge-neutral' : 'badge-moderate'}`}>
               {scope.status}
             </span>
           </div>
@@ -263,11 +252,11 @@ export function OverviewPage() {
         </div>
 
         {/* Service area bars */}
-        <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="lg:col-span-3 card overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
             <div>
-              <p className="text-sm font-bold text-gray-800">Service Area Performance</p>
-              <p className="text-xs text-gray-400">
+              <p className="panel-title">Service Area Performance</p>
+              <p className="panel-sub mt-0.5">
                 {scopeType === 'state'
                   ? 'Q1–Q5 · from call responses · Good ≥70%'
                   : 'Q1–Q3 derived from BSI components · Good ≥70%'}
@@ -314,7 +303,7 @@ export function OverviewPage() {
       </div>
 
       {/* ── Zone / District breakdown ────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-gray-800">
@@ -403,7 +392,7 @@ export function OverviewPage() {
 
           {/* Scheme coverage */}
           <div onClick={() => nav('schemes')}
-            className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group">
+            className="card p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-sm font-bold text-gray-800">Scheme Coverage</p>
@@ -442,7 +431,7 @@ export function OverviewPage() {
 
           {/* Call consent breakdown */}
           <div onClick={() => nav('calls')}
-            className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group">
+            className="card p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-sm font-bold text-gray-800">Call Consent Breakdown</p>

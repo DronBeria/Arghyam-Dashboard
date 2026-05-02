@@ -3,32 +3,49 @@
 @tailwind utilities;
 
 @layer base {
+  * { box-sizing: border-box; }
+
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    background-color: #f1f5f9;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #1e293b;
   }
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { @apply bg-gray-100; }
-  ::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
+
+  ::-webkit-scrollbar          { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track    { background: transparent; }
+  ::-webkit-scrollbar-thumb    { background: #cbd5e1; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 }
 
 @layer components {
-  .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
-  }
-  .section-title {
-    @apply text-base font-semibold text-gray-800 mb-1;
-  }
-  .section-sub {
-    @apply text-xs text-gray-500 mb-4;
-  }
-  .th {
-    @apply text-left py-2.5 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200;
-  }
-  .td {
-    @apply py-2.5 px-3 text-sm text-gray-700 border-b border-gray-100;
-  }
-  .td-mono {
-    @apply py-2.5 px-3 text-sm font-mono text-gray-800 border-b border-gray-100;
-  }
+
+  .card { @apply bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_4px_rgba(0,0,0,0.06)]; }
+
+  .panel-label { @apply text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400; }
+  .panel-title { @apply text-sm font-semibold text-slate-800 leading-tight; }
+  .panel-sub   { @apply text-[11px] text-slate-400 leading-tight; }
+
+  .stat-value  { @apply text-[26px] font-black leading-none tracking-tight tabular-nums text-slate-900; }
+  .stat-label  { @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 mt-1.5; }
+  .stat-sub    { @apply text-[11px] text-slate-400 mt-0.5; }
+
+  .badge          { @apply inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border; }
+  .badge-good     { @apply badge bg-emerald-50 text-emerald-700 border-emerald-200; }
+  .badge-moderate { @apply badge bg-amber-50   text-amber-700   border-amber-200;   }
+  .badge-critical { @apply badge bg-red-50     text-red-700     border-red-200;     }
+  .badge-info     { @apply badge bg-blue-50    text-blue-700    border-blue-200;    }
+  .badge-neutral  { @apply badge bg-slate-100  text-slate-500   border-slate-200;   }
+
+  .th      { @apply px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 bg-slate-50/80 border-b border-slate-200 whitespace-nowrap text-left; }
+  .td      { @apply px-4 py-2.5 text-[13px] text-slate-600 border-b border-slate-100/80; }
+  .td-mono { @apply px-4 py-2.5 text-[13px] font-mono tabular-nums text-slate-800 border-b border-slate-100/80; }
+
+  .btn-primary { @apply text-[11px] font-bold text-white bg-slate-900 hover:bg-slate-700 px-3.5 py-1.5 rounded-lg transition-colors; }
+  .btn-ghost   { @apply text-[11px] font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors; }
+  .btn-outline { @apply text-[11px] font-semibold text-slate-600 border border-slate-200 hover:border-blue-400 hover:text-blue-600 bg-white px-3.5 py-1.5 rounded-lg transition-all; }
+
+  .tab-bar         { @apply flex items-center gap-0.5 p-0.5 bg-slate-100/80 rounded-lg; }
+  .tab-item        { @apply px-3.5 py-1.5 text-[11px] font-semibold rounded-md transition-all text-slate-500 hover:text-slate-700; }
+  .tab-item-active { @apply tab-item bg-white text-slate-900 shadow-sm; }
 }
