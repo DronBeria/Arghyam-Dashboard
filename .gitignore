@@ -35,3 +35,5 @@ pnpm-debug.log*
 # Large data files (optional - user might want these, but usually good to ignore)
 # final.xlsx
 # JJM_CSAT_Phase1_Final.xlsx
+*.xlsx
+*.xls
