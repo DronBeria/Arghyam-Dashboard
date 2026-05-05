@@ -209,9 +209,9 @@ function Q5Tab() {
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-gray-600">
-        <strong>Q5 context:</strong> Only 4,284 of 9,224 usable calls reached Q5 (overall satisfaction).
-        Of those, slightly more than half (52.1%) reported satisfaction — below the 70% benchmark.
-        The 24.8% dissatisfied rate is a key concern for Phase 2 intervention.
+        <strong>Q5 base:</strong> 4,284 of 12,583 <em>consented</em> calls answered Q5 (34.1% response rate).
+        Q5 is a consented-only question — the 9,224 usable calls are the Q1 base, a separate population.
+        Of those who answered Q5: 52.1% satisfied · 24.8% dissatisfied · 23.1% neutral.
       </div>
     </div>
   )
@@ -222,7 +222,9 @@ function FunnelTab() {
     <div className="space-y-5">
       <div>
         <h3 className="text-base font-semibold text-gray-800 mb-1">Question Response Funnel</h3>
-        <p className="text-xs text-gray-400">Drop-off at each question stage · Q2–Q5 share the 12,583 consented base</p>
+        <p className="text-xs text-gray-400">
+          Q1 base = 9,224 usable calls · Q2–Q5 were asked to 12,583 consented callers, but yes% is of those who actually answered each Q
+        </p>
       </div>
 
       {/* Visual funnel */}
@@ -268,11 +270,12 @@ function FunnelTab() {
             <tr>
               <th className="th">Q</th>
               <th className="th">Indicator</th>
+              <th className="th text-right">Asked (base)</th>
               <th className="th text-right">Answered</th>
+              <th className="th text-right hidden sm:table-cell">Response %</th>
               <th className="th text-right">Yes n</th>
               <th className="th text-right hidden sm:table-cell">No n</th>
-              <th className="th text-right">Yes %</th>
-              <th className="th hidden md:table-cell">Base</th>
+              <th className="th text-right">Yes % of answered</th>
             </tr>
           </thead>
           <tbody>
@@ -280,14 +283,15 @@ function FunnelTab() {
               <tr key={q.q} className="hover:bg-gray-50">
                 <td className="td font-mono text-xs font-bold text-gray-600">{q.q}</td>
                 <td className="td font-medium text-gray-800">{q.label}</td>
-                <td className="td-mono text-right">{q.answered.toLocaleString()}</td>
+                <td className="td-mono text-right text-gray-400">{q.askedN.toLocaleString()}</td>
+                <td className="td-mono text-right font-semibold">{q.answered.toLocaleString()}</td>
+                <td className="td-mono text-right text-gray-500 hidden sm:table-cell">{q.responsePct.toFixed(1)}%</td>
                 <td className="td-mono text-right text-emerald-700">{q.yesCount.toLocaleString()}</td>
                 <td className="td-mono text-right text-red-500 hidden sm:table-cell">{q.noCount.toLocaleString()}</td>
                 <td className={`td-mono text-right font-bold ${
                   q.yesPct >= 70 ? 'text-emerald-700' :
                   q.yesPct >= 50 ? 'text-amber-700' : 'text-red-600'
                 }`}>{q.yesPct.toFixed(2)}%</td>
-                <td className="td text-xs text-gray-400 hidden md:table-cell">{q.base}</td>
               </tr>
             ))}
           </tbody>

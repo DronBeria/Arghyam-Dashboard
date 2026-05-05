@@ -18,11 +18,18 @@ const ATTEMPT_CHART = [
   { attempt: '5th', consent: 23, satisfied: 63.0, calls: 307   },
 ]
 
-const FUNNEL_STEPS = [
-  { label: 'Total Dialled',      val: 45863, pct: 100,  color: 'bg-blue-500',    textColor: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200'     },
-  { label: 'Consented (Yes)',    val: 12583, pct: 27.4, color: 'bg-indigo-500',  textColor: 'text-indigo-700',  bg: 'bg-indigo-50 border-indigo-200' },
-  { label: 'Usable (Q1+ answ.)', val: 9224,  pct: 20.1, color: 'bg-emerald-500', textColor: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200'},
-  { label: 'All Questions Done', val: 1578,  pct: 3.4,  color: 'bg-emerald-700', textColor: 'text-emerald-800', bg: 'bg-emerald-100 border-emerald-300'},
+// Two independent analysis paths — NOT a sequential funnel.
+// Consent path: base for Q2–Q5. Usable path: base for Q1.
+// 8,327 calls appear in BOTH (consented AND answered Q1).
+// 897 calls are in Usable only (answered Q1 without consenting).
+const CONSENT_PATH = [
+  { label: 'Total Dialled',      val: 45863, pct: 100,   note: 'All calls attempted' },
+  { label: 'Consented',          val: 12583, pct: 27.4,  note: 'consent = "yes" · Q2–Q5 base' },
+  { label: 'Completed All 5 Q',  val: 1578,  pct: 12.5,  note: '12.5% of consented · not % of total' },
+]
+const USABLE_PATH = [
+  { label: 'Total Dialled',      val: 45863, pct: 100,   note: 'All calls attempted' },
+  { label: 'Q1 Answered',        val: 9224,  pct: 20.1,  note: 'Q1 base · 8,327 consented + 897 not' },
 ]
 
 // Derived from CALL_SUMMARY — explicitly refused: 31,710 of which 897 were usable
@@ -79,54 +86,84 @@ function CallSummaryTab() {
   return (
     <div className="space-y-4">
 
-      {/* Funnel hero */}
+      {/* Two-path analysis overview */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-bold text-gray-800">Call Funnel Overview</h3>
-            <p className="text-xs text-gray-400 mt-0.5">From 45,863 dialled calls down to 9,224 usable data points</p>
+            <h3 className="text-sm font-bold text-gray-800">Call Analysis Paths</h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Two independent bases — consent path (Q2–Q5) and usable path (Q1). Not a sequential funnel.
+            </p>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700">
             Phase 1 · April 2026
           </span>
         </div>
 
-        {/* Funnel steps */}
-        <div className="flex items-end gap-2 mb-6">
-          {FUNNEL_STEPS.map((s) => {
-            const height = Math.max(16, (s.pct / 100) * 88)
-            return (
-              <div key={s.label} className="flex-1 flex flex-col items-center gap-2">
-                <div className="text-center">
-                  <p className={`text-base font-black ${s.textColor}`}>{fmt(s.val)}</p>
-                  <p className="text-xs text-gray-400 font-medium">{s.pct}%</p>
-                </div>
-                <div className="w-full flex justify-center">
-                  <div
-                    className={`w-full rounded-lg ${s.color} opacity-90`}
-                    style={{ height: `${height}px` }}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 text-center leading-tight font-medium">{s.label}</p>
-              </div>
-            )
-          })}
+        {/* Shared origin */}
+        <div className="flex justify-center mb-3">
+          <div className="text-center bg-blue-50 border border-blue-200 rounded-xl px-6 py-3">
+            <p className="text-2xl font-black text-blue-700">45,863</p>
+            <p className="text-xs text-gray-500 font-medium">Total calls dialled</p>
+          </div>
         </div>
 
-        {/* Drop rates */}
-        <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100">
-          <div className="text-center">
-            <p className="text-sm font-black text-red-600">72.6%</p>
-            <p className="text-xs text-gray-400">Did not consent</p>
+        {/* Arrow split */}
+        <div className="relative flex justify-center mb-3">
+          <div className="w-px h-4 bg-gray-300" />
+          <div className="absolute top-4 left-1/4 right-1/4 h-px bg-gray-300" />
+        </div>
+
+        {/* Two paths side by side */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Consent path */}
+          <div className="border border-indigo-200 rounded-xl overflow-hidden">
+            <div className="bg-indigo-50 px-4 py-2 border-b border-indigo-200">
+              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide">Consent Path · Q2–Q5 base</p>
+            </div>
+            <div className="p-4 space-y-3">
+              {CONSENT_PATH.map((s, i) => (
+                <div key={s.label} className={i === 0 ? 'opacity-50' : ''}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-700">{s.label}</span>
+                    <span className="text-sm font-black text-indigo-700">{fmt(s.val)}</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                    <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${i === 2 ? s.pct : s.pct}%` }} />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{s.note}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-center">
-            <p className="text-sm font-black text-amber-600">79.9%</p>
-            <p className="text-xs text-gray-400">Did not answer Q1</p>
+
+          {/* Usable path */}
+          <div className="border border-emerald-200 rounded-xl overflow-hidden">
+            <div className="bg-emerald-50 px-4 py-2 border-b border-emerald-200">
+              <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Usable Path · Q1 base</p>
+            </div>
+            <div className="p-4 space-y-3">
+              {USABLE_PATH.map((s, i) => (
+                <div key={s.label} className={i === 0 ? 'opacity-50' : ''}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-700">{s.label}</span>
+                    <span className="text-sm font-black text-emerald-700">{fmt(s.val)}</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${s.pct}%` }} />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{s.note}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-center">
-            <p className="text-sm font-black text-gray-500">96.6%</p>
-            <p className="text-xs text-gray-400">Did not finish all Q</p>
-          </div>
+        </div>
+
+        {/* Overlap note */}
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
+          <strong>Overlap:</strong> 8,327 calls appear in <em>both</em> paths (consented AND answered Q1).
+          897 calls are usable-only (answered Q1 without consenting — included in Q1 base, excluded from Q2–Q5).
+          Total unique usable = 8,327 + 897 = 9,224 ✓
         </div>
       </div>
 
@@ -468,7 +505,7 @@ function QuestionFunnelTab() {
           { label: 'Consented base (Q2–Q5)', val: '12,583', sub: 'Agreed to survey',    color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200'   },
           { label: 'Usable base (Q1)',        val: '9,224',  sub: 'Answered Q1',          color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'       },
           { label: 'Q5 respondents',          val: '4,284',  sub: '34.1% of consented',   color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200'     },
-          { label: 'Completed all 5',         val: '1,578',  sub: '3.4% of all calls',    color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
+          { label: 'Completed all 5',         val: '1,578',  sub: '12.5% of consented',   color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
         ].map(k => (
           <div key={k.label} className={`rounded-xl border p-3.5 ${k.bg}`}>
             <p className={`text-xl font-black leading-none ${k.color}`}>{k.val}</p>
@@ -480,49 +517,54 @@ function QuestionFunnelTab() {
 
       {/* Per-question visual bars */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <h3 className="text-sm font-bold text-gray-800 mb-1">Response Drop-off by Question</h3>
-        <p className="text-xs text-gray-400 mb-4">
-          Q1 base = 9,224 usable calls · Q2–Q5 base = 12,583 consented · Questions are not strictly sequential
+        <h3 className="text-sm font-bold text-gray-800 mb-1">Response Rate + Yes/No Split per Question</h3>
+        <p className="text-xs text-gray-400 mb-1">
+          Two separate metrics per question:
         </p>
-        <div className="space-y-4">
+        <div className="flex gap-4 text-xs text-gray-500 mb-4">
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 bg-slate-300 rounded-sm inline-block"/>Response rate = answered ÷ asked (how many responded)</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-2 bg-emerald-400 rounded-sm inline-block"/>Yes % = yes ÷ answered (of those who responded, how many said yes)</span>
+        </div>
+        <div className="space-y-5">
           {QUESTION_FUNNEL.map(q => {
             const yesPctColor = q.yesPct >= 70 ? 'text-emerald-700' : q.yesPct >= 50 ? 'text-amber-700' : 'text-red-600'
             const yesBarColor = q.yesPct >= 70 ? 'bg-emerald-500' : q.yesPct >= 50 ? 'bg-amber-400' : 'bg-red-400'
-            const base = q.q === 'Q1' ? BASE_USABLE : BASE_CONSENTED
-            const responsePct = +((q.answered / base) * 100).toFixed(1)
 
             return (
-              <div key={q.q}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-bold font-mono text-gray-400 w-5">{q.q}</span>
-                    <span className="text-xs font-semibold text-gray-700">{q.label}</span>
-                    <span className="text-xs text-gray-300 italic hidden sm:inline">"{q.label === 'Water Daily' ? 'Did water come every day in last 7 days?' : q.label === 'Water Quality' ? 'Is the water clean enough?' : q.label === 'Water Quantity' ? 'Is there enough water?' : q.label === 'Consistent Timing' ? 'Does it arrive at a fixed time?' : 'Are you satisfied with your supply?'}"</span>
+              <div key={q.q} className="border border-gray-100 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black font-mono text-gray-400 w-5">{q.q}</span>
+                    <span className="text-xs font-semibold text-gray-800">{q.label}</span>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-xs text-gray-400 font-mono">{q.answered.toLocaleString()} answered</span>
-                    <span className={`text-sm font-black ${yesPctColor}`}>{(q.yesPct * 100).toFixed(1)}%</span>
+                  <span className="text-[10px] text-gray-400">{q.note}</span>
+                </div>
+
+                {/* Metric 1: Response rate */}
+                <div className="mb-2">
+                  <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+                    <span className="font-medium text-gray-500">Response rate</span>
+                    <span className="font-bold text-gray-700">{q.answered.toLocaleString()} of {q.askedN.toLocaleString()} asked = <strong>{q.responsePct.toFixed(1)}%</strong></span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-slate-300 rounded-full" style={{ width: `${q.responsePct}%` }} />
                   </div>
                 </div>
 
-                {/* Response rate bar */}
-                <div className="mb-1">
-                  <div className="flex justify-between text-xs text-gray-400 mb-0.5">
-                    <span>Response rate: {responsePct}% of {q.q === 'Q1' ? '9,224 usable' : '12,583 consented'}</span>
+                {/* Metric 2: Yes/No of those who answered */}
+                <div>
+                  <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+                    <span className="font-medium text-gray-500">Yes % <span className="text-gray-400 font-normal">(of {q.answered.toLocaleString()} who answered)</span></span>
+                    <span className={`font-black ${yesPctColor}`}>{q.yesPct.toFixed(2)}%</span>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-slate-300 rounded-full" style={{ width: `${Math.min(responsePct, 100)}%` }} />
+                  <div className="h-3 rounded-full overflow-hidden flex">
+                    <div className={`h-full ${yesBarColor}`} style={{ width: `${q.yesPct}%` }} />
+                    <div className="h-full bg-red-200 flex-1" />
                   </div>
-                </div>
-
-                {/* Yes/No split bar */}
-                <div className="h-4 rounded-full overflow-hidden flex">
-                  <div className={`h-full ${yesBarColor}`} style={{ width: `${q.yesPct * 100}%` }} />
-                  <div className="h-full bg-red-200 flex-1" />
-                </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-emerald-700 font-medium">Yes: {q.yesCount.toLocaleString()}</span>
-                  <span className="text-red-500">No: {q.noCount.toLocaleString()}</span>
+                  <div className="flex justify-between text-[10px] mt-0.5">
+                    <span className="text-emerald-700 font-semibold">Yes: {q.yesCount.toLocaleString()}</span>
+                    <span className="text-red-500">No: {q.noCount.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             )
@@ -542,11 +584,12 @@ function QuestionFunnelTab() {
               <tr className="border-b border-gray-100">
                 <th className="th">Q</th>
                 <th className="th">Indicator</th>
+                <th className="th text-right">Asked</th>
                 <th className="th text-right">Answered</th>
+                <th className="th text-right hidden sm:table-cell">Response %</th>
                 <th className="th text-right hidden sm:table-cell">Yes n</th>
                 <th className="th text-right hidden sm:table-cell">No n</th>
-                <th className="th text-right">Yes %</th>
-                <th className="th hidden lg:table-cell">Data Base</th>
+                <th className="th text-right">Yes % of answered</th>
               </tr>
             </thead>
             <tbody>
@@ -556,11 +599,13 @@ function QuestionFunnelTab() {
                   <tr key={q.q} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
                     <td className="td font-mono text-xs font-bold text-gray-500">{q.q}</td>
                     <td className="td font-medium text-gray-800">{q.label}</td>
+                    <td className="td-mono text-right text-gray-400">{q.askedN.toLocaleString()}</td>
                     <td className="td-mono text-right">{q.answered.toLocaleString()}</td>
+                    <td className="td-mono text-right text-gray-500 hidden sm:table-cell">{q.responsePct.toFixed(1)}%</td>
                     <td className="td-mono text-right text-emerald-700 hidden sm:table-cell">{q.yesCount.toLocaleString()}</td>
                     <td className="td-mono text-right text-red-500 hidden sm:table-cell">{q.noCount.toLocaleString()}</td>
                     <td className={`td-mono text-right font-bold ${yesPctColor}`}>{(q.yesPct * 100).toFixed(2)}%</td>
-                    <td className="td text-xs text-gray-400 hidden lg:table-cell">{q.base}</td>
+                    <td className="td text-xs text-gray-400 hidden lg:table-cell">{q.askedLabel}</td>
                   </tr>
                 )
               })}
