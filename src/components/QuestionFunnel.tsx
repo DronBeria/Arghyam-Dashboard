@@ -73,7 +73,7 @@ export function QuestionFunnel() {
                     q.yesPct >= 70 ? 'text-emerald-700' :
                     q.yesPct >= 40 ? 'text-amber-700' : 'text-red-600'
                   }`}>{q.yesPct.toFixed(1)}%</td>
-                  <td className="td text-xs text-gray-400 hidden sm:table-cell">{q.base}</td>
+                  <td className="td text-xs text-gray-400 hidden sm:table-cell">{q.askedLabel}</td>
                 </tr>
               ))}
             </tbody>
