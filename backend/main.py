@@ -13,8 +13,14 @@ import uuid
 
 load_dotenv()
 
-SUPABASE_URL         = os.environ["SUPABASE_URL"]
-SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
+SUPABASE_URL         = os.environ.get("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+    raise RuntimeError(
+        "Missing required environment variables: SUPABASE_URL and/or SUPABASE_SERVICE_KEY. "
+        "Set them in Render → Environment tab (use the service_role key, not anon key)."
+    )
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
