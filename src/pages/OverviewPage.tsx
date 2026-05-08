@@ -210,6 +210,10 @@ export function OverviewPage() {
       const d = DISTRICT_SCORES.find(d => d.district === scopeValue)
       return d ? DISTRICT_SCORES.filter(x => x.zone === d.zone).sort((a, b) => b.bsi - a.bsi) : []
     }
+    if (scopeType === 'district') {
+      // All districts — no specific district selected
+      return DISTRICT_SCORES.slice().sort((a, b) => b.bsi - a.bsi)
+    }
     return ZONE_SCORES.filter(z => z.bsi !== null && z.zone !== 'Assam (State)').sort((a, b) => (b.bsi ?? 0) - (a.bsi ?? 0))
   }, [scopeType, scopeValue])
 
@@ -232,7 +236,7 @@ export function OverviewPage() {
 
   function handleScopeTypeChange(t: 'state' | 'zone' | 'district') {
     setScopeType(t)
-    setScopeValue(t === 'zone' ? ZONE_LIST[0] : t === 'district' ? DISTRICT_LIST[0] : '')
+    setScopeValue('')   // '' = All; user picks specific value from dropdown
     setSchemeFilter(''); setSchemeStats(null); setSchemeList([])
   }
 
@@ -264,12 +268,14 @@ export function OverviewPage() {
         {scopeType === 'zone' && (
           <select value={scopeValue} onChange={e => setScopeValue(e.target.value)}
             className="px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <option value="">All zones</option>
             {ZONE_LIST.map(z => <option key={z}>{z}</option>)}
           </select>
         )}
         {scopeType === 'district' && (
-          <select value={scopeValue} onChange={e => setScopeValue(e.target.value)}
+          <select value={scopeValue} onChange={e => { setScopeValue(e.target.value); setSchemeFilter(''); setSchemeStats(null) }}
             className="px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <option value="">All districts</option>
             {DISTRICT_LIST.map(d => <option key={d}>{d}</option>)}
           </select>
         )}
@@ -539,13 +545,22 @@ export function OverviewPage() {
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-gray-800">
-              {scopeType === 'state' ? 'Zone Rankings'
-               : scopeType === 'zone'  ? `Districts in ${scopeValue}`
-               : `Other districts in ${DISTRICT_SCORES.find(d => d.district === scopeValue)?.zone ?? ''}`}
+              {scopeType === 'state'
+                ? 'Zone Rankings'
+                : scopeType === 'zone' && scopeValue
+                  ? `Districts in ${scopeValue}`
+                  : scopeType === 'zone'
+                    ? 'All Zones'
+                    : scopeType === 'district' && scopeValue
+                      ? `Other districts in ${DISTRICT_SCORES.find(d => d.district === scopeValue)?.zone ?? ''}`
+                      : 'All Districts'}
             </p>
             <p className="text-xs text-gray-400">
-              {scopeType === 'state' ? 'No zone meets the 3.50 target · sorted best to worst'
-               : 'Sorted by BSI · click a district to drill down'}
+              {scopeType === 'state'
+                ? 'No zone meets the 3.50 target · sorted best to worst'
+                : scopeType === 'district' && !scopeValue
+                  ? `${DISTRICT_SCORES.length} districts · sorted by BSI · click to drill down`
+                  : 'Sorted by BSI · click a district to drill down'}
             </p>
           </div>
           <button onClick={() => nav('geographic')}
@@ -557,7 +572,12 @@ export function OverviewPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="th text-left">{scopeType === 'state' ? 'Zone' : 'District'}</th>
+                <th className="th text-left">
+                  {scopeType === 'state' ? 'Zone' : 'District'}
+                </th>
+                {scopeType === 'district' && !scopeValue && (
+                  <th className="th text-left hidden sm:table-cell">Zone</th>
+                )}
                 <th className="th text-right">BSI /5</th>
                 <th className="th text-right hidden sm:table-cell">Quality</th>
                 <th className="th text-right hidden sm:table-cell">Quantity</th>
@@ -570,10 +590,10 @@ export function OverviewPage() {
               {breakdownRows.map((row: any) => {
                 const bsi5 = ((row.bsi ?? 0) * 5).toFixed(2)
                 const rc = statusColor(row.status ?? 'Moderate')
-                const isSelected = scopeType === 'district' && row.district === scopeValue
+                const isSelected = scopeType === 'district' && scopeValue && row.district === scopeValue
                 const rowLabel = scopeType === 'state' ? row.zone : (row.district ?? row.zone)
                 return (
-                  <tr key={rowLabel}
+                  <tr key={row.zone ?? '' + row.district ?? rowLabel}
                     onClick={() => {
                       if (row.district) {
                         setScopeType('district')
@@ -587,6 +607,9 @@ export function OverviewPage() {
                       <span className="font-semibold text-gray-800 text-xs">{rowLabel}</span>
                       {isSelected && <span className="ml-2 text-[10px] text-blue-500 font-bold">← selected</span>}
                     </td>
+                    {scopeType === 'district' && !scopeValue && (
+                      <td className="td text-xs text-gray-400 hidden sm:table-cell">{row.zone ?? '—'}</td>
+                    )}
                     <td className="td-mono text-right">
                       <span className={`font-black text-sm ${rc.text}`}>{bsi5}</span>
                     </td>
