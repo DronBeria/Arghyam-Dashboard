@@ -21,7 +21,7 @@ export function LoginPage() {
   const [success, setSuccess]     = useState('')
 
   function switchMode(m: Mode) {
-    setMode(m); setError(''); setSuccess('')
+    setMode(m); setError('')           // keep success banner when switching tabs
     setEmail(''); setPassword(''); setConfirm(''); setFullName('')
   }
 
@@ -39,18 +39,25 @@ export function LoginPage() {
     if (password !== confirm) { setError('Passwords do not match.'); return }
     if (password.length < 8)  { setError('Password must be at least 8 characters.'); return }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName.trim() || email.split('@')[0] } },
     })
+    setLoading(false)
     if (error) {
       setError(error.message)
-    } else {
-      setSuccess('Account created! Check your email to confirm, then sign in.')
-      switchMode('signin')
+      return
     }
-    setLoading(false)
+    if (data.session) {
+      // Email confirmation is OFF in Supabase — user is immediately signed in
+      // Auth state change listener in App.tsx will handle the redirect automatically
+      return
+    }
+    // Email confirmation is ON — email has been sent, show message and go to Sign In tab
+    setSuccess(`Account created! A confirmation email has been sent to ${email}. Click the link in the email to activate your account, then sign in here.`)
+    setMode('signin')
+    setEmail(''); setPassword(''); setConfirm(''); setFullName('')
   }
 
   const isSignUp = mode === 'signup'
