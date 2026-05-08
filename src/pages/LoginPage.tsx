@@ -8,11 +8,22 @@ const STATS = [
   { val: '2.20/5', label: 'State BSI Score', icon: '📊' },
 ]
 
+type Mode = 'signin' | 'signup'
+
 export function LoginPage() {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
+  const [mode, setMode]           = useState<Mode>('signin')
+  const [email, setEmail]         = useState('')
+  const [password, setPassword]   = useState('')
+  const [confirm, setConfirm]     = useState('')
+  const [fullName, setFullName]   = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState('')
+  const [success, setSuccess]     = useState('')
+
+  function switchMode(m: Mode) {
+    setMode(m); setError(''); setSuccess('')
+    setEmail(''); setPassword(''); setConfirm(''); setFullName('')
+  }
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault()
@@ -22,10 +33,32 @@ export function LoginPage() {
     setLoading(false)
   }
 
+  async function handleSignUp(e: React.FormEvent) {
+    e.preventDefault()
+    setError(''); setSuccess('')
+    if (password !== confirm) { setError('Passwords do not match.'); return }
+    if (password.length < 8)  { setError('Password must be at least 8 characters.'); return }
+    setLoading(true)
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName.trim() || email.split('@')[0] } },
+    })
+    if (error) {
+      setError(error.message)
+    } else {
+      setSuccess('Account created! Check your email to confirm, then sign in.')
+      switchMode('signin')
+    }
+    setLoading(false)
+  }
+
+  const isSignUp = mode === 'signup'
+
   return (
     <div className="min-h-screen flex bg-white">
 
-      {/* ── Left branding panel (desktop only) ──────────────────────────── */}
+      {/* ── Left branding panel ──────────────────────────────────────────── */}
       <div className="hidden lg:flex flex-col flex-1 bg-slate-900 p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.04)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -83,14 +116,54 @@ export function LoginPage() {
         </div>
 
         <div className="w-full max-w-sm">
-          <h2 className="text-2xl font-black text-gray-900 mb-1">Sign in</h2>
-          <p className="text-gray-400 text-sm mb-8">Access the JJM CSAT dashboard</p>
 
-          <form onSubmit={handleSignIn} className="space-y-4">
+          {/* Mode toggle */}
+          <div className="flex rounded-xl bg-gray-100 p-1 mb-8">
+            {(['signin', 'signup'] as Mode[]).map(m => (
+              <button
+                key={m}
+                onClick={() => switchMode(m)}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                  mode === m ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {m === 'signin' ? 'Sign In' : 'Create Account'}
+              </button>
+            ))}
+          </div>
+
+          <h2 className="text-2xl font-black text-gray-900 mb-1">
+            {isSignUp ? 'Create account' : 'Sign in'}
+          </h2>
+          <p className="text-gray-400 text-sm mb-8">
+            {isSignUp ? 'Add a new authorised user' : 'Access the JJM CSAT dashboard'}
+          </p>
+
+          {success && (
+            <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-emerald-700 text-xs flex items-start gap-2">
+              <span className="flex-shrink-0 mt-0.5">✓</span>
+              <span>{success}</span>
+            </div>
+          )}
+
+          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+
+            {isSignUp && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Full Name</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  placeholder="Priya Sharma"
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
+                    placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
+            )}
+
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                Email Address
-              </label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Email Address</label>
               <input
                 type="email"
                 required
@@ -98,15 +171,12 @@ export function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="you@araghyam.org"
                 className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
-                  placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                  transition-all"
+                  placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                Password
-              </label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Password</label>
               <input
                 type="password"
                 required
@@ -114,10 +184,24 @@ export function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
-                  placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                  transition-all"
+                  placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
+
+            {isSignUp && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Confirm Password</label>
+                <input
+                  type="password"
+                  required
+                  value={confirm}
+                  onChange={e => setConfirm(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3
+                    placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-600 text-xs flex items-start gap-2">
@@ -133,8 +217,8 @@ export function LoginPage() {
                 text-sm py-3 rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 mt-1"
             >
               {loading
-                ? <><span className="animate-spin text-base">⟳</span> Signing in…</>
-                : 'Sign In'}
+                ? <><span className="animate-spin text-base">⟳</span> {isSignUp ? 'Creating…' : 'Signing in…'}</>
+                : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
           </form>
 
