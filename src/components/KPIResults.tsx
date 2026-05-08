@@ -24,7 +24,7 @@ export function KPIResults() {
   return (
     <div>
       <h2 className="section-title">2. KPI Results</h2>
-      <p className="section-sub">% satisfied = Yes ÷ (Yes + No) · Benchmark ≥ 70% = Good</p>
+      <p className="section-sub">Q1 → Q1A → Q2 → Q3 → Q5 · Yes% = Yes ÷ (Yes + No) · Weights: 0.75 + 0.75 + 1.5 + 1.5 + 0.5 = 5.0 · Benchmark ≥ 70%</p>
 
       <div className="h-48 mb-4">
         <ResponsiveContainer width="100%" height="100%">
@@ -50,29 +50,34 @@ export function KPIResults() {
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="th">Question</th>
-              <th className="th text-right">Yes</th>
-              <th className="th text-right">No</th>
-              <th className="th text-right">% Yes</th>
+              <th className="th">Q</th>
+              <th className="th">Indicator</th>
+              <th className="th text-right">Yes %</th>
+              <th className="th text-right">Yes N</th>
+              <th className="th text-right">No N</th>
               <th className="th text-right hidden sm:table-cell">Base</th>
+              <th className="th text-right hidden sm:table-cell">Weight</th>
               <th className="th text-center">Status</th>
             </tr>
           </thead>
           <tbody>
             {KPI_QUESTIONS.map((q) => (
               <tr key={q.id} className="hover:bg-gray-50">
+                <td className="td font-mono text-xs font-bold text-gray-400">{q.id}</td>
                 <td className="td">
-                  <span className="text-xs font-bold text-gray-400 mr-1">{q.id}</span>
-                  <span className="font-medium text-gray-800">{q.label}</span>
-                  <div className="text-xs text-gray-400 italic mt-0.5">{q.question}</div>
+                  <span className="font-medium text-gray-800 text-xs">{q.label}</span>
+                  {(q as any).askedOf && (
+                    <div className="text-[10px] text-blue-500 mt-0.5">base = {fmt((q as any).askedOf)} Q1=Yes callers</div>
+                  )}
                 </td>
-                <td className="td-mono text-right text-emerald-600 text-xs">{fmt(q.yesCount)}</td>
-                <td className="td-mono text-right text-red-500 text-xs">{fmt(q.noCount)}</td>
                 <td className={`td-mono text-right font-bold ${
                   q.status === 'Good' ? 'text-emerald-700' :
                   q.status === 'Critical' ? 'text-red-600' : 'text-amber-700'
-                }`}>{q.yesPct.toFixed(1)}%</td>
+                }`}>{q.yesPct.toFixed(2)}%</td>
+                <td className="td-mono text-right text-emerald-600 text-xs">{fmt(q.yesCount)}</td>
+                <td className="td-mono text-right text-red-500 text-xs">{fmt(q.noCount)}</td>
                 <td className="td-mono text-right text-gray-400 text-xs hidden sm:table-cell">{fmt(q.base)}</td>
+                <td className="td-mono text-right text-gray-400 text-xs hidden sm:table-cell">{q.weight}</td>
                 <td className="td text-center"><StatusBadge status={q.status} /></td>
               </tr>
             ))}

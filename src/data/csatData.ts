@@ -7,6 +7,7 @@ export const KPI_HEADLINE = {
   satisfied: 52.1,
   functionalSchemes: 17.6,
   consentRate: 27.4,
+  completedSurvey: 4284,
 }
 
 // ─── CALL SUMMARY ─────────────────────────────────────────────────────────────
@@ -25,7 +26,36 @@ export const CALL_SUMMARY = [
 export const CALL_SUMMARY_NOTE = 'Why usable = 9,224 and not 8,327? — 897 calls logged as "refused" lasted long enough (median 133 sec) that Q1 was answered before hang-up. Rule: any call where Q1 was answered = usable. 8,327 + 897 = 9,224 ✓'
 
 // ─── KPI RESULTS (Q1–Q5) — verified from Excel ────────────────────────────────
+// Order matches survey flow. Weights sum to 5.0; BSI = Σ(w×score)/5.0
+// Q1(0.75) + Q1A(0.75) + Q2(1.5) + Q3(1.5) + Q5(0.5) = 5.0
 export const KPI_QUESTIONS = [
+  {
+    id: 'Q1',
+    label: 'Water Daily',
+    question: 'Did water come every day in last 7 days?',
+    yesCount: 2855,
+    noCount: 6369,
+    base: 9224,
+    yesPct: 30.95,
+    weight: '0.75 / 5',
+    status: 'Critical',
+    benchmark: 70,
+    color: '#ef4444',
+  },
+  {
+    id: 'Q1A',
+    label: 'Consistent Timing',
+    question: 'Does water arrive at a consistent time? (follow-up to Q1)',
+    yesCount: 1222,
+    noCount: 920,
+    base: 2142,
+    askedOf: 2855,
+    yesPct: 57.05,
+    weight: '0.75 / 5',
+    status: 'Moderate',
+    benchmark: 70,
+    color: '#f59e0b',
+  },
   {
     id: 'Q2',
     label: 'Water Quality',
@@ -53,19 +83,6 @@ export const KPI_QUESTIONS = [
     color: '#f59e0b',
   },
   {
-    id: 'Q4',
-    label: 'Consistent Timing',
-    question: 'Does it arrive at a fixed time?',
-    yesCount: 1222,
-    noCount: 920,
-    base: 2142,
-    yesPct: 57.05,
-    weight: '0.75 / 5',
-    status: 'Moderate',
-    benchmark: 70,
-    color: '#f59e0b',
-  },
-  {
     id: 'Q5',
     label: 'Overall Satisfaction',
     question: 'Are you satisfied with your supply?',
@@ -77,19 +94,6 @@ export const KPI_QUESTIONS = [
     status: 'Moderate',
     benchmark: 70,
     color: '#f59e0b',
-  },
-  {
-    id: 'Q1',
-    label: 'Water Daily',
-    question: 'Did water come every day in last 7 days?',
-    yesCount: 2855,
-    noCount: 6369,
-    base: 9224,
-    yesPct: 30.95,
-    weight: '0.75 / 5',
-    status: 'Critical',
-    benchmark: 70,
-    color: '#ef4444',
   },
 ]
 
@@ -126,7 +130,7 @@ export const ZONE_SCORES = [
   { zone: 'BTAD',         usableCalls: 142,  bsi: 0.3841, quality: 0.869, quantity: 0.725, daily: 0.198, status: 'Critical' },
   { zone: 'Barak Valley', usableCalls: 339,  bsi: 0.3789, quality: 0.706, quantity: 0.720, daily: 0.314, status: 'Critical' },
   { zone: 'DHAC',         usableCalls: null, bsi: null,   quality: null,  quantity: null,  daily: null,  status: 'No Data' },
-  { zone: 'Assam (State)',usableCalls: 5346, bsi: 0.4406, quality: 0.8905,quantity: 0.8158,daily: 0.2803,status: 'Moderate' },
+  { zone: 'Assam (State)',usableCalls: 9224, bsi: 0.4406, quality: 0.8905,quantity: 0.8158,daily: 0.2803,status: 'Moderate' },
 ]
 
 // ─── DISTRICT SCORES — verified from Excel ────────────────────────────────────
@@ -196,9 +200,9 @@ export const CALL_ATTEMPTS = [
 // answered = who actually responded (denominator of yes%)
 // yesPct = yesCount / answered  (NOT yesCount / base)
 export const QUESTION_FUNNEL = [
-  { q: 'Q1', label: 'Water Daily',         answered: 9224, yesCount: 2855, noCount: 6369, yesPct: 30.95, askedN: 45863,  askedLabel: 'All 45,863 calls (any call where Q1 was captured)',  responsePct: 20.1, note: 'Only answered calls counted (yes or no) — 9,224 of 45,863' },
-  { q: 'Q2', label: 'Water Quality',       answered: 4553, yesCount: 3293, noCount: 1260, yesPct: 72.33, askedN: 12583,  askedLabel: '12,583 consented callers',  responsePct: 36.2, note: '7,030 consented callers gave no Q2 response' },
-  { q: 'Q3', label: 'Water Quantity',      answered: 4745, yesCount: 2953, noCount: 1792, yesPct: 62.23, askedN: 12583,  askedLabel: '12,583 consented callers',  responsePct: 37.7, note: '7,838 consented callers gave no Q3 response' },
-  { q: 'Q4', label: 'Consistent Timing',   answered: 2142, yesCount: 1222, noCount: 920,  yesPct: 57.05, askedN: 12583,  askedLabel: '12,583 consented callers',  responsePct: 17.0, note: '10,441 consented callers gave no Q4 response — lowest engagement' },
-  { q: 'Q5', label: 'Overall Satisfaction',answered: 4284, yesCount: 2233, noCount: 2051, yesPct: 52.12, askedN: 12583,  askedLabel: '12,583 consented callers',  responsePct: 34.1, note: '8,299 consented callers gave no Q5 response' },
+  { q: 'Q1',  label: 'Water Daily',         answered: 9224, yesCount: 2855, noCount: 6369, yesPct: 30.95, askedN: 45863, askedLabel: 'All 45,863 calls (any call where Q1 was captured)',       responsePct: 20.1, note: 'Only answered calls counted (yes or no) — 9,224 of 45,863' },
+  { q: 'Q1A', label: 'Consistent Timing',   answered: 2142, yesCount: 1222, noCount: 920,  yesPct: 57.05, askedN: 2855,  askedLabel: '2,855 callers who answered Q1 = Yes (follow-up only)', responsePct: 75.0, note: 'Asked only when Q1 = Yes · 75% of Q1=Yes callers responded' },
+  { q: 'Q2',  label: 'Water Quality',       answered: 4553, yesCount: 3293, noCount: 1260, yesPct: 72.33, askedN: 12583, askedLabel: '12,583 consented callers',                               responsePct: 36.2, note: '7,030 consented callers gave no Q2 response' },
+  { q: 'Q3',  label: 'Water Quantity',      answered: 4745, yesCount: 2953, noCount: 1792, yesPct: 62.23, askedN: 12583, askedLabel: '12,583 consented callers',                               responsePct: 37.7, note: '7,838 consented callers gave no Q3 response' },
+  { q: 'Q5',  label: 'Overall Satisfaction',answered: 4284, yesCount: 2233, noCount: 2051, yesPct: 52.12, askedN: 12583, askedLabel: '12,583 consented callers',                               responsePct: 34.1, note: '8,299 consented callers gave no Q5 response' },
 ]

@@ -10,17 +10,26 @@ import { CallRecordsPage } from './pages/CallRecordsPage'
 import { SurveyResultsPage } from './pages/SurveyResultsPage'
 import { SchemePage } from './pages/SchemePage'
 import { GeographicPage } from './pages/GeographicPage'
-import { DataVerificationPage } from './pages/DataVerificationPage'
+import { DataIngestionPage } from './pages/DataIngestionPage'
 
-// ─── Nav structure ────────────────────────────────────────────────────────────
-type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'verification'
+// ─── Types ────────────────────────────────────────────────────────────────────
+type Phase = 'phase1' | 'phase2'
+type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'ingestion'
+
+interface NavItem {
+  id: PageId
+  label: string
+  description: string
+  phase2Only?: boolean
+}
 
 interface NavGroup {
   label: string
   icon: string
-  items: { id: PageId; label: string; description: string }[]
+  items: NavItem[]
 }
 
+// ─── Nav structure ────────────────────────────────────────────────────────────
 const NAV: NavGroup[] = [
   {
     label: 'Dashboard',
@@ -59,34 +68,78 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    label: 'Audit',
-    icon: '🔍',
+    label: 'Data Pipeline',
+    icon: '⬆',
     items: [
-      { id: 'verification', label: 'Data Verification', description: 'Sanity checks, bot errors, proof' },
+      { id: 'ingestion', label: 'Data Ingestion', description: 'Upload Phase 2 CSV data', phase2Only: true },
     ],
   },
 ]
 
 const PAGE_META: Record<PageId, { title: string; sub: string }> = {
-  overview: { title: 'Dashboard Overview', sub: 'State-level KPIs at a glance' },
-  calls: { title: 'Call Analysis', sub: 'Breakdown of 45,863 calls' },
-  records: { title: 'Call Records', sub: 'Browse, filter and play individual calls' },
-  survey: { title: 'Survey Results', sub: 'Q1–Q5 satisfaction indicators' },
-  schemes: { title: 'Scheme Coverage', sub: '2,373 IMIS schemes analysed' },
-  geographic: { title: 'Zone & District Scores', sub: 'BSI by geography across Assam' },
-  verification: { title: 'Data Verification', sub: 'Sanity check audit — raw data vs dashboard' },
+  overview:   { title: 'Dashboard Overview',    sub: 'State-level KPIs at a glance' },
+  calls:      { title: 'Call Analysis',          sub: 'Breakdown of calls' },
+  records:    { title: 'Call Records',           sub: 'Browse, filter and play individual calls' },
+  survey:     { title: 'Survey Results',         sub: 'Q1–Q5 satisfaction indicators' },
+  schemes:    { title: 'Scheme Coverage',        sub: 'IMIS schemes analysed' },
+  geographic: { title: 'Zone & District Scores', sub: 'BSI by geography' },
+  ingestion:  { title: 'Data Ingestion',         sub: 'Upload Phase 2 CSAT survey data' },
+}
+
+// ─── Phase 2 empty state ──────────────────────────────────────────────────────
+function Phase2EmptyState({ pageName, onGoToIngestion }: { pageName: string; onGoToIngestion: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[55vh] text-center space-y-6 py-12">
+      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+        <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Phase 2 · {pageName}</p>
+        <h2 className="text-xl font-black text-slate-700">No Phase 2 Data Yet</h2>
+        <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
+          Phase 2 survey data hasn't been uploaded yet. Use Data Ingestion to upload a CSV file — the dashboard populates automatically.
+        </p>
+      </div>
+      <button onClick={onGoToIngestion}
+        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-[12px] font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/30">
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        Go to Data Ingestion
+      </button>
+      <div className="max-w-xs w-full rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2.5">What appears after upload</p>
+        <div className="space-y-2">
+          {[
+            'All Phase 2 call statistics and KPIs',
+            'Q1–Q5 survey results with BSI scores',
+            'Zone and district-level breakdowns',
+            'Scheme coverage analysis',
+          ].map(item => (
+            <div key={item} className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded-full bg-blue-50 text-blue-500 text-[9px] font-black flex items-center justify-center flex-shrink-0">→</span>
+              <p className="text-[11px] text-slate-500">{item}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [page, setPage] = useState<PageId>('overview')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [session, setSession]           = useState<Session | null>(null)
+  const [authLoading, setAuthLoading]   = useState(true)
+  const [phase, setPhase]               = useState<Phase>('phase1')
+  const [page, setPage]                 = useState<PageId>('overview')
+  const [sidebarOpen, setSidebarOpen]   = useState(true)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
-  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen]   = useState(false)
 
-  // ── Auth state ────────────────────────────────────────────────────────────
+  // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -109,7 +162,6 @@ export default function App() {
     return () => window.removeEventListener('navigate', onNav)
   }, [])
 
-  // Global Ctrl+K shortcut
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -129,7 +181,13 @@ export default function App() {
     })
   }
 
-  // ── Loading splash ────────────────────────────────────────────────────────
+  function switchPhase(p: Phase) {
+    setPhase(p)
+    if (p === 'phase1' && page === 'ingestion') setPage('overview')
+    if (p === 'phase2') setPage('overview')
+  }
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -143,15 +201,26 @@ export default function App() {
     )
   }
 
-  // ── Login gate ────────────────────────────────────────────────────────────
   if (!session) return <LoginPage />
 
   const userEmail = session.user?.email
 
+  // Which nav items to show based on phase
+  const visibleNav = NAV.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (item.phase2Only && phase === 'phase1') return false
+      return true
+    }),
+  })).filter(group => group.items.length > 0)
+
+  const isPhase2NonIngestion = phase === 'phase2' && page !== 'ingestion'
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#0f172a' }}>
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
-      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+
+      {/* ── Sidebar ───────────────────────────────────────────────────────── */}
       <aside className={`${sidebarOpen ? 'w-56' : 'w-[52px]'} h-full flex-shrink-0 flex flex-col transition-all duration-200 z-40 border-r border-white/[0.06]`}
         style={{ background: '#0f172a' }}>
 
@@ -164,7 +233,7 @@ export default function App() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-bold text-white leading-none">Araghyam</p>
-                <p className="text-[9px] text-slate-500 mt-0.5 font-medium tracking-widest uppercase">JJM Phase 1</p>
+                <p className="text-[9px] text-slate-500 mt-0.5 font-medium tracking-widest uppercase">JJM · CSAT AI</p>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="text-slate-600 hover:text-slate-300 transition-colors p-1 flex-shrink-0">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7"/></svg>
@@ -177,9 +246,51 @@ export default function App() {
           )}
         </div>
 
+        {/* ── Phase Switcher ─────────────────────────────────────────────── */}
+        <div className={`flex-shrink-0 border-b border-white/[0.06] ${sidebarOpen ? 'p-3' : 'p-2'}`}>
+          {sidebarOpen ? (
+            <div className="flex rounded-lg overflow-hidden border border-white/[0.08] p-0.5 gap-0.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              {(['phase1', 'phase2'] as const).map(p => (
+                <button key={p} onClick={() => switchPhase(p)}
+                  className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all ${
+                    phase === p
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}>
+                  {p === 'phase1' ? 'Phase 1' : 'Phase 2'}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {(['phase1', 'phase2'] as const).map(p => (
+                <button key={p} onClick={() => switchPhase(p)} title={p === 'phase1' ? 'Phase 1' : 'Phase 2'}
+                  className={`w-full py-1 rounded-md text-[10px] font-black transition-all ${
+                    phase === p
+                      ? 'bg-blue-500 text-white'
+                      : 'text-slate-600 hover:text-slate-400'
+                  }`} style={phase !== p ? { background: 'rgba(255,255,255,0.04)' } : {}}>
+                  {p === 'phase1' ? '1' : '2'}
+                </button>
+              ))}
+            </div>
+          )}
+          {sidebarOpen && (
+            <div className="mt-1.5 flex items-center justify-center">
+              <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${
+                phase === 'phase1'
+                  ? 'text-emerald-500 bg-emerald-500/10'
+                  : 'text-blue-400 bg-blue-500/10'
+              }`}>
+                {phase === 'phase1' ? '● Active · Apr 2026' : '○ Awaiting data'}
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* Nav */}
         <nav className="flex-1 py-3 overflow-y-auto min-h-0 px-2 space-y-0.5">
-          {NAV.map((group) => {
+          {visibleNav.map((group) => {
             const isExpanded = expandedGroups.has(group.label) || group.items.length === 1
             const hasActive  = group.items.some(i => i.id === page)
             return (
@@ -208,7 +319,6 @@ export default function App() {
                         ? 'bg-blue-500/10 text-blue-400'
                         : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
                       }`}>
-                      {/* Icon: simple svg shapes, no emoji */}
                       <NavIcon id={item.id} active={active} />
                       {sidebarOpen && (
                         <span className={`text-[12px] font-medium truncate ${active ? 'text-blue-300' : 'text-slate-400'}`}>
@@ -217,6 +327,9 @@ export default function App() {
                       )}
                       {active && sidebarOpen && (
                         <div className="ml-auto w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
+                      )}
+                      {item.phase2Only && sidebarOpen && !active && (
+                        <span className="ml-auto text-[8px] font-bold text-blue-500/60 uppercase tracking-wide flex-shrink-0">P2</span>
                       )}
                     </button>
                   )
@@ -250,27 +363,32 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ── Content Area ──────────────────────────────────────────────── */}
+      {/* ── Content Area ──────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden" style={{ background: '#f1f5f9' }}>
         <Header
           pageTitle={PAGE_META[page].title}
+          phase={phase}
           onNavigate={(id) => navigate(id as PageId)}
           userEmail={userEmail}
         />
         <main className="flex-1 overflow-y-auto">
-          {/* Page header bar */}
+          {/* Breadcrumb bar */}
           <div className="bg-white/80 backdrop-blur border-b border-slate-200/80 px-6 py-2.5 flex items-center justify-between sticky top-0 z-30">
             <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
               <span>Araghyam</span>
+              <span className="text-slate-300">/</span>
+              <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                phase === 'phase1'
+                  ? 'text-emerald-700 bg-emerald-100'
+                  : 'text-blue-700 bg-blue-100'
+              }`}>{phase === 'phase1' ? 'Phase 1' : 'Phase 2'}</span>
               <span className="text-slate-300">/</span>
               <span className="text-slate-600 font-semibold">{PAGE_META[page].title}</span>
             </div>
             <div className="flex items-center gap-3">
               <p className="panel-label hidden sm:block">{PAGE_META[page].sub}</p>
-              <button
-                onClick={() => setPaletteOpen(true)}
-                className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors text-slate-400 hover:text-slate-600"
-              >
+              <button onClick={() => setPaletteOpen(true)}
+                className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors text-slate-400 hover:text-slate-600">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
@@ -281,16 +399,27 @@ export default function App() {
           </div>
 
           <div className="px-6 py-6 max-w-7xl mx-auto w-full">
-            {page === 'overview' && <OverviewPage />}
-            {page === 'calls' && <CallAnalysisPage />}
-            {page === 'records' && <CallRecordsPage />}
-            {page === 'survey' && <SurveyResultsPage />}
-            {page === 'schemes' && <SchemePage />}
-            {page === 'geographic' && <GeographicPage />}
-            {page === 'verification' && <DataVerificationPage />}
+            {/* Phase 1 pages */}
+            {phase === 'phase1' && page === 'overview'   && <OverviewPage />}
+            {phase === 'phase1' && page === 'calls'      && <CallAnalysisPage />}
+            {phase === 'phase1' && page === 'records'    && <CallRecordsPage />}
+            {phase === 'phase1' && page === 'survey'     && <SurveyResultsPage />}
+            {phase === 'phase1' && page === 'schemes'    && <SchemePage />}
+            {phase === 'phase1' && page === 'geographic' && <GeographicPage />}
+
+            {/* Phase 2 pages */}
+            {phase === 'phase2' && page === 'ingestion'  && <DataIngestionPage />}
+            {isPhase2NonIngestion && (
+              <Phase2EmptyState
+                pageName={PAGE_META[page].title}
+                onGoToIngestion={() => navigate('ingestion')}
+              />
+            )}
 
             <footer className="mt-12 pt-6 border-t border-slate-200/60 text-center">
-              <p className="panel-label">Araghyam · CSAT AI Phase 1 · Assam JJM · 45,863 calls · April 2026</p>
+              <p className="panel-label">
+                Araghyam · CSAT AI · Assam JJM · {phase === 'phase1' ? 'Phase 1 · 45,863 calls · April 2026' : 'Phase 2'}
+              </p>
             </footer>
           </div>
         </main>
@@ -299,17 +428,17 @@ export default function App() {
   )
 }
 
-// ── Clean SVG nav icons — no emoji ───────────────────────────────────────────
+// ── Nav icons ─────────────────────────────────────────────────────────────────
 function NavIcon({ id, active }: { id: string; active: boolean }) {
   const cls = `w-4 h-4 flex-shrink-0 ${active ? 'text-blue-400' : 'text-slate-500'}`
   const icons: Record<string, JSX.Element> = {
-    overview:     <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
-    calls:        <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>,
-    records:      <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>,
-    survey:       <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>,
-    schemes:      <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>,
-    geographic:   <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/><circle cx="12" cy="12" r="9"/></svg>,
-    verification: <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>,
+    overview:   <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+    calls:      <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>,
+    records:    <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>,
+    survey:     <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>,
+    schemes:    <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>,
+    geographic: <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/><circle cx="12" cy="12" r="9"/></svg>,
+    ingestion:  <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>,
   }
   return icons[id] ?? <div className={`w-4 h-4 rounded-sm ${active ? 'bg-blue-400' : 'bg-slate-600'}`} />
 }

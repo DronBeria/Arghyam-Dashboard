@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { KPI_HEADLINE, ZONE_SCORES, DISTRICT_SCORES, SCHEME_COVERAGE } from '../data/csatData'
+import { supabase } from '../lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ScopeData {
@@ -14,6 +15,21 @@ interface ScopeData {
   daily:        number | null   // out of 0.75
   zone:         string | null
 }
+
+interface SchemeStats {
+  schemeName:     string
+  totalCalls:     number
+  usableCalls:    number
+  consentedCalls: number
+  bsiStandard:    number
+  bsiUsable:      number
+  bsiConsented:   number
+  bsi5:           (mode: BsiMode) => string
+  status:         (mode: BsiMode) => string
+  q1Pct:  number; q1aPct: number; q2Pct: number; q3Pct: number; q5Pct: number
+}
+
+type BsiMode = 'standard' | 'usable' | 'consented'
 
 // ─── Static derived values ────────────────────────────────────────────────────
 const STATE_BSI   = KPI_HEADLINE.stateBSI
@@ -42,12 +58,14 @@ function insight(scopeType: string, scopeValue: string, scope: { bsi5: string; s
 
 // Q percentages for state scope (from raw call counts — most accurate)
 const STATE_Q = [
-  { q: 'Q1', label: 'Daily Supply',        pct: 30.95, max: 100, status: 'Critical', insight: 'Only 1 in 3 households · biggest single gap in the BSI' },
-  { q: 'Q2', label: 'Water Quality',        pct: 72.33, max: 100, status: 'Good',     insight: 'Above 70% benchmark · strongest indicator across Assam' },
-  { q: 'Q3', label: 'Water Quantity',       pct: 62.23, max: 100, status: 'Moderate', insight: 'Sufficient for 3 in 5 · supply reaching but volume lacking' },
-  { q: 'Q4', label: 'Consistent Timing',    pct: 57.05, max: 100, status: 'Moderate', insight: 'Only 2,142 of 12,583 answered · low engagement with this Q' },
-  { q: 'Q5', label: 'Overall Satisfaction', pct: 52.12, max: 100, status: 'Moderate', insight: '24.8% dissatisfied · 23.1% neutral · 4,284 total respondents' },
+  { q: 'Q1',  label: 'Daily Supply',        pct: 30.95, max: 100, status: 'Critical', insight: 'Only 1 in 3 households · biggest single gap in the BSI' },
+  { q: 'Q1A', label: 'Consistent Timing',   pct: 57.05, max: 100, status: 'Moderate', insight: 'Follow-up to Q1 · 2,142 of 2,855 Q1=Yes callers answered (75% response)' },
+  { q: 'Q2',  label: 'Water Quality',       pct: 72.33, max: 100, status: 'Good',     insight: 'Above 70% benchmark · strongest indicator across Assam' },
+  { q: 'Q3',  label: 'Water Quantity',      pct: 62.23, max: 100, status: 'Moderate', insight: 'Sufficient for 3 in 5 · supply reaching but volume lacking' },
+  { q: 'Q5',  label: 'Overall Satisfaction',pct: 52.12, max: 100, status: 'Moderate', insight: '24.8% dissatisfied · 23.1% neutral · 4,284 total respondents' },
 ]
+
+const USABLE_TOTAL_RATIO = +(9224 / 45863 * 100).toFixed(1)
 
 function statusColor(s: string) {
   if (s === 'Good')     return { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500', text: 'text-emerald-700' }
@@ -59,10 +77,31 @@ function statusColor(s: string) {
 function fmt(n: number) { return n.toLocaleString() }
 function nav(page: string) { window.dispatchEvent(new CustomEvent('navigate', { detail: page })) }
 
+// ─── BSI helpers ──────────────────────────────────────────────────────────────
+function computeSchemeBsi(
+  q1: number, q1a: number, q2: number, q3: number, q5: number,
+  mode: BsiMode,
+  usablePcts: { q1: number; q1a: number },
+  consentedPcts: { q2: number; q3: number; q5: number },
+): number {
+  if (mode === 'usable')    return (usablePcts.q1*0.75 + usablePcts.q1a*0.75 + q2*1.5 + q3*1.5 + q5*0.5) / 5.0
+  if (mode === 'consented') return (q1*0.75 + q1a*0.75 + consentedPcts.q2*1.5 + consentedPcts.q3*1.5 + consentedPcts.q5*0.5) / 5.0
+  return (q1*0.75 + q1a*0.75 + q2*1.5 + q3*1.5 + q5*0.5) / 5.0
+}
+
+function bsiStatus(bsi5: number) {
+  return bsi5 >= 3.5 ? 'Good' : bsi5 >= 2.0 ? 'Moderate' : 'Critical'
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function OverviewPage() {
   const [scopeType, setScopeType] = useState<'state' | 'zone' | 'district'>('state')
   const [scopeValue, setScopeValue] = useState('')
+  const [schemeList, setSchemeList]     = useState<string[]>([])
+  const [schemeFilter, setSchemeFilter] = useState('')
+  const [schemeStats, setSchemeStats]   = useState<SchemeStats | null>(null)
+  const [loadingSchemes, setLoadingSchemes] = useState(false)
+  const [bsiMode, setBsiMode] = useState<BsiMode>('standard')
 
   // Listen for scope changes from command palette
   useEffect(() => {
@@ -74,6 +113,69 @@ export function OverviewPage() {
     window.addEventListener('setScope', onSetScope)
     return () => window.removeEventListener('setScope', onSetScope)
   }, [])
+
+  // Fetch scheme names when a district is selected
+  useEffect(() => {
+    if (scopeType !== 'district' || !scopeValue) {
+      setSchemeList([]); setSchemeFilter(''); setSchemeStats(null); return
+    }
+    setLoadingSchemes(true)
+    supabase.from('call_records').select('scheme_name').eq('district', scopeValue)
+      .not('scheme_name', 'is', null)
+      .then(({ data }) => {
+        const names = [...new Set((data ?? []).map((r: any) => r.scheme_name as string).filter(Boolean))].sort()
+        setSchemeList(names)
+        setLoadingSchemes(false)
+      })
+  }, [scopeType, scopeValue])
+
+  // Compute scheme-level stats when a scheme is picked
+  useEffect(() => {
+    if (!schemeFilter) { setSchemeStats(null); return }
+    supabase.from('call_records')
+      .select('q1_answer,q2_answer,q3_answer,q4_answer,q5_answer,consented')
+      .eq('scheme_name', schemeFilter)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return
+        const lc = (v: unknown) => String(v ?? '').toLowerCase()
+        const usable    = data.filter((r: any) => ['yes','no'].includes(lc(r.q1_answer)))
+        const consented = data.filter((r: any) => r.consented === true)
+        const q1YesN    = usable.filter((r: any) => lc(r.q1_answer) === 'yes').length
+        const q1Pct     = usable.length ? q1YesN / usable.length : 0
+        const q1YesRows = usable.filter((r: any) => lc(r.q1_answer) === 'yes')
+        const q1aAns    = q1YesRows.filter((r: any) => ['yes','no'].includes(lc(r.q4_answer)))
+        const q1aYesN   = q1aAns.filter((r: any) => lc(r.q4_answer) === 'yes').length
+        const q1aPct    = q1aAns.length ? q1aYesN / q1aAns.length : 0
+        const q2Ans     = consented.filter((r: any) => ['yes','no'].includes(lc(r.q2_answer)))
+        const q2YesN    = q2Ans.filter((r: any) => lc(r.q2_answer) === 'yes').length
+        const q2Pct     = q2Ans.length ? q2YesN / q2Ans.length : 0
+        const q3Ans     = consented.filter((r: any) => ['yes','no'].includes(lc(r.q3_answer)))
+        const q3YesN    = q3Ans.filter((r: any) => lc(r.q3_answer) === 'yes').length
+        const q3Pct     = q3Ans.length ? q3YesN / q3Ans.length : 0
+        const q5Ans     = consented.filter((r: any) => ['satisfied','neutral','dissatisfied'].includes(lc(r.q5_answer)))
+        const q5SatN    = q5Ans.filter((r: any) => lc(r.q5_answer) === 'satisfied').length
+        const q5Pct     = q5Ans.length ? q5SatN / q5Ans.length : 0
+        const bsiStd  = +(( q1Pct*0.75 + q1aPct*0.75 + q2Pct*1.5 + q3Pct*1.5 + q5Pct*0.5) / 5.0).toFixed(4)
+        const bsiUsb  = +((usable.length ? q1Pct : 0)*0.75 + (q1aAns.length ? q1aPct : 0)*0.75 + q2Pct*1.5 + q3Pct*1.5 + q5Pct*0.5) / 5.0
+        const bsiCon  = +(( q1Pct*0.75 + q1aPct*0.75 + q2Pct*1.5 + q3Pct*1.5 + q5Pct*0.5) / 5.0).toFixed(4)
+        setSchemeStats({
+          schemeName: schemeFilter, totalCalls: data.length,
+          usableCalls: usable.length, consentedCalls: consented.length,
+          bsiStandard: bsiStd, bsiUsable: +bsiUsb.toFixed(4), bsiConsented: bsiCon,
+          bsi5: (mode) => {
+            const v = mode === 'usable' ? bsiUsb : mode === 'consented' ? bsiCon : bsiStd
+            return (+(v * 5).toFixed(2)).toString()
+          },
+          status: (mode) => {
+            const v = mode === 'usable' ? bsiUsb : mode === 'consented' ? bsiCon : bsiStd
+            return bsiStatus(+(v * 5).toFixed(2))
+          },
+          q1Pct: +(q1Pct*100).toFixed(1), q1aPct: +(q1aPct*100).toFixed(1),
+          q2Pct: +(q2Pct*100).toFixed(1), q3Pct: +(q3Pct*100).toFixed(1),
+          q5Pct: +(q5Pct*100).toFixed(1),
+        })
+      })
+  }, [schemeFilter])
 
   // Derive all data from current scope
   const scope = useMemo<ScopeData>(() => {
@@ -112,8 +214,6 @@ export function OverviewPage() {
   }, [scopeType, scopeValue])
 
   const isScoped = scopeType !== 'state'
-  const sc = statusColor(scope.status)
-  const gap5 = +(TARGET_5 - +scope.bsi5).toFixed(2)
   const ins = insight(scopeType, scopeValue, scope)
 
   // Build Q bars — component-derived for zone/district, direct % for state
@@ -133,7 +233,16 @@ export function OverviewPage() {
   function handleScopeTypeChange(t: 'state' | 'zone' | 'district') {
     setScopeType(t)
     setScopeValue(t === 'zone' ? ZONE_LIST[0] : t === 'district' ? DISTRICT_LIST[0] : '')
+    setSchemeFilter(''); setSchemeStats(null); setSchemeList([])
   }
+
+  // Active scope for display — scheme overrides district when selected
+  const activeScheme = schemeFilter && schemeStats
+  const activeBsi5   = activeScheme ? schemeStats!.bsi5(bsiMode) : scope.bsi5
+  const activeStatus = activeScheme ? schemeStats!.status(bsiMode) : scope.status
+  const activeSc     = statusColor(activeStatus)
+  const activeLabel  = activeScheme ? schemeStats!.schemeName : scope.label
+  const activeGap5   = +(TARGET_5 - +activeBsi5).toFixed(2)
 
   return (
     <div className="space-y-4">
@@ -151,7 +260,7 @@ export function OverviewPage() {
           ))}
         </div>
 
-        {/* Value dropdown */}
+        {/* Value dropdowns */}
         {scopeType === 'zone' && (
           <select value={scopeValue} onChange={e => setScopeValue(e.target.value)}
             className="px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
@@ -165,44 +274,102 @@ export function OverviewPage() {
           </select>
         )}
 
+        {/* Scheme dropdown — shown when district selected and schemes available */}
+        {scopeType === 'district' && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Scheme</span>
+            {loadingSchemes ? (
+              <span className="text-xs text-gray-400 italic">loading…</span>
+            ) : schemeList.length > 0 ? (
+              <select value={schemeFilter} onChange={e => setSchemeFilter(e.target.value)}
+                className="px-3 py-1.5 text-xs font-semibold border border-blue-200 rounded-lg bg-blue-50 text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <option value="">All schemes</option>
+                {schemeList.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            ) : (
+              <span className="text-xs text-gray-400 italic">no data in call records</span>
+            )}
+          </div>
+        )}
+
+        {/* BSI basis radio — shown when district or scheme selected */}
+        {(scopeType === 'district' || activeScheme) && (
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex-shrink-0">BSI basis</span>
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[10px] font-semibold">
+              {(['standard', 'usable', 'consented'] as BsiMode[]).map(m => (
+                <button key={m} onClick={() => setBsiMode(m)}
+                  className={`px-2 py-1 capitalize transition-colors ${
+                    bsiMode === m ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+                  }`}>
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Breadcrumb label */}
-        <div className="flex items-center gap-2 ml-auto">
-          {isScoped && (
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${sc.badge}`}>
-              {scope.status}
+        {!(scopeType === 'district' || activeScheme) && (
+          <div className="flex items-center gap-2 ml-auto">
+            {isScoped && (
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${activeSc.badge}`}>
+                {activeStatus}
+              </span>
+            )}
+            <span className="text-xs text-gray-400">
+              {scopeType === 'state' ? '45,863 calls · 35 districts · 7 zones'
+               : `${scope.usableCalls ? fmt(scope.usableCalls) : '—'} usable calls · ${scope.validSchemes ?? '—'} valid schemes`}
             </span>
-          )}
-          <span className="text-xs text-gray-400">
-            {scopeType === 'state' ? '45,863 calls · 35 districts · 7 zones'
-             : scopeType === 'zone' ? `${scope.usableCalls ? fmt(scope.usableCalls) : '—'} usable calls · ${scope.validSchemes ?? '—'} valid schemes`
-             : `${scope.usableCalls ? fmt(scope.usableCalls) : '—'} usable calls · ${scope.validSchemes ?? '—'} valid schemes · ${scope.zone}`}
-          </span>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ── KPI strip ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           {
-            value: scope.bsi5 + '/5',
-            label: 'BSI Score',
-            insight: ins.bsi,
-            accent: scope.status === 'Good' ? 'border-l-emerald-500' : scope.status === 'Critical' ? 'border-l-red-500' : 'border-l-amber-500',
-            valueColor: sc.text,
-            badge: scope.status,
+            value: activeBsi5 + '/5',
+            label: activeScheme ? `BSI · ${bsiMode}` : 'BSI Score',
+            insight: activeScheme
+              ? `${bsiMode} basis · ${activeGap5 > 0 ? activeGap5 + ' below target' : 'meets target'}`
+              : ins.bsi,
+            accent: activeStatus === 'Good' ? 'border-l-emerald-500' : activeStatus === 'Critical' ? 'border-l-red-500' : 'border-l-amber-500',
+            valueColor: activeSc.text,
+            badge: activeStatus,
           },
           {
-            value: scopeType === 'state' ? '9,224' : scope.usableCalls ? fmt(scope.usableCalls) : '—',
+            value: activeScheme
+              ? fmt(schemeStats!.usableCalls)
+              : (scopeType === 'state' ? '9,224' : scope.usableCalls ? fmt(scope.usableCalls) : '—'),
             label: 'Usable Calls',
-            insight: ins.calls,
+            insight: activeScheme
+              ? `${fmt(schemeStats!.consentedCalls)} consented · ${fmt(schemeStats!.totalCalls)} total for this scheme`
+              : (scopeType === 'state' ? `${USABLE_TOTAL_RATIO}% of 45,863 dialled · Q1 answered yes or no` : ins.calls),
             accent: 'border-l-blue-500',
             valueColor: 'text-slate-900',
-            badge: scopeType === 'state' ? '45,863 dialled' : `${scope.validSchemes ?? '—'} valid schemes`,
+            badge: activeScheme
+              ? `${fmt(schemeStats!.totalCalls)} total`
+              : (scopeType === 'state' ? `${USABLE_TOTAL_RATIO}% yield` : `${scope.validSchemes ?? '—'} valid schemes`),
           },
           {
-            value: scopeType === 'state' ? '52.1%' : scope.quality ? `${(scope.quality / 1.5 * 100).toFixed(1)}%` : '—',
-            label: scopeType === 'state' ? 'Q5 Satisfied' : 'Water Quality',
-            insight: ins.quality,
+            value: activeScheme ? `${schemeStats!.q5Pct}%` : (scopeType === 'state' ? '4,284' : '—'),
+            label: activeScheme ? 'Q5 Satisfied' : 'Completed Survey',
+            insight: activeScheme
+              ? `Overall satisfaction for ${schemeStats!.schemeName}`
+              : (scopeType === 'state' ? 'Answered Q5 (Overall Satisfaction) · 9.3% of all dialled calls' : 'State-level metric only'),
+            accent: 'border-l-teal-500',
+            valueColor: 'text-slate-900',
+            badge: activeScheme ? '' : (scopeType === 'state' ? '52.1% satisfied' : ''),
+          },
+          {
+            value: activeScheme
+              ? `${schemeStats!.q2Pct}%`
+              : (scopeType === 'state' ? '52.1%' : scope.quality ? `${(scope.quality / 1.5 * 100).toFixed(1)}%` : '—'),
+            label: activeScheme ? 'Water Quality' : (scopeType === 'state' ? 'Q5 Satisfied' : 'Water Quality'),
+            insight: activeScheme
+              ? `Q1: ${schemeStats!.q1Pct}% · Q1A: ${schemeStats!.q1aPct}% · Q3: ${schemeStats!.q3Pct}%`
+              : ins.quality,
             accent: 'border-l-violet-500',
             valueColor: 'text-slate-900',
             badge: scopeType === 'state' ? '4,284 responded' : '',
@@ -227,18 +394,21 @@ export function OverviewPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="panel-title">BSI Score</p>
-              <p className="panel-sub mt-0.5">{scope.label} · Target ≥ 3.50 / 5.0</p>
+              <p className="panel-sub mt-0.5">{activeLabel} · Target ≥ 3.50 / 5.0</p>
             </div>
-            <span className={`badge ${scope.status === 'Good' ? 'badge-good' : scope.status === 'Critical' ? 'badge-critical' : scope.status === 'No Data' ? 'badge-neutral' : 'badge-moderate'}`}>
-              {scope.status}
+            <span className={`badge ${activeStatus === 'Good' ? 'badge-good' : activeStatus === 'Critical' ? 'badge-critical' : activeStatus === 'No Data' ? 'badge-neutral' : 'badge-moderate'}`}>
+              {activeStatus}
             </span>
           </div>
 
           {/* Score bar */}
           <div className="mb-4">
             <div className="flex items-end gap-2 mb-2">
-              <span className={`text-4xl font-black ${sc.text}`}>{scope.bsi5}</span>
+              <span className={`text-4xl font-black ${activeSc.text}`}>{activeBsi5}</span>
               <span className="text-base text-gray-400 mb-0.5">/ 5.0</span>
+              {activeScheme && (
+                <span className="text-[10px] font-semibold text-blue-500 mb-1 ml-1 capitalize">{bsiMode} basis</span>
+              )}
             </div>
             <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
               <div className="absolute inset-0 flex">
@@ -246,8 +416,8 @@ export function OverviewPage() {
                 <div className="h-full bg-amber-100" style={{ width: '30%' }} />
                 <div className="h-full bg-emerald-100 flex-1" />
               </div>
-              <div className={`absolute inset-y-0 left-0 h-full ${sc.bar} rounded-full transition-all duration-500`}
-                style={{ width: `${(+scope.bsi5 / 5) * 100}%` }} />
+              <div className={`absolute inset-y-0 left-0 h-full ${activeSc.bar} rounded-full transition-all duration-500`}
+                style={{ width: `${(+activeBsi5 / 5) * 100}%` }} />
               <div className="absolute top-0 bottom-0 w-0.5 bg-emerald-500/60" style={{ left: '70%' }} />
             </div>
             <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -257,8 +427,30 @@ export function OverviewPage() {
             </div>
           </div>
 
-          {/* Component contributions */}
-          {(scope.quality || scope.quantity) && (
+          {/* Scheme-level Q breakdown */}
+          {activeScheme && (
+            <div className="space-y-2 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-400 font-medium">Q breakdown for this scheme</p>
+              {[
+                { label: 'Q1 Daily',    pct: schemeStats!.q1Pct,  color: 'bg-red-400',     max: 100 },
+                { label: 'Q1A Timing',  pct: schemeStats!.q1aPct, color: 'bg-orange-400',  max: 100 },
+                { label: 'Q2 Quality',  pct: schemeStats!.q2Pct,  color: 'bg-emerald-400', max: 100 },
+                { label: 'Q3 Quantity', pct: schemeStats!.q3Pct,  color: 'bg-blue-400',    max: 100 },
+                { label: 'Q5 Overall',  pct: schemeStats!.q5Pct,  color: 'bg-violet-400',  max: 100 },
+              ].map(c => (
+                <div key={c.label} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-20 flex-shrink-0">{c.label}</span>
+                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${c.color} rounded-full`} style={{ width: `${c.pct}%` }} />
+                  </div>
+                  <span className="text-xs font-mono text-gray-500 w-10 text-right">{c.pct}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Component contributions (zone/district static data) */}
+          {!activeScheme && (scope.quality || scope.quantity) && (
             <div className="space-y-2 pt-3 border-t border-gray-100">
               <p className="text-xs text-gray-400 font-medium">BSI components</p>
               {[
@@ -281,7 +473,7 @@ export function OverviewPage() {
           {scopeType !== 'state' && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <p className="text-xs text-gray-400">
-                {scopeType === 'district' ? 'Q4 & Q5 not available at district level' : 'Q4 & Q5 not available at zone level'}
+                {scopeType === 'district' ? 'Q1A & Q5 not available at district level' : 'Q1A & Q5 not available at zone level'}
               </p>
             </div>
           )}
@@ -379,8 +571,9 @@ export function OverviewPage() {
                 const bsi5 = ((row.bsi ?? 0) * 5).toFixed(2)
                 const rc = statusColor(row.status ?? 'Moderate')
                 const isSelected = scopeType === 'district' && row.district === scopeValue
+                const rowLabel = scopeType === 'state' ? row.zone : (row.district ?? row.zone)
                 return (
-                  <tr key={row.zone ?? row.district}
+                  <tr key={rowLabel}
                     onClick={() => {
                       if (row.district) {
                         setScopeType('district')
@@ -391,7 +584,7 @@ export function OverviewPage() {
                       row.district ? 'cursor-pointer hover:bg-blue-50/40' : ''
                     } ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : ''}`}>
                     <td className="td">
-                      <span className="font-semibold text-gray-800 text-xs">{row.zone ?? row.district}</span>
+                      <span className="font-semibold text-gray-800 text-xs">{rowLabel}</span>
                       {isSelected && <span className="ml-2 text-[10px] text-blue-500 font-bold">← selected</span>}
                     </td>
                     <td className="td-mono text-right">

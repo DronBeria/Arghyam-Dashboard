@@ -84,7 +84,7 @@ function buildIndex(): Item[] {
     ['Q1 Daily Water',   '30.95% Yes — Critical, only 1 in 3 households', 'survey'],
     ['Q2 Water Quality', '72.33% Yes — Good, above 70% benchmark',        'survey'],
     ['Q3 Water Quantity','62.23% Yes — Moderate',                         'survey'],
-    ['Q4 Fixed Timing',  '57.05% Yes — Moderate',                         'survey'],
+    ['Q1A Consistent Timing', '57.05% Yes — Moderate · follow-up to Q1', 'survey'],
     ['Q5 Satisfaction',  '52.12% satisfied · 24.8% dissatisfied',         'survey'],
     ['Valid Schemes',    '615 of 2,373 — 17.6% functional',               'schemes'],
     ['Non-functional',   '507 of 615 valid schemes failing',               'schemes'],

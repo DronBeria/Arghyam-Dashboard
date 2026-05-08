@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 
 interface HeaderProps {
   pageTitle: string
+  phase?: 'phase1' | 'phase2'
   onNavigate: (page: string) => void
   userEmail?: string
 }
@@ -30,7 +31,7 @@ const QUICK_LINKS = [
   },
 ]
 
-export function Header({ pageTitle, onNavigate, userEmail }: HeaderProps) {
+export function Header({ pageTitle, phase = 'phase1', onNavigate, userEmail }: HeaderProps) {
   const [open, setOpen] = useState(false)
   const [showDownload, setShowDownload] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -50,10 +51,17 @@ export function Header({ pageTitle, onNavigate, userEmail }: HeaderProps) {
         {/* Right controls */}
         <div className="flex items-center gap-3">
 
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Live · Apr 2026</span>
-          </div>
+          {phase === 'phase1' ? (
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Phase 1 · Apr 2026</span>
+            </div>
+          ) : (
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide">Phase 2 · Awaiting data</span>
+            </div>
+          )}
 
           {/* Download */}
           <button onClick={() => setShowDownload(true)}

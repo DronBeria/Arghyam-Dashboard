@@ -6,7 +6,7 @@ export function QuestionFunnel() {
   return (
     <div>
       <h2 className="section-title">8. Question Response Funnel</h2>
-      <p className="section-sub">How many answered each question · Questions are NOT strictly sequential · Independent bases</p>
+      <p className="section-sub">How many answered each question · Q1A is a follow-up to Q1 (base = Q1=Yes callers) · Q2, Q3, Q5 use consented base</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Visual funnel */}
@@ -80,7 +80,7 @@ export function QuestionFunnel() {
           </table>
           <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 leading-relaxed">
             <span className="font-semibold text-gray-700">Note on bases: </span>
-            Q1 base = 9,224 usable calls. Q2–Q5 base = 12,583 consented calls — not all answered every question.
+            Q1 base = 9,224 usable calls. Q1A base = 2,855 (Q1=Yes callers only — follow-up question). Q2, Q3, Q5 base = 12,583 consented calls.
           </div>
         </div>
       </div>
