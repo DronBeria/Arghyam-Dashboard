@@ -220,7 +220,7 @@ function CallSummaryTab() {
                 { label: 'Consented (said Yes)',      count: 12583, pct: 27.4,  note: 'Agreed to participate · base for Q2, Q3, Q5',                           bold: false },
                 { label: 'Did NOT consent',           count: 33280, pct: 72.6,  note: 'Refused, hung up, or no response',                                      bold: false },
                 { label: 'Usable calls (Q1 answered)',count: 9224,  pct: 20.1,  note: '8,327 consented + 897 refused-but-answered · base for Q1 & Q1A in BSI', bold: true  },
-                { label: 'Completed survey (Q5)',     count: 4284,  pct: 9.3,   note: 'Answered Q5 Overall Satisfaction · highest data quality',                bold: false },
+                { label: 'Completed survey (Q5)',     count: 4410,  pct: 9.6,   note: 'Reached Q5 Overall Satisfaction · 4,284 consented + 126 non-consented who answered Q5', bold: false },
                 { label: 'Completed all 5 questions', count: 1578,  pct: 3.4,   note: 'Answered every question Q1 through Q5',                                  bold: false },
               ].map((row, i) => (
                 <tr key={i} className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/50 ${row.bold ? 'bg-slate-50/80' : ''}`}>

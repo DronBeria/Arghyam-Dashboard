@@ -62,7 +62,7 @@ const STATE_Q = [
   { q: 'Q1A', label: 'Consistent Timing',   pct: 57.05, max: 100, status: 'Moderate', insight: 'Follow-up to Q1 · 2,142 of 2,855 Q1=Yes callers answered (75% response)' },
   { q: 'Q2',  label: 'Water Quality',       pct: 72.33, max: 100, status: 'Good',     insight: 'Above 70% benchmark · strongest indicator across Assam' },
   { q: 'Q3',  label: 'Water Quantity',      pct: 62.23, max: 100, status: 'Moderate', insight: 'Sufficient for 3 in 5 · supply reaching but volume lacking' },
-  { q: 'Q5',  label: 'Overall Satisfaction',pct: 52.12, max: 100, status: 'Moderate', insight: '24.8% dissatisfied · 23.1% neutral · 4,284 total respondents' },
+  { q: 'Q5',  label: 'Overall Satisfaction',pct: 51.7,  max: 100, status: 'Moderate', insight: '25.6% dissatisfied · 22.7% neutral · 4,410 total respondents' },
 ]
 
 const USABLE_TOTAL_RATIO = +(9224 / 45863 * 100).toFixed(1)
@@ -366,7 +366,7 @@ export function OverviewPage() {
               : (scopeType === 'state' ? 'Answered Q5 (Overall Satisfaction) · 9.3% of all dialled calls' : 'State-level metric only'),
             accent: 'border-l-teal-500',
             valueColor: 'text-slate-900',
-            badge: activeScheme ? '' : (scopeType === 'state' ? '52.1% satisfied' : ''),
+            badge: activeScheme ? '' : (scopeType === 'state' ? '51.7% satisfied' : ''),
           },
           {
             value: activeScheme
@@ -378,7 +378,7 @@ export function OverviewPage() {
               : ins.quality,
             accent: 'border-l-violet-500',
             valueColor: 'text-slate-900',
-            badge: scopeType === 'state' ? '4,284 responded' : '',
+            badge: scopeType === 'state' ? '4,410 responded' : '',
           },
         ].map(k => (
           <div key={k.label} className={`card p-4 border-l-4 ${k.accent}`}>
