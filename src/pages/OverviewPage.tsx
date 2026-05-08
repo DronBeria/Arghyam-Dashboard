@@ -593,7 +593,7 @@ export function OverviewPage() {
                 const isSelected = scopeType === 'district' && scopeValue && row.district === scopeValue
                 const rowLabel = scopeType === 'state' ? row.zone : (row.district ?? row.zone)
                 return (
-                  <tr key={row.zone ?? '' + row.district ?? rowLabel}
+                  <tr key={`${row.zone ?? ''}-${row.district ?? ''}`}
                     onClick={() => {
                       if (row.district) {
                         setScopeType('district')
