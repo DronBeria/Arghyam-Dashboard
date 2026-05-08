@@ -55,7 +55,7 @@ app = FastAPI(title="JJM Phase 2 Data Pipeline", version="1.0.0", lifespan=lifes
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten to your Vercel URL in production
+    allow_origins=["https://arghyam-dashboard.vercel.app"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
