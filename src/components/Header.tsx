@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { DownloadModal } from './DownloadModal'
 import { supabase } from '../lib/supabase'
 
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:8000'
+
 interface HeaderProps {
   pageTitle: string
   phase?: 'phase1' | 'phase2'
@@ -32,9 +34,32 @@ const QUICK_LINKS = [
 ]
 
 export function Header({ pageTitle, phase = 'phase1', onNavigate, userEmail }: HeaderProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen]               = useState(false)
   const [showDownload, setShowDownload] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [showInvite, setShowInvite]   = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [inviteMsg, setInviteMsg]     = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault()
+    setInviteLoading(true); setInviteMsg(null)
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Invite failed')
+      setInviteMsg({ type: 'ok', text: `Invite sent to ${inviteEmail}` })
+      setInviteEmail('')
+    } catch (err: any) {
+      setInviteMsg({ type: 'err', text: err.message })
+    }
+    setInviteLoading(false)
+  }
 
   return (
     <>
@@ -121,21 +146,69 @@ export function Header({ pageTitle, phase = 'phase1', onNavigate, userEmail }: H
           {/* User */}
           {userEmail && (
             <div className="relative">
-              <button onClick={() => { setUserMenuOpen(v => !v); setOpen(false) }}
+              <button onClick={() => { setUserMenuOpen(v => !v); setOpen(false); setShowInvite(false) }}
                 className="flex items-center gap-2 py-1 pl-1 pr-2.5 rounded-full border border-slate-200 hover:border-slate-300 bg-white transition-colors">
                 <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold">
                   {userEmail.charAt(0).toUpperCase()}
                 </div>
                 <span className="text-[11px] font-semibold text-slate-600 max-w-[100px] truncate hidden sm:block">{userEmail.split('@')[0]}</span>
               </button>
+
               {userMenuOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl border border-slate-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.1)] z-50 overflow-hidden">
+                  <div className="fixed inset-0 z-40" onClick={() => { setUserMenuOpen(false); setShowInvite(false); setInviteMsg(null) }} />
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl border border-slate-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.1)] z-50 overflow-hidden">
+
+                    {/* Account header */}
                     <div className="px-3 py-2.5 border-b border-slate-100">
                       <p className="panel-label">Account</p>
                       <p className="text-[11px] text-slate-600 truncate font-medium mt-1">{userEmail}</p>
                     </div>
+
+                    {/* Invite User */}
+                    <div className="border-b border-slate-100">
+                      <button
+                        onClick={() => { setShowInvite(v => !v); setInviteMsg(null) }}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors text-left"
+                      >
+                        <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                        Invite User
+                        <svg className={`w-3 h-3 ml-auto transition-transform ${showInvite ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+                      </button>
+
+                      {showInvite && (
+                        <form onSubmit={handleInvite} className="px-3 pb-3 space-y-2">
+                          <input
+                            type="email"
+                            required
+                            value={inviteEmail}
+                            onChange={e => setInviteEmail(e.target.value)}
+                            placeholder="colleague@araghyam.org"
+                            className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2
+                              placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          {inviteMsg && (
+                            <p className={`text-[11px] font-medium ${inviteMsg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>
+                              {inviteMsg.type === 'ok' ? '✓ ' : '⚠ '}{inviteMsg.text}
+                            </p>
+                          )}
+                          <button
+                            type="submit"
+                            disabled={inviteLoading}
+                            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 text-white text-[11px] font-semibold
+                              py-2 rounded-lg transition-all flex items-center justify-center gap-1.5"
+                          >
+                            {inviteLoading
+                              ? <><span className="animate-spin">⟳</span> Sending…</>
+                              : 'Send Invite'}
+                          </button>
+                        </form>
+                      )}
+                    </div>
+
+                    {/* Sign out */}
                     <button onClick={() => { supabase.auth.signOut(); setUserMenuOpen(false) }}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold text-red-600 hover:bg-red-50 transition-colors text-left">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7"/></svg>

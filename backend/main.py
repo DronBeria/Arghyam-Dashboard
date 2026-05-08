@@ -67,6 +67,19 @@ def health():
     return {"status": "ok", "version": "1.0.0"}
 
 
+# ── Invite user ───────────────────────────────────────────────────────────────
+@app.post("/api/invite")
+async def invite_user(body: dict):
+    email = (body.get("email") or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Valid email required.")
+    try:
+        supabase.auth.admin.invite_user_by_email(email)
+        return {"invited": email}
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 # ── Upload ────────────────────────────────────────────────────────────────────
 @app.post("/api/upload")
 async def upload_csv(file: UploadFile, background_tasks: BackgroundTasks):
