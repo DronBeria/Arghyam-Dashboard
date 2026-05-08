@@ -77,20 +77,12 @@ function statusColor(s: string) {
 function fmt(n: number) { return n.toLocaleString() }
 function nav(page: string) { window.dispatchEvent(new CustomEvent('navigate', { detail: page })) }
 
-// ─── BSI helpers ──────────────────────────────────────────────────────────────
-function computeSchemeBsi(
-  q1: number, q1a: number, q2: number, q3: number, q5: number,
-  mode: BsiMode,
-  usablePcts: { q1: number; q1a: number },
-  consentedPcts: { q2: number; q3: number; q5: number },
-): number {
-  if (mode === 'usable')    return (usablePcts.q1*0.75 + usablePcts.q1a*0.75 + q2*1.5 + q3*1.5 + q5*0.5) / 5.0
-  if (mode === 'consented') return (q1*0.75 + q1a*0.75 + consentedPcts.q2*1.5 + consentedPcts.q3*1.5 + consentedPcts.q5*0.5) / 5.0
-  return (q1*0.75 + q1a*0.75 + q2*1.5 + q3*1.5 + q5*0.5) / 5.0
-}
-
 function bsiStatus(bsi5: number) {
   return bsi5 >= 3.5 ? 'Good' : bsi5 >= 2.0 ? 'Moderate' : 'Critical'
+}
+
+function calcBsi(q1: number, q1a: number, q2: number, q3: number, q5: number) {
+  return +((q1*0.75 + q1a*0.75 + q2*1.5 + q3*1.5 + q5*0.5) / 5.0).toFixed(4)
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -138,30 +130,49 @@ export function OverviewPage() {
       .then(({ data }) => {
         if (!data || data.length === 0) return
         const lc = (v: unknown) => String(v ?? '').toLowerCase()
+
+        // ── Subsets ──
         const usable    = data.filter((r: any) => ['yes','no'].includes(lc(r.q1_answer)))
         const consented = data.filter((r: any) => r.consented === true)
-        const q1YesN    = usable.filter((r: any) => lc(r.q1_answer) === 'yes').length
-        const q1Pct     = usable.length ? q1YesN / usable.length : 0
-        const q1YesRows = usable.filter((r: any) => lc(r.q1_answer) === 'yes')
-        const q1aAns    = q1YesRows.filter((r: any) => ['yes','no'].includes(lc(r.q4_answer)))
-        const q1aYesN   = q1aAns.filter((r: any) => lc(r.q4_answer) === 'yes').length
-        const q1aPct    = q1aAns.length ? q1aYesN / q1aAns.length : 0
-        const q2Ans     = consented.filter((r: any) => ['yes','no'].includes(lc(r.q2_answer)))
-        const q2YesN    = q2Ans.filter((r: any) => lc(r.q2_answer) === 'yes').length
-        const q2Pct     = q2Ans.length ? q2YesN / q2Ans.length : 0
-        const q3Ans     = consented.filter((r: any) => ['yes','no'].includes(lc(r.q3_answer)))
-        const q3YesN    = q3Ans.filter((r: any) => lc(r.q3_answer) === 'yes').length
-        const q3Pct     = q3Ans.length ? q3YesN / q3Ans.length : 0
-        const q5Ans     = consented.filter((r: any) => ['satisfied','neutral','dissatisfied'].includes(lc(r.q5_answer)))
-        const q5SatN    = q5Ans.filter((r: any) => lc(r.q5_answer) === 'satisfied').length
-        const q5Pct     = q5Ans.length ? q5SatN / q5Ans.length : 0
-        const bsiStd  = +(( q1Pct*0.75 + q1aPct*0.75 + q2Pct*1.5 + q3Pct*1.5 + q5Pct*0.5) / 5.0).toFixed(4)
-        const bsiUsb  = +((usable.length ? q1Pct : 0)*0.75 + (q1aAns.length ? q1aPct : 0)*0.75 + q2Pct*1.5 + q3Pct*1.5 + q5Pct*0.5) / 5.0
-        const bsiCon  = +(( q1Pct*0.75 + q1aPct*0.75 + q2Pct*1.5 + q3Pct*1.5 + q5Pct*0.5) / 5.0).toFixed(4)
+        const conQ1yes  = consented.filter((r: any) => lc(r.q1_answer) === 'yes')
+
+        // ── Standard mode pcts (Q1/Q1A = usable base, Q2/Q3/Q5 = consented base) ──
+        const q1YesN  = usable.filter((r: any) => lc(r.q1_answer) === 'yes').length
+        const q1Pct   = usable.length ? q1YesN / usable.length : 0
+        const q1YesU  = usable.filter((r: any) => lc(r.q1_answer) === 'yes')
+        const q1aAns  = q1YesU.filter((r: any) => ['yes','no'].includes(lc(r.q4_answer)))
+        const q1aYesN = q1aAns.filter((r: any) => lc(r.q4_answer) === 'yes').length
+        const q1aPct  = q1aAns.length ? q1aYesN / q1aAns.length : 0
+        const q2Ans   = consented.filter((r: any) => ['yes','no'].includes(lc(r.q2_answer)))
+        const q2Pct   = q2Ans.length ? q2Ans.filter((r: any) => lc(r.q2_answer) === 'yes').length / q2Ans.length : 0
+        const q3Ans   = consented.filter((r: any) => ['yes','no'].includes(lc(r.q3_answer)))
+        const q3Pct   = q3Ans.length ? q3Ans.filter((r: any) => lc(r.q3_answer) === 'yes').length / q3Ans.length : 0
+        const q5Ans   = consented.filter((r: any) => ['satisfied','neutral','dissatisfied'].includes(lc(r.q5_answer)))
+        const q5Pct   = q5Ans.length ? q5Ans.filter((r: any) => lc(r.q5_answer) === 'satisfied').length / q5Ans.length : 0
+
+        // ── Usable mode pcts (Q2/Q3/Q5 recalculated from anyone who answered, not just consented) ──
+        const q2AnsU  = data.filter((r: any) => ['yes','no'].includes(lc(r.q2_answer)))
+        const q2PctU  = q2AnsU.length ? q2AnsU.filter((r: any) => lc(r.q2_answer) === 'yes').length / q2AnsU.length : 0
+        const q3AnsU  = data.filter((r: any) => ['yes','no'].includes(lc(r.q3_answer)))
+        const q3PctU  = q3AnsU.length ? q3AnsU.filter((r: any) => lc(r.q3_answer) === 'yes').length / q3AnsU.length : 0
+        const q5AnsU  = data.filter((r: any) => ['satisfied','neutral','dissatisfied'].includes(lc(r.q5_answer)))
+        const q5PctU  = q5AnsU.length ? q5AnsU.filter((r: any) => lc(r.q5_answer) === 'satisfied').length / q5AnsU.length : 0
+
+        // ── Consented mode pcts (Q1/Q1A recalculated from consented-only base) ──
+        const q1AnsC  = consented.filter((r: any) => ['yes','no'].includes(lc(r.q1_answer)))
+        const q1PctC  = q1AnsC.length ? q1AnsC.filter((r: any) => lc(r.q1_answer) === 'yes').length / q1AnsC.length : 0
+        const q1aAnsC = conQ1yes.filter((r: any) => ['yes','no'].includes(lc(r.q4_answer)))
+        const q1aPctC = q1aAnsC.length ? q1aAnsC.filter((r: any) => lc(r.q4_answer) === 'yes').length / q1aAnsC.length : 0
+
+        // ── BSI per mode ──
+        const bsiStd = calcBsi(q1Pct,  q1aPct,  q2Pct,  q3Pct,  q5Pct)   // standard
+        const bsiUsb = calcBsi(q1Pct,  q1aPct,  q2PctU, q3PctU, q5PctU)   // usable: Q2/Q3/Q5 from all-callers
+        const bsiCon = calcBsi(q1PctC, q1aPctC, q2Pct,  q3Pct,  q5Pct)   // consented: Q1/Q1A from consented-only
+
         setSchemeStats({
           schemeName: schemeFilter, totalCalls: data.length,
           usableCalls: usable.length, consentedCalls: consented.length,
-          bsiStandard: bsiStd, bsiUsable: +bsiUsb.toFixed(4), bsiConsented: bsiCon,
+          bsiStandard: bsiStd, bsiUsable: bsiUsb, bsiConsented: bsiCon,
           bsi5: (mode) => {
             const v = mode === 'usable' ? bsiUsb : mode === 'consented' ? bsiCon : bsiStd
             return (+(v * 5).toFixed(2)).toString()
