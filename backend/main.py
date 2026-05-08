@@ -1,13 +1,16 @@
 """
 JJM Phase 2 Data Pipeline — FastAPI Backend
-Deploy on Railway: railway up
-Run locally:       uvicorn main:app --reload --port 8000
+Deploy on Render: push to main branch
+Run locally:      uvicorn main:app --reload --port 8000
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import asyncio
+import httpx
 import os
 import uuid
 
@@ -24,7 +27,31 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-app = FastAPI(title="JJM Phase 2 Data Pipeline", version="1.0.0")
+
+# ── Keep-alive loop (prevents Render free-tier spin-down) ─────────────────────
+async def _keep_alive():
+    """Ping own /health every 10 minutes so Render never marks the service idle."""
+    # Wait 30s after startup before first ping (let the server fully boot)
+    await asyncio.sleep(30)
+    port = os.environ.get("PORT", "8000")
+    url  = f"http://localhost:{port}/health"
+    async with httpx.AsyncClient(timeout=10) as client:
+        while True:
+            try:
+                await client.get(url)
+            except Exception:
+                pass   # silently ignore — server will retry next cycle
+            await asyncio.sleep(600)   # 10 minutes
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    task = asyncio.create_task(_keep_alive())
+    yield
+    task.cancel()
+
+
+app = FastAPI(title="JJM Phase 2 Data Pipeline", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
