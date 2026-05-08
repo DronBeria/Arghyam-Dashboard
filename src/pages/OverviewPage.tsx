@@ -123,7 +123,7 @@ export function OverviewPage() {
 
   // Compute scheme-level stats when a scheme is picked
   useEffect(() => {
-    if (!schemeFilter) { setSchemeStats(null); return }
+    if (!schemeFilter) { setSchemeStats(null); setBsiMode('standard'); return }
     supabase.from('call_records')
       .select('q1_answer,q2_answer,q3_answer,q4_answer,q5_answer,consented')
       .eq('scheme_name', schemeFilter)
@@ -309,8 +309,8 @@ export function OverviewPage() {
           </div>
         )}
 
-        {/* BSI basis radio — shown when district or scheme selected */}
-        {(scopeType === 'district' || activeScheme) && (
+        {/* BSI basis radio — only active when a scheme is selected */}
+        {activeScheme ? (
           <div className="flex items-center gap-1.5 ml-auto">
             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex-shrink-0">BSI basis</span>
             <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[10px] font-semibold">
@@ -324,7 +324,9 @@ export function OverviewPage() {
               ))}
             </div>
           </div>
-        )}
+        ) : scopeType === 'district' && schemeList.length > 0 ? (
+          <p className="text-[10px] text-gray-400 ml-auto italic">Select a scheme above to compare BSI bases</p>
+        ) : null}
 
         {/* Breadcrumb label */}
         {!(scopeType === 'district' || activeScheme) && (
@@ -382,7 +384,7 @@ export function OverviewPage() {
           {
             value: activeScheme
               ? `${schemeStats!.q2Pct}%`
-              : (scopeType === 'state' ? '52.1%' : scope.quality ? `${(scope.quality / 1.5 * 100).toFixed(1)}%` : '—'),
+              : (scopeType === 'state' ? '51.7%' : scope.quality ? `${(scope.quality / 1.5 * 100).toFixed(1)}%` : '—'),
             label: activeScheme ? 'Water Quality' : (scopeType === 'state' ? 'Q5 Satisfied' : 'Water Quality'),
             insight: activeScheme
               ? `Q1: ${schemeStats!.q1Pct}% · Q1A: ${schemeStats!.q1aPct}% · Q3: ${schemeStats!.q3Pct}%`
