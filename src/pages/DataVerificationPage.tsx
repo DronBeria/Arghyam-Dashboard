@@ -482,16 +482,17 @@ Q4 yes%+no%: 57.05%+42.95% = 100.00%`} />
       <Card>
         <ProofHeader
           n="R"
-          title="Phase 1 Data Reconciliation — CSV vs Dashboard"
-          sub="CSAT_AI_Ph1_Final_Scores_v22.csv compared against dashboard · May 2026 · 6 discrepancies found and resolved"
+          title="Phase 1 Data Reconciliation — Two-Round Verification"
+          sub="Round 1: CSAT_AI_Ph1_Final_Scores_v22.csv · Round 2: CSAT_AI_.xlsb (authoritative source) · May 2026"
         />
         <div className="p-5 space-y-5">
 
-          {/* Intro */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800 leading-relaxed">
-            <span className="font-bold">Source compared:</span> <span className="font-mono">CSAT_AI_Ph1_Final_Scores_v22.csv</span> — the official Phase 1 summary dashboard provided by the data team.
-            Every number in that file was matched against the dashboard. 6 discrepancies were found, verified, and corrected.
-            2 were methodology differences (no code change). 4 required data updates.
+          {/* Process explanation */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800 leading-relaxed space-y-2">
+            <p><span className="font-bold">Round 1:</span> <span className="font-mono">CSAT_AI_Ph1_Final_Scores_v22.csv</span> — a summary dashboard file showing aggregated KPIs and zone usable call counts.
+            This file uses <em>all usable calls per zone</em> (totalling 9,224) for its zone-level figures, which differs from the BSI computation methodology.</p>
+            <p><span className="font-bold">Round 2:</span> <span className="font-mono">CSAT_AI_.xlsb</span> — the authoritative calculation workbook containing the full scoring matrix, all 615 valid scheme BSIs, and the district/zone/state rollup table.
+            This file confirms the original dashboard zone values (5,346 valid-scheme calls) and state BSI (0.4406). Round 1 changes to zone data were reverted.</p>
           </div>
 
           {/* Discrepancy table */}
@@ -501,74 +502,69 @@ Q4 yes%+no%: 57.05%+42.95% = 100.00%`} />
                 <tr className="border-b border-slate-200 bg-slate-50">
                   <th className="th text-left w-6">#</th>
                   <th className="th text-left">Metric</th>
-                  <th className="th text-right">CSV value</th>
-                  <th className="th text-right">Old dashboard</th>
-                  <th className="th text-center">Resolution</th>
-                  <th className="th text-left hidden md:table-cell">Root cause</th>
+                  <th className="th text-right">Authoritative value (xlsb)</th>
+                  <th className="th text-right">Was wrong / changed to</th>
+                  <th className="th text-center">Status</th>
+                  <th className="th text-left hidden md:table-cell">Explanation</th>
                 </tr>
               </thead>
               <tbody>
                 {[
                   {
-                    n: 1, metric: 'Zone usable calls (all 6 zones)', severity: 'critical',
-                    csv: '9,224 across all zones',
-                    old: '5,346 (missing 3,878 calls)',
-                    resolution: 'Fixed — updated all zones', action: 'fixed',
-                    cause: 'Dashboard only counted calls matched to valid scheme records. Calls not linked to a scheme were excluded from zone totals.',
+                    n: 1, metric: 'State BSI', action: 'confirmed',
+                    correct: '0.4406 / 2.20 (xlsb row 659)',
+                    change: 'Was 0.4406 ✓ — CSV showed 2.32 (different method)',
+                    cause: 'xlsb uses per-call scoring via valid schemes (5,346 calls). The CSV\'s 2.32 was computed from all usable calls (9,224) with a different aggregation. Dashboard correctly shows 0.4406.',
                   },
                   {
-                    n: 2, metric: 'BTAD & Barak Valley BSI + status', severity: 'high',
-                    csv: 'BTAD 0.440 (Moderate) · BV 0.428 (Moderate)',
-                    old: 'BTAD 0.384 (Critical) · BV 0.379 (Critical)',
-                    resolution: 'Fixed — status Critical → Moderate', action: 'fixed',
-                    cause: 'BSI was computed from incomplete zone usable call counts (see #1). BTAD missing 221 calls, Barak Valley missing 720 calls.',
+                    n: 2, metric: 'Zone usable calls (all zones)', action: 'confirmed',
+                    correct: '5,346 total · BTAD 142 · BV 339 · N.Assam 2,330 etc.',
+                    change: 'Was correct ✓ — CSV showed 9,224 (different metric)',
+                    cause: 'BSI counts only valid-scheme calls (615 schemes, ≥6 usable each). The CSV\'s 9,224 zone total includes all usable calls regardless of scheme validity — a different metric, not a correction.',
                   },
                   {
-                    n: 3, metric: 'DHAC zone', severity: 'high',
-                    csv: '1 usable call · BSI 0.300 · Critical',
-                    old: 'null / No Data',
-                    resolution: 'Fixed — DHAC now shows as Critical', action: 'fixed',
-                    cause: 'DHAC was not populated because it had no valid scheme matches. CSV confirms 1 usable call with BSI 0.300.',
+                    n: 3, metric: 'BTAD & Barak Valley status', action: 'confirmed',
+                    correct: 'BTAD 0.3841 Critical · Barak Valley 0.3789 Critical',
+                    change: 'Was correct ✓ — erroneously changed to Moderate in Round 1',
+                    cause: 'xlsb row 653–654 confirms both zones are Critical. The erroneous Round 1 fix used incorrect zone usable call counts.',
                   },
                   {
-                    n: 4, metric: 'State BSI', severity: 'medium',
-                    csv: '0.4635 / 2.32 (zone-weighted avg)',
-                    old: '0.4406 / 2.20',
-                    resolution: 'Fixed — updated to zone-weighted method', action: 'fixed',
-                    cause: 'Dashboard used a scheme-level average. CSV uses zone-weighted average: Σ(zone_bsi × zone_usable_calls) / 9,224 = 0.4635. Verified by calculation.',
+                    n: 4, metric: 'Q5 base, counts, 3-way split', action: 'fixed',
+                    correct: 'base 4,410 · satisfied 2,281 · neutral 1,002 · dissatisfied 1,127',
+                    change: 'Was base 4,284 · 2,233 / 990 / 1,061',
+                    cause: '126 non-consented callers reached and answered Q5. xlsb funnel confirms 4,410 total reached Q5. Dashboard now uses 4,410 as base — correct for the satisfaction metric.',
                   },
                   {
-                    n: 5, metric: 'Q5 base, counts, and 3-way split', severity: 'medium',
-                    csv: 'base 4,410 · satisfied 2,281 · neutral 1,002 · dissatisfied 1,127',
-                    old: 'base 4,284 · satisfied 2,233 · neutral 990 · dissatisfied 1,061',
-                    resolution: 'Fixed — updated to full Q5 population', action: 'fixed',
-                    cause: '126 non-consented callers answered Q5 but were excluded from the consented-only base. CSV counts all 4,410 who reached Q5 regardless of consent — correct for the overall satisfaction metric.',
+                    n: 5, metric: 'Q1A counts', action: 'fixed',
+                    correct: '1,289 yes · 965 no · base 2,254 · 57.2% · bot missed 601 (21%)',
+                    change: 'Was 1,222 / 920 / 2,142 (consented only) → updated twice',
+                    cause: 'xlsb Survey Funnel confirms 2,254 answered Q1A of 2,855 eligible, with bot failing to ask 601 (21%). Dashboard now uses 2,254 (all Q1=Yes answerers, not consented-only).',
                   },
                   {
-                    n: 6, metric: 'Q1A raw counts', severity: 'low',
-                    csv: '1,297 yes · 987 no · base 2,284 · 56.8%',
-                    old: '1,222 yes · 920 no · base 2,142 · 57.1%',
-                    resolution: 'Fixed — updated to CSV counts', action: 'fixed',
-                    cause: 'Dashboard used a stricter filter. CSV note: "Bot failed to ask 571 of 2,855 Q1=Yes callers (20%) who should have received Q1A." Both give ~57% satisfaction rate.',
+                    n: 6, metric: '"Satisfied" headline methodology', action: 'kept',
+                    correct: '51.7% of Q5 respondents (xlsb also documents 26.0% of usable)',
+                    change: 'Kept at 51.7% (Q5-respondent base)',
+                    cause: 'Dashboard correctly uses Q5-respondent base (51.7%) — the survey satisfaction rate. The xlsb explicitly notes both figures. The 26% penalises for call drop-off which is a reach metric, not a quality metric.',
                   },
                   {
-                    n: 7, metric: '"Satisfied" headline — methodology', severity: 'info',
-                    csv: '26.0% (of 9,224 usable calls) · also notes 51.7% (of Q5 respondents)',
-                    old: '52.1% (of Q5 respondents)',
-                    resolution: 'No change — methodology confirmed correct', action: 'kept',
-                    cause: 'Dashboard correctly uses Q5-respondent base (51.7%) — this is the survey satisfaction rate. The 26% figure penalises for call drop-off, which reflects survey reach not water quality. Updated from 52.1% → 51.7% due to corrected Q5 base (#5).',
+                    n: 7, metric: 'All 28 district BSI scores', action: 'confirmed',
+                    correct: 'All match xlsb Valid sheet rows 619–649 exactly',
+                    change: 'All correct ✓ — never changed',
+                    cause: 'District BSIs in csatData.ts match the xlsb to 4 decimal places for every district. Original data was accurate.',
                   },
                 ].map(r => (
                   <tr key={r.n} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/40">
                     <td className="td font-black text-slate-400">{r.n}</td>
                     <td className="td font-semibold text-slate-700">{r.metric}</td>
-                    <td className="td-mono text-right text-emerald-700 text-[11px]">{r.csv}</td>
-                    <td className="td-mono text-right text-red-500 text-[11px] line-through opacity-60">{r.old}</td>
+                    <td className="td-mono text-right text-emerald-700 text-[11px]">{r.correct}</td>
+                    <td className="td-mono text-right text-slate-500 text-[11px]">{r.change}</td>
                     <td className="td text-center">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        r.action === 'fixed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200'
+                        r.action === 'fixed'      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        r.action === 'confirmed'  ? 'bg-slate-100 text-slate-600 border-slate-200' :
+                                                    'bg-blue-50 text-blue-700 border-blue-200'
                       }`}>
-                        {r.action === 'fixed' ? '✓ Fixed' : '→ Kept'}
+                        {r.action === 'fixed' ? '✓ Fixed' : r.action === 'confirmed' ? '✓ Confirmed' : '→ Kept'}
                       </span>
                     </td>
                     <td className="td text-slate-400 text-[11px] hidden md:table-cell leading-snug">{r.cause}</td>
@@ -578,12 +574,12 @@ Q4 yes%+no%: 57.05%+42.95% = 100.00%`} />
             </table>
           </div>
 
-          {/* Post-reconciliation summary */}
+          {/* Final state summary */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
-              { label: 'State BSI (corrected)', val: '2.32 / 5.0', sub: 'zone-weighted average', color: 'border-amber-300 bg-amber-50' },
+              { label: 'State BSI (xlsb confirmed)', val: '2.20 / 5.0', sub: '0.4406 · valid-scheme weighted avg', color: 'border-amber-300 bg-amber-50' },
               { label: 'Q5 Satisfied (corrected)', val: '51.7%', sub: '2,281 of 4,410 who reached Q5', color: 'border-blue-300 bg-blue-50' },
-              { label: 'Total Usable Calls', val: '9,224', sub: 'all zones now sum correctly', color: 'border-emerald-300 bg-emerald-50' },
+              { label: 'Zone calls (BSI basis)', val: '5,346', sub: 'valid-scheme calls · xlsb confirmed', color: 'border-emerald-300 bg-emerald-50' },
             ].map(s => (
               <div key={s.label} className={`rounded-lg border p-3 ${s.color}`}>
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{s.label}</p>
@@ -593,14 +589,15 @@ Q4 yes%+no%: 57.05%+42.95% = 100.00%`} />
             ))}
           </div>
 
-          {/* What did NOT change */}
+          {/* Unchanged / confirmed */}
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-            <p className="text-xs font-bold text-slate-600 mb-2">✓ Unchanged — verified correct in both sources</p>
+            <p className="text-xs font-bold text-slate-600 mb-2">✓ Confirmed correct in xlsb authoritative source</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[11px] text-slate-500">
               {[
-                'Total calls: 45,863', 'Consented: 12,583', 'Q1 (all counts)', 'Q2 (all counts)',
-                'Q3 (all counts)', 'All 28 district BSI scores', 'Formula weights (sum = 5.0)',
-                'Scheme coverage (615/1426/332)', 'Repeat caller metrics', 'Completed all 5 strict: 1,578',
+                'Total calls: 45,863', 'Consented: 12,583 (27.4%)', 'Q1: 2,855 yes / 9,224 base',
+                'Q2: 3,293 yes / 4,553 base', 'Q3: 2,953 yes / 4,745 base', 'All 28 district BSI scores',
+                'Formula weights (sum = 5.0)', 'Scheme coverage (615/1,426/332)', 'Repeat caller metrics',
+                'BTAD Critical · BV Critical', 'State BSI = 0.4406', 'Completed all 5 strict: 1,578',
               ].map(i => (
                 <div key={i} className="flex items-center gap-1">
                   <span className="text-emerald-500 font-bold flex-shrink-0">✓</span>

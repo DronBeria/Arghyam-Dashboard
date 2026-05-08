@@ -3,11 +3,11 @@
 
 export const KPI_HEADLINE = {
   totalCalls: 45863,
-  stateBSI: 0.4635,       // zone-weighted avg: Σ(zone_bsi × usable_calls) / 9224 = 0.4635
-  satisfied: 51.7,         // 2,281 of 4,410 who reached Q5 = 51.7%
+  stateBSI: 0.4406,        // verified from xlsb Valid sheet: State total 0.4406 (5,346 valid-scheme calls)
+  satisfied: 51.7,          // 2,281 of 4,410 who reached Q5 = 51.7%
   functionalSchemes: 17.6,
   consentRate: 27.4,
-  completedSurvey: 4410,  // all who reached Q5 (incl. 126 non-consented)
+  completedSurvey: 4410,   // all who reached Q5 (4,284 consented + 126 non-consented)
 }
 
 // ─── CALL SUMMARY ─────────────────────────────────────────────────────────────
@@ -46,11 +46,11 @@ export const KPI_QUESTIONS = [
     id: 'Q1A',
     label: 'Consistent Timing',
     question: 'Does water arrive at a consistent time? (follow-up to Q1)',
-    yesCount: 1297,
-    noCount: 987,
-    base: 2284,
+    yesCount: 1289,
+    noCount: 965,
+    base: 2254,
     askedOf: 2855,
-    yesPct: 56.8,
+    yesPct: 57.2,
     weight: '0.75 / 5',
     status: 'Moderate',
     benchmark: 70,
@@ -120,19 +120,19 @@ export const SCHEME_COVERAGE = {
   minThreshold: 6,
 }
 
-// ─── ZONE SCORES — reconciled May 2026 against CSAT_AI_Ph1_Final_Scores_v22.csv ──
-// BSI = zone-weighted avg (Σ zone_bsi × usable_calls / 9224). All zones now include
-// full usable call counts, not just scheme-matched calls. quality/quantity/daily are
-// the original Excel component contributions (out of 1.5/1.5/0.75) — kept from source.
+// ─── ZONE SCORES — verified from xlsb Valid sheet (Valid—Scheme-District-Zone) ──
+// Usable calls = valid-scheme calls (≥6 usable, 615 schemes, 5,346 total).
+// BSI = weighted avg of scheme BSIs by call count, rolled up district→zone→state.
+// Quality/Quantity out of 1.5 | Daily out of 0.75 | BSI out of 1.0
 export const ZONE_SCORES = [
-  { zone: 'North Assam',  usableCalls: 3250, bsi: 0.4720, quality: 0.902, quantity: 0.870, daily: 0.345, status: 'Moderate' },
-  { zone: 'Upper Assam',  usableCalls: 1808, bsi: 0.4800, quality: 0.965, quantity: 0.863, daily: 0.292, status: 'Moderate' },
-  { zone: 'KAAC',         usableCalls: 207,  bsi: 0.4540, quality: 0.989, quantity: 0.911, daily: 0.220, status: 'Moderate' },
-  { zone: 'Lower Assam',  usableCalls: 2536, bsi: 0.4600, quality: 0.913, quantity: 0.807, daily: 0.312, status: 'Moderate' },
-  { zone: 'BTAD',         usableCalls: 363,  bsi: 0.4400, quality: 0.869, quantity: 0.725, daily: 0.198, status: 'Moderate' },
-  { zone: 'Barak Valley', usableCalls: 1059, bsi: 0.4280, quality: 0.706, quantity: 0.720, daily: 0.314, status: 'Moderate' },
-  { zone: 'DHAC',         usableCalls: 1,    bsi: 0.3000, quality: null,  quantity: null,  daily: null,  status: 'Critical' },
-  { zone: 'Assam (State)',usableCalls: 9224, bsi: 0.4635, quality: 0.8905,quantity: 0.8158,daily: 0.2803,status: 'Moderate' },
+  { zone: 'North Assam',  usableCalls: 2330, bsi: 0.4836, quality: 0.902, quantity: 0.870, daily: 0.345, status: 'Moderate' },
+  { zone: 'Upper Assam',  usableCalls: 951,  bsi: 0.4786, quality: 0.965, quantity: 0.863, daily: 0.292, status: 'Moderate' },
+  { zone: 'KAAC',         usableCalls: 97,   bsi: 0.4632, quality: 0.989, quantity: 0.911, daily: 0.220, status: 'Moderate' },
+  { zone: 'Lower Assam',  usableCalls: 1487, bsi: 0.4553, quality: 0.913, quantity: 0.807, daily: 0.312, status: 'Moderate' },
+  { zone: 'BTAD',         usableCalls: 142,  bsi: 0.3841, quality: 0.869, quantity: 0.725, daily: 0.198, status: 'Critical' },
+  { zone: 'Barak Valley', usableCalls: 339,  bsi: 0.3789, quality: 0.706, quantity: 0.720, daily: 0.314, status: 'Critical' },
+  { zone: 'DHAC',         usableCalls: null, bsi: null,   quality: null,  quantity: null,  daily: null,  status: 'No Data'  },
+  { zone: 'Assam (State)',usableCalls: 9224, bsi: 0.4406, quality: 0.8905,quantity: 0.8158,daily: 0.2803,status: 'Moderate' },
 ]
 
 // ─── DISTRICT SCORES — verified from Excel ────────────────────────────────────
@@ -203,7 +203,7 @@ export const CALL_ATTEMPTS = [
 // yesPct = yesCount / answered  (NOT yesCount / base)
 export const QUESTION_FUNNEL = [
   { q: 'Q1',  label: 'Water Daily',         answered: 9224, yesCount: 2855, noCount: 6369, yesPct: 30.95, askedN: 45863, askedLabel: 'All 45,863 calls (any call where Q1 was captured)',       responsePct: 20.1, note: 'Only answered calls counted (yes or no) — 9,224 of 45,863' },
-  { q: 'Q1A', label: 'Consistent Timing',   answered: 2284, yesCount: 1297, noCount: 987,  yesPct: 56.8,  askedN: 2855,  askedLabel: '2,855 callers who answered Q1 = Yes (follow-up only)', responsePct: 80.0, note: 'Asked only when Q1 = Yes · 2,284 of 2,855 responded (80%) · bot missed 571 (20%)' },
+  { q: 'Q1A', label: 'Consistent Timing',   answered: 2254, yesCount: 1289, noCount: 965,  yesPct: 57.2,  askedN: 2855,  askedLabel: '2,855 callers who answered Q1 = Yes (follow-up only)', responsePct: 79.0, note: 'Asked only when Q1 = Yes · 2,254 of 2,855 responded (79%) · bot failed to ask 601 (21%)' },
   { q: 'Q2',  label: 'Water Quality',       answered: 4553, yesCount: 3293, noCount: 1260, yesPct: 72.33, askedN: 12583, askedLabel: '12,583 consented callers',                               responsePct: 36.2, note: '7,030 consented callers gave no Q2 response' },
   { q: 'Q3',  label: 'Water Quantity',      answered: 4745, yesCount: 2953, noCount: 1792, yesPct: 62.23, askedN: 12583, askedLabel: '12,583 consented callers',                               responsePct: 37.7, note: '7,838 consented callers gave no Q3 response' },
   { q: 'Q5',  label: 'Overall Satisfaction',answered: 4410, yesCount: 2281, noCount: 2129, yesPct: 51.7,  askedN: 12583, askedLabel: '12,583 consented callers (+ 126 non-consented who also reached Q5)', responsePct: 35.1, note: '4,410 total reached Q5 (incl. 126 non-consented) · 8,173 consented gave no Q5 response' },

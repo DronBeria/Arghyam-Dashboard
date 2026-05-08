@@ -59,7 +59,7 @@ function insight(scopeType: string, scopeValue: string, scope: { bsi5: string; s
 // Q percentages for state scope (from raw call counts — most accurate)
 const STATE_Q = [
   { q: 'Q1',  label: 'Daily Supply',        pct: 30.95, max: 100, status: 'Critical', insight: 'Only 1 in 3 households · biggest single gap in the BSI' },
-  { q: 'Q1A', label: 'Consistent Timing',   pct: 57.05, max: 100, status: 'Moderate', insight: 'Follow-up to Q1 · 2,142 of 2,855 Q1=Yes callers answered (75% response)' },
+  { q: 'Q1A', label: 'Consistent Timing',   pct: 57.2,  max: 100, status: 'Moderate', insight: 'Follow-up to Q1 · 2,254 of 2,855 Q1=Yes callers answered (79%) · bot missed 601 (21%)' },
   { q: 'Q2',  label: 'Water Quality',       pct: 72.33, max: 100, status: 'Good',     insight: 'Above 70% benchmark · strongest indicator across Assam' },
   { q: 'Q3',  label: 'Water Quantity',      pct: 62.23, max: 100, status: 'Moderate', insight: 'Sufficient for 3 in 5 · supply reaching but volume lacking' },
   { q: 'Q5',  label: 'Overall Satisfaction',pct: 51.7,  max: 100, status: 'Moderate', insight: '25.6% dissatisfied · 22.7% neutral · 4,410 total respondents' },
