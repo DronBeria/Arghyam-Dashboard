@@ -225,7 +225,7 @@ export function OverviewPage() {
       // All districts — no specific district selected
       return DISTRICT_SCORES.slice().sort((a, b) => b.bsi - a.bsi)
     }
-    return ZONE_SCORES.filter(z => z.bsi !== null && z.zone !== 'Assam (State)').sort((a, b) => (b.bsi ?? 0) - (a.bsi ?? 0))
+    return ZONE_SCORES.filter(z => z.zone !== 'Assam (State)').sort((a, b) => (b.bsi ?? 0) - (a.bsi ?? 0))
   }, [scopeType, scopeValue])
 
   const isScoped = scopeType !== 'state'
@@ -742,7 +742,9 @@ function stateScope(): ScopeData {
   const state = ZONE_SCORES.find(z => z.zone === 'Assam (State)')!
   return {
     label: 'All Assam', bsi: STATE_BSI, bsi5: STATE_BSI_5.toFixed(2),
-    status: 'Moderate', usableCalls: 9224, validSchemes: SCHEME_COVERAGE.valid,
+    // usableCalls = sum of all zone usable calls (valid-scheme BSI basis = 5,346)
+    // The 9,224 (Q1-answered) is shown separately in the state KPI strip
+    status: 'Moderate', usableCalls: state.usableCalls, validSchemes: SCHEME_COVERAGE.valid,
     quality: state.quality, quantity: state.quantity, daily: state.daily, zone: null,
   }
 }

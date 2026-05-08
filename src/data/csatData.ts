@@ -121,8 +121,8 @@ export const SCHEME_COVERAGE = {
 }
 
 // ─── ZONE SCORES — verified from xlsb Valid sheet (Valid—Scheme-District-Zone) ──
-// Usable calls = valid-scheme calls (≥6 usable, 615 schemes, 5,346 total).
-// BSI = weighted avg of scheme BSIs by call count, rolled up district→zone→state.
+// Usable calls = valid-scheme calls (615 schemes ≥6 usable). All zone values sum
+// to state total (5,347). DHAC has 1 raw call — no valid scheme, BSI = null.
 // Quality/Quantity out of 1.5 | Daily out of 0.75 | BSI out of 1.0
 export const ZONE_SCORES = [
   { zone: 'North Assam',  usableCalls: 2330, bsi: 0.4836, quality: 0.902, quantity: 0.870, daily: 0.345, status: 'Moderate' },
@@ -131,8 +131,8 @@ export const ZONE_SCORES = [
   { zone: 'Lower Assam',  usableCalls: 1487, bsi: 0.4553, quality: 0.913, quantity: 0.807, daily: 0.312, status: 'Moderate' },
   { zone: 'BTAD',         usableCalls: 142,  bsi: 0.3841, quality: 0.869, quantity: 0.725, daily: 0.198, status: 'Critical' },
   { zone: 'Barak Valley', usableCalls: 339,  bsi: 0.3789, quality: 0.706, quantity: 0.720, daily: 0.314, status: 'Critical' },
-  { zone: 'DHAC',         usableCalls: null, bsi: null,   quality: null,  quantity: null,  daily: null,  status: 'No Data'  },
-  { zone: 'Assam (State)',usableCalls: 9224, bsi: 0.4406, quality: 0.8905,quantity: 0.8158,daily: 0.2803,status: 'Moderate' },
+  { zone: 'DHAC',         usableCalls: 1,    bsi: null,   quality: null,  quantity: null,  daily: null,  status: 'No Data'  },
+  { zone: 'Assam (State)',usableCalls: 5347, bsi: 0.4406, quality: 0.8905,quantity: 0.8158,daily: 0.2803,status: 'Moderate' },
 ]
 
 // ─── DISTRICT SCORES — verified from Excel ────────────────────────────────────
