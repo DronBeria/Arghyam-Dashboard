@@ -245,17 +245,19 @@ Q2 [CONSENTED only]
   yes=3293  no=1260  base=4553  yes%=72.33%
 Q3 [CONSENTED only]
   yes=2953  no=1792  base=4745  yes%=62.23%
-Q4 [CONSENTED only]
-  yes=1222  no=920  base=2142  yes%=57.05%
-Q5 [CONSENTED only — 3-way split]
-  satisfied=2233  neutral=990  dissatisfied=1061  base=4284
-  pcts: 52.1% + 23.1% + 24.8% = 100.0%
-  binary (sat=yes): yes=2233  no=2051  pct=52.12%
+Q1A [CONDITIONAL — Q1=Yes callers, all answerers per xlsb]
+  yes=1289  no=965  base=2254  yes%=57.2%
+  (Original consented-only: yes=1222 no=920 base=2142 — see Section R)
+Q5 [ALL who reached Q5 — incl. 126 non-consented, per xlsb]
+  satisfied=2281  neutral=1002  dissatisfied=1127  base=4410
+  pcts: 51.7% + 22.7% + 25.6% = 100.0%
+  binary (sat=yes): yes=2281  no=2129  pct=51.7%
+  (Original consented-only: satisfied=2233 neutral=990 dissatisfied=1061 base=4284 — see Section R)
 
 VERIFY non-consented contamination:
-  Q2 answers in non-consented calls: 406 (excluded by dashboard)
-  Q3 answers in non-consented calls: 414 (excluded by dashboard)
-  Q4 answers in non-consented calls: 142 (excluded by dashboard)`} />
+  Q2 answers in non-consented calls: 406 (excluded from Q2 KPI base)
+  Q3 answers in non-consented calls: 414 (excluded from Q3 KPI base)
+  Q1A answers in non-consented Q1=Yes calls: 112 (now INCLUDED — xlsb methodology)`} />
 
           <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full">
@@ -273,8 +275,8 @@ VERIFY non-consented contamination:
                   { q:'Q1', y:2855, n:6369, base:9224,  pct:'30.95%', dash:'30.95% ✓', rule:'All usable (9,224)' },
                   { q:'Q2', y:3293, n:1260, base:4553,  pct:'72.33%', dash:'72.33% ✓', rule:'Consented only (12,583 base)' },
                   { q:'Q3', y:2953, n:1792, base:4745,  pct:'62.23%', dash:'62.23% ✓', rule:'Consented only' },
-                  { q:'Q4', y:1222, n:920,  base:2142,  pct:'57.05%', dash:'57.05% ✓', rule:'Consented only' },
-                  { q:'Q5', y:2233, n:2051, base:4284,  pct:'52.12%', dash:'52.12% ✓', rule:'Consented only; sat=Yes, rest=No' },
+                  { q:'Q1A', y:1289, n:965,  base:2254, pct:'57.2%',  dash:'57.2% ✓',  rule:'Q1=Yes callers (xlsb; orig. consented-only was 1222/920/2142)' },
+                  { q:'Q5',  y:2281, n:2129, base:4410, pct:'51.7%',  dash:'51.7% ✓',  rule:'All who reached Q5 (xlsb; orig. consented-only was 2233/2051/4284)' },
                 ].map(r => (
                   <tr key={r.q} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/40">
                     <td className="td font-bold text-slate-700 font-mono">{r.q}</td>
@@ -429,13 +431,13 @@ PROOF 4 — CALL ATTEMPTS BREAKDOWN
           <CodeBlock code={`# Every breakdown must sum to 100% ─────────────────────────────────
 checks = [
     ("Consent: consented + not",    12583/45863 + 33280/45863),
-    ("Q5 split: sat+neu+dis",       2233/4284   + 990/4284    + 1061/4284),
+    ("Q5 split: sat+neu+dis",       2281/4410   + 1002/4410   + 1127/4410),
     ("Schemes: valid+flagged+none",  615/2373   + 1426/2373   + 332/2373),
     ("Func/non-func of 615 valid",   108/615    + 507/615),
     ("Q1 yes% + no%",               2855/9224   + 6369/9224),
     ("Q2 yes% + no%",               3293/4553   + 1260/4553),
     ("Q3 yes% + no%",               2953/4745   + 1792/4745),
-    ("Q4 yes% + no%",               1222/2142   +  920/2142),
+    ("Q1A yes% + no%",              1289/2254   +  965/2254),
 ]
 for label, total in checks:
     status = 'PASS' if abs(total - 1.0) < 0.001 else 'FAIL'
@@ -445,13 +447,13 @@ for label, total in checks:
 PROOF 5 — PERCENTAGE INTEGRITY CHECKS
 =======================================================
 Consent: 27.44% + 72.56% = 100.00%
-Q5 split: 52.1% + 23.1% + 24.8% = 100.0%
+Q5 split: 51.7% + 22.7% + 25.6% = 100.0%
 Schemes: 25.9%+60.1%+14.0% = 100.0%
 Func/non-func (of 615 valid): 108/615=17.6% + 507/615=82.4% = 100.0%
 Q1 yes%+no%: 30.95%+69.05% = 100.00%
 Q2 yes%+no%: 72.33%+27.67% = 100.00%
 Q3 yes%+no%: 62.23%+37.77% = 100.00%
-Q4 yes%+no%: 57.05%+42.95% = 100.00%`} />
+Q1A yes%+no%: 57.2%+42.8% = 100.0%`} />
 
           {/* Big pass grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -463,7 +465,7 @@ Q4 yes%+no%: 57.05%+42.95% = 100.00%`} />
               { check: 'Q1 yes/no',           result: '30.95+69.05',      sum: '100.00%' },
               { check: 'Q2 yes/no',           result: '72.33+27.67',      sum: '100.00%' },
               { check: 'Q3 yes/no',           result: '62.23+37.77',      sum: '100.00%' },
-              { check: 'Q1A yes/no',          result: '56.8+43.2',        sum: '100.0%'  },
+              { check: 'Q1A yes/no',          result: '57.2+42.8',        sum: '100.0%'  },
             ].map(c => (
               <div key={c.check} className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
                 <div className="flex items-center gap-1.5 mb-1.5">

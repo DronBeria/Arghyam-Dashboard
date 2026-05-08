@@ -86,87 +86,6 @@ function CallSummaryTab() {
   return (
     <div className="space-y-4">
 
-      {/* Two-path analysis overview */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-bold text-gray-800">Call Analysis Paths</h3>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Two independent bases — consent path (Q2–Q5) and usable path (Q1). Not a sequential funnel.
-            </p>
-          </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700">
-            Phase 1 · April 2026
-          </span>
-        </div>
-
-        {/* Shared origin */}
-        <div className="flex justify-center mb-3">
-          <div className="text-center bg-blue-50 border border-blue-200 rounded-xl px-6 py-3">
-            <p className="text-2xl font-black text-blue-700">45,863</p>
-            <p className="text-xs text-gray-500 font-medium">Total calls dialled</p>
-          </div>
-        </div>
-
-        {/* Arrow split */}
-        <div className="relative flex justify-center mb-3">
-          <div className="w-px h-4 bg-gray-300" />
-          <div className="absolute top-4 left-1/4 right-1/4 h-px bg-gray-300" />
-        </div>
-
-        {/* Two paths side by side */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Consent path */}
-          <div className="border border-indigo-200 rounded-xl overflow-hidden">
-            <div className="bg-indigo-50 px-4 py-2 border-b border-indigo-200">
-              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide">Consent Path · Q2–Q5 base</p>
-            </div>
-            <div className="p-4 space-y-3">
-              {CONSENT_PATH.map((s, i) => (
-                <div key={s.label} className={i === 0 ? 'opacity-50' : ''}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-700">{s.label}</span>
-                    <span className="text-sm font-black text-indigo-700">{fmt(s.val)}</span>
-                  </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                    <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${i === 2 ? s.pct : s.pct}%` }} />
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{s.note}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Usable path */}
-          <div className="border border-emerald-200 rounded-xl overflow-hidden">
-            <div className="bg-emerald-50 px-4 py-2 border-b border-emerald-200">
-              <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Usable Path · Q1 base</p>
-            </div>
-            <div className="p-4 space-y-3">
-              {USABLE_PATH.map((s, i) => (
-                <div key={s.label} className={i === 0 ? 'opacity-50' : ''}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-700">{s.label}</span>
-                    <span className="text-sm font-black text-emerald-700">{fmt(s.val)}</span>
-                  </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${s.pct}%` }} />
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{s.note}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Overlap note */}
-        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
-          <strong>Overlap:</strong> 8,327 calls appear in <em>both</em> paths (consented AND answered Q1).
-          897 calls are usable-only (answered Q1 without consenting — included in Q1 base, excluded from Q2–Q5).
-          Total unique usable = 8,327 + 897 = 9,224 ✓
-        </div>
-      </div>
-
       {/* Outcome breakdown */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <h3 className="text-sm font-bold text-gray-800 mb-1">Call Outcome Breakdown</h3>
@@ -506,7 +425,7 @@ function QuestionFunnelTab() {
         {[
           { label: 'Consented base (Q2–Q5)', val: '12,583', sub: 'Agreed to survey',    color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200'   },
           { label: 'Usable base (Q1)',        val: '9,224',  sub: 'Answered Q1',          color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'       },
-          { label: 'Q5 respondents',          val: '4,284',  sub: '34.1% of consented',   color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200'     },
+          { label: 'Q5 respondents',          val: '4,410',  sub: '35.1% of consented',   color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200'     },
           { label: 'Completed all 5',         val: '1,578',  sub: '12.5% of consented',   color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
         ].map(k => (
           <div key={k.label} className={`rounded-xl border p-3.5 ${k.bg}`}>
@@ -615,8 +534,8 @@ function QuestionFunnelTab() {
           </table>
         </div>
         <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">
-          Q5 note: 8,299 of 12,583 consented respondents did not answer Q5 (unknown / not captured).
-          Only 4,284 (34.1%) gave a Q5 response — this is the base for all satisfaction figures.
+          Q5 note: 4,410 total reached Q5 (4,284 consented + 126 non-consented who stayed engaged).
+          35.1% of 12,583 consented — this broader base is used for all satisfaction figures.
         </div>
       </div>
 

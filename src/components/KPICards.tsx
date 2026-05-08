@@ -22,7 +22,7 @@ const cards = [
   {
     label: 'Overall Satisfied',
     value: `${KPI_HEADLINE.satisfied}%`,
-    sub: 'Of 4,284 Q5 respondents',
+    sub: 'Of 4,410 Q5 respondents',
     accent: 'border-t-amber-500',
     valueColor: 'text-amber-700',
     icon: '✓',

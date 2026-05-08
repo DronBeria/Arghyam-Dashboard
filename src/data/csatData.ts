@@ -194,7 +194,7 @@ export const CALL_ATTEMPTS = [
   { attempt: '3',   totalCalls: 1220,  pctOfAll: 2.66,  consentedN: 285,   consentPct: 23,   q5Respondents: 99,   satisfiedN: 47,   satisfiedPct: 47.47 },
   { attempt: '4',   totalCalls: 479,   pctOfAll: 1.04,  consentedN: 103,   consentPct: 22,   q5Respondents: 26,   satisfiedN: 10,   satisfiedPct: 38.46 },
   { attempt: '5',   totalCalls: 307,   pctOfAll: 0.67,  consentedN: 70,    consentPct: 23,   q5Respondents: 27,   satisfiedN: 17,   satisfiedPct: 62.96 },
-  { attempt: 'All', totalCalls: 45863, pctOfAll: 100,   consentedN: 12583, consentPct: 27.4, q5Respondents: 4284, satisfiedN: 2233, satisfiedPct: 52.12 },
+  { attempt: 'All', totalCalls: 45863, pctOfAll: 100,   consentedN: 12583, consentPct: 27.4, q5Respondents: 4410, satisfiedN: 2281, satisfiedPct: 51.7  },
 ]
 
 // ─── QUESTION FUNNEL — verified from Excel ────────────────────────────────────

@@ -44,7 +44,7 @@ function insight(scopeType: string, scopeValue: string, scope: { bsi5: string; s
   if (scopeType === 'state') return {
     bsi:     `${gap} below target · no zone meets the ≥3.50 benchmark`,
     calls:   `27.4% consented · 72.6% refused or no response`,
-    quality: `52.1% satisfied · 24.8% dissatisfied · 23.1% neutral`,
+    quality: `51.7% satisfied · 25.6% dissatisfied · 22.7% neutral`,
   }
   const bsiNum = parseFloat(scope.bsi5)
   return {
@@ -372,7 +372,7 @@ export function OverviewPage() {
               : (scopeType === 'state' ? `${USABLE_TOTAL_RATIO}% yield` : `${scope.validSchemes ?? '—'} valid schemes`),
           },
           {
-            value: activeScheme ? `${schemeStats!.q5Pct}%` : (scopeType === 'state' ? '4,284' : '—'),
+            value: activeScheme ? `${schemeStats!.q5Pct}%` : (scopeType === 'state' ? '4,410' : '—'),
             label: activeScheme ? 'Q5 Satisfied' : 'Completed Survey',
             insight: activeScheme
               ? `Overall satisfaction for ${schemeStats!.schemeName}`

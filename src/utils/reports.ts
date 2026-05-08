@@ -128,8 +128,8 @@ export async function downloadStatePDF(userEmail?: string) {
     ['Gets Water Every Day',         '30.95%', `${(2855).toLocaleString()} of ${(9224).toLocaleString()}`, 'Critical'],
     ['Happy with Water Quality',     '72.33%', `${(3293).toLocaleString()} of ${(4553).toLocaleString()}`, 'Good'],
     ['Satisfied with Water Quantity','62.23%', `${(2953).toLocaleString()} of ${(4745).toLocaleString()}`, 'Needs Attention'],
-    ['Water Comes at Fixed Time',    '57.05%', `${(1222).toLocaleString()} of ${(2142).toLocaleString()}`, 'Needs Attention'],
-    ['Overall Satisfaction (Q5)',    '52.12%', `${(2233).toLocaleString()} of ${(4284).toLocaleString()}`, 'Needs Attention'],
+    ['Water Comes at Fixed Time',    '57.2%',  `${(1289).toLocaleString()} of ${(2254).toLocaleString()}`, 'Needs Attention'],
+    ['Overall Satisfaction (Q5)',    '51.7%',  `${(2281).toLocaleString()} of ${(4410).toLocaleString()}`, 'Needs Attention'],
   ]
 
   autoTable(doc, {
@@ -161,11 +161,11 @@ export async function downloadStatePDF(userEmail?: string) {
   doc.setFillColor(...C.grayBg)
   doc.roundedRect(M, y, W - M*2, 24, 2, 2, 'F')
   doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark)
-  doc.text('Q5 — Overall Satisfaction 3-Way Split  (base: 4,284 respondents)', M + 4, y + 7)
+  doc.text('Q5 — Overall Satisfaction 3-Way Split  (base: 4,410 respondents)', M + 4, y + 7)
   const splitData = [
-    { label: '😊 Satisfied',    pct: '52.1%', n: '2,233', color: C.emerald },
-    { label: '😐 Neutral',      pct: '23.1%', n: '990',   color: C.gray   },
-    { label: '😞 Dissatisfied', pct: '24.8%', n: '1,061', color: C.red    },
+    { label: '😊 Satisfied',    pct: '51.7%', n: '2,281', color: C.emerald },
+    { label: '😐 Neutral',      pct: '22.7%', n: '1,002', color: C.gray   },
+    { label: '😞 Dissatisfied', pct: '25.6%', n: '1,127', color: C.red    },
   ]
   splitData.forEach((s, i) => {
     const bx = M + 4 + i * 58

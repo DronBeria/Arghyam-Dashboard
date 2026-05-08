@@ -172,7 +172,7 @@ function Q5Tab() {
     <div className="space-y-5">
       <div>
         <h3 className="text-base font-semibold text-gray-800 mb-1">Q5 — Overall Satisfaction Split</h3>
-        <p className="text-xs text-gray-400">4,284 respondents · 3-way satisfaction breakdown</p>
+        <p className="text-xs text-gray-400">4,410 respondents · 3-way satisfaction breakdown</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -209,9 +209,9 @@ function Q5Tab() {
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-gray-600">
-        <strong>Q5 base:</strong> 4,284 of 12,583 <em>consented</em> calls answered Q5 (34.1% response rate).
-        Q5 is a consented-only question — the 9,224 usable calls are the Q1 base, a separate population.
-        Of those who answered Q5: 52.1% satisfied · 24.8% dissatisfied · 23.1% neutral.
+        <strong>Q5 base:</strong> 4,410 total reached Q5 (4,284 consented + 126 non-consented who answered).
+        The 9,224 usable calls are the Q1 base — a separate population.
+        Of those who answered Q5: 51.7% satisfied · 25.6% dissatisfied · 22.7% neutral.
       </div>
     </div>
   )

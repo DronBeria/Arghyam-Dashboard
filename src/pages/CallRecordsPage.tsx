@@ -410,7 +410,7 @@ export function CallRecordsPage() {
                 ['Q1 Daily Water',    q1Filter, setQ1Filter],
                 ['Q2 Water Quality',  q2Filter, setQ2Filter],
                 ['Q3 Quantity',       q3Filter, setQ3Filter],
-                ['Q4 Timing',         q4Filter, setQ4Filter],
+                ['Q1A Timing',        q4Filter, setQ4Filter],
               ] as [string, string, (v: string) => void][]).map(([lbl, val, setter]) => (
                 <div key={lbl}>
                   <label className="block text-xs text-gray-500 mb-1 font-medium">{lbl}</label>
@@ -684,7 +684,7 @@ function CallDetail({ record: r, onClose }: { record: CallRecord; onClose: () =>
               { q: 'Q1', label: 'Water came every day?',   val: r.q1_answer, evidence: r.q1_evidence, extra: r.days_without_water ? `Days without water: ${r.days_without_water}` : null },
               { q: 'Q2', label: 'Water quality clean?',    val: r.q2_answer, evidence: r.q2_evidence, extra: r.quality_issue_details },
               { q: 'Q3', label: 'Sufficient quantity?',    val: r.q3_answer, evidence: r.q3_evidence, extra: r.quantity_issue_details },
-              { q: 'Q4', label: 'Consistent timing?',      val: r.q4_answer, evidence: r.q4_evidence, extra: null },
+              { q: 'Q1A', label: 'Consistent timing?',     val: r.q4_answer, evidence: r.q4_evidence, extra: null },
               { q: 'Q5', label: 'Overall satisfied?',      val: r.q5_answer, evidence: r.q5_evidence, extra: r.satisfaction_reason ?? r.dissatisfaction_reason },
             ].map(({ q, label, val, evidence, extra }) => {
               const isYes = val === 'yes'
