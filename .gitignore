@@ -37,3 +37,7 @@ pnpm-debug.log*
 # JJM_CSAT_Phase1_Final.xlsx
 *.xlsx
 *.xls
+*.xlsb
+
+# Verification / source data files (sensitive — kept local only)
+verification/
