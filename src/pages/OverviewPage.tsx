@@ -13,6 +13,7 @@ interface ScopeData {
   quality:      number | null   // out of 1.5
   quantity:     number | null   // out of 1.5
   daily:        number | null   // out of 0.75
+  satisfaction: number | null   // Q5 contribution /0.5; multiply ×2 for Q5 sat%
   zone:         string | null
 }
 
@@ -197,7 +198,8 @@ export function OverviewPage() {
       return {
         label: z.zone, bsi: z.bsi ?? 0, bsi5: ((z.bsi ?? 0) * 5).toFixed(2),
         status: z.status ?? 'No Data', usableCalls: z.usableCalls, validSchemes: schemes,
-        quality: z.quality, quantity: z.quantity, daily: z.daily, zone: z.zone,
+        quality: z.quality, quantity: z.quantity, daily: z.daily,
+        satisfaction: (z as any).satisfaction ?? null, zone: z.zone,
       }
     }
     if (scopeType === 'district' && scopeValue) {
@@ -206,7 +208,8 @@ export function OverviewPage() {
       return {
         label: d.district, bsi: d.bsi, bsi5: (d.bsi * 5).toFixed(2),
         status: d.status, usableCalls: d.usableCalls, validSchemes: d.validSchemes,
-        quality: d.quality, quantity: d.quantity, daily: null, zone: d.zone,
+        quality: d.quality, quantity: d.quantity, daily: null,
+        satisfaction: (d as any).satisfaction ?? null, zone: d.zone,
       }
     }
     return stateScope()
@@ -372,11 +375,21 @@ export function OverviewPage() {
               : (scopeType === 'state' ? `${USABLE_TOTAL_RATIO}% yield` : `${scope.validSchemes ?? '—'} valid schemes`),
           },
           {
-            value: activeScheme ? `${schemeStats!.q5Pct}%` : (scopeType === 'state' ? '4,410' : '—'),
-            label: activeScheme ? 'Q5 Satisfied' : 'Completed Survey',
+            value: activeScheme
+              ? `${schemeStats!.q5Pct}%`
+              : scopeType === 'state'
+                ? '4,410'
+                : scope.satisfaction !== null && scope.satisfaction !== undefined
+                  ? `${+(scope.satisfaction / 0.5 * 100).toFixed(1)}%`
+                  : '—',
+            label: scopeType === 'state' && !activeScheme ? 'Completed Survey' : 'Q5 Satisfied',
             insight: activeScheme
               ? `Overall satisfaction for ${schemeStats!.schemeName}`
-              : (scopeType === 'state' ? 'Answered Q5 (Overall Satisfaction) · 9.3% of all dialled calls' : 'State-level metric only'),
+              : scopeType === 'state'
+                ? 'Answered Q5 (Overall Satisfaction) · 4,410 reached Q5'
+                : scope.satisfaction !== null && scope.satisfaction !== undefined
+                  ? `Q5 satisfaction rate (scheme-weighted avg for this ${scopeType})`
+                  : 'No Q5 data for this scope',
             accent: 'border-l-teal-500',
             valueColor: 'text-slate-900',
             badge: activeScheme ? '' : (scopeType === 'state' ? '51.7% satisfied' : ''),
@@ -745,6 +758,7 @@ function stateScope(): ScopeData {
     // usableCalls = sum of all zone usable calls (valid-scheme BSI basis = 5,346)
     // The 9,224 (Q1-answered) is shown separately in the state KPI strip
     status: 'Moderate', usableCalls: state.usableCalls, validSchemes: SCHEME_COVERAGE.valid,
-    quality: state.quality, quantity: state.quantity, daily: state.daily, zone: null,
+    quality: state.quality, quantity: state.quantity, daily: state.daily,
+    satisfaction: (state as any).satisfaction ?? null, zone: null,
   }
 }

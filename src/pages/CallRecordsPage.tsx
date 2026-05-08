@@ -42,7 +42,7 @@ interface CallRecord {
   satisfaction: string | null
 }
 
-const ZONES = ['All Zones', 'Critical Zones', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC', 'DHAC']
+const ZONES = ['All Zones', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC', 'DHAC']
 const DISTRICTS = [
   'All Districts',
   'Bajali','Baksa','Barpeta','Biswanath','Bongaigaon','Cachar','Charaideo',
@@ -93,13 +93,6 @@ const QUICK_FILTERS: Preset[] = [
     filters: { q1: 'No' },
   },
   {
-    id: 'critical_zones',
-    label: 'Critical Zones',
-    icon: '🔴',
-    desc: 'BTAD and Barak Valley — lowest BSI regions',
-    filters: { zone: 'Critical Zones' },
-  },
-  {
     id: 'callbacks',
     label: 'Callback Requested',
     icon: '📲',
@@ -146,6 +139,7 @@ function fmtDate(iso: string | null) {
 export function CallRecordsPage() {
   const [records, setRecords]       = useState<CallRecord[]>([])
   const [total, setTotal]           = useState(0)
+  const [usableTotal, setUsableTotal] = useState<number | null>(null)
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -190,8 +184,7 @@ export function CallRecordsPage() {
       .order(sortCol, { ascending: sortDir === 'asc', nullsFirst: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-    if (zone === 'Critical Zones') q = q.in('zone', ['BTAD', 'Barak Valley'])
-    else if (zone !== 'All Zones') q = q.eq('zone', zone)
+    if (zone !== 'All Zones') q = q.eq('zone', zone)
 
     if (district !== 'All Districts') q = q.ilike('district', district)
 
@@ -233,6 +226,20 @@ export function CallRecordsPage() {
 
     const { data, count, error } = await q
     if (!error && data) { setRecords(data); setTotal(count ?? 0) }
+
+    // Parallel count of survey-usable records (Q1 answered) with same zone/district/search filters
+    let uq = supabase.from('call_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_usable', true)
+    if (zone !== 'All Zones') uq = uq.eq('zone', zone)
+    if (district !== 'All Districts') uq = uq.ilike('district', district)
+    if (debouncedSearch.trim()) {
+      const s = debouncedSearch.trim()
+      uq = uq.or(`scheme_name.ilike.%${s}%,district.ilike.%${s}%,call_summary.ilike.%${s}%,call_id.eq.${Number.isInteger(+s) ? s : -1}`)
+    }
+    const { count: uc } = await uq
+    setUsableTotal(uc ?? null)
+
     setLoading(false)
   }
 
@@ -335,7 +342,7 @@ export function CallRecordsPage() {
           {[
             { label: 'Matching Records', val: total.toLocaleString(),       color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200' },
             { label: 'Total in DB',      val: '45,863',                     color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200' },
-            { label: 'Survey Usable',    val: '9,224',                      color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+            { label: 'Survey Usable',    val: usableTotal !== null ? usableTotal.toLocaleString() : '—', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
             { label: 'Active Filters',   val: activeFilterCount > 0 ? `${activeFilterCount} active` : 'Default', color: activeFilterCount > 0 ? 'text-amber-700' : 'text-gray-500', bg: activeFilterCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200' },
           ].map(c => (
             <div key={c.label} className={`rounded-xl border p-3 ${c.bg}`}>
