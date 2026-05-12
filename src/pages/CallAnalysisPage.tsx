@@ -117,44 +117,36 @@ function CallSummaryTab() {
         </div>
       </div>
 
-      {/* Call summary table — simplified */}
+      {/* Call summary table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100">
           <h3 className="text-sm font-bold text-gray-800">Call Summary</h3>
-          <p className="text-xs text-gray-400">Key call groups · % of 45,863 total dialled</p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="th text-left">Category</th>
-                <th className="th text-right">Count</th>
-                <th className="th text-right">%</th>
-                <th className="th hidden md:table-cell">Note</th>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50/60">
+              <th className="th text-left">Category</th>
+              <th className="th text-right">Count</th>
+              <th className="th text-right">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { label: 'Total calls dialled',       count: 45863, pct: 100.0, bold: true  },
+              { label: 'Consented',                  count: 12583, pct: 27.4,  bold: false },
+              { label: 'Did not consent',            count: 33280, pct: 72.6,  bold: false },
+              { label: 'Usable calls (Q1 answered)', count: 9224,  pct: 20.1,  bold: true  },
+              { label: 'Reached Q5 (Overall)',       count: 4410,  pct: 9.6,   bold: false },
+              { label: 'Completed all 5 questions',  count: 1578,  pct: 3.4,   bold: false },
+            ].map((row, i) => (
+              <tr key={i} className={`border-b border-gray-50 last:border-0 ${row.bold ? 'bg-slate-50/80' : ''}`}>
+                <td className={`td text-xs ${row.bold ? 'font-bold text-gray-800' : 'text-gray-500 pl-5'}`}>{row.label}</td>
+                <td className="td-mono text-right font-semibold">{fmt(row.count)}</td>
+                <td className="td-mono text-right text-gray-400">{row.pct.toFixed(1)}%</td>
               </tr>
-            </thead>
-            <tbody>
-              {[
-                { label: 'Total calls dialled',      count: 45863, pct: 100.0, note: 'All calls attempted across Assam in Phase 1',                            bold: true  },
-                { label: 'Consented (said Yes)',      count: 12583, pct: 27.4,  note: 'Agreed to participate · base for Q2, Q3, Q5',                           bold: false },
-                { label: 'Did NOT consent',           count: 33280, pct: 72.6,  note: 'Refused, hung up, or no response',                                      bold: false },
-                { label: 'Usable calls (Q1 answered)',count: 9224,  pct: 20.1,  note: '8,327 consented + 897 refused-but-answered · base for Q1 & Q1A in BSI', bold: true  },
-                { label: 'Completed survey (Q5)',     count: 4410,  pct: 9.6,   note: 'Reached Q5 Overall Satisfaction · 4,284 consented + 126 non-consented who answered Q5', bold: false },
-                { label: 'Completed all 5 questions', count: 1578,  pct: 3.4,   note: 'Answered every question Q1 through Q5',                                  bold: false },
-              ].map((row, i) => (
-                <tr key={i} className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/50 ${row.bold ? 'bg-slate-50/80' : ''}`}>
-                  <td className={`td text-xs ${row.bold ? 'font-bold text-gray-800' : 'text-gray-600'}`}>{row.label}</td>
-                  <td className="td-mono text-right font-semibold">{fmt(row.count)}</td>
-                  <td className="td-mono text-right text-gray-400">{row.pct.toFixed(1)}%</td>
-                  <td className="td text-xs text-gray-400 hidden md:table-cell">{row.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="m-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700 leading-relaxed">
-          <strong>Why usable = 9,224 and not 8,327?</strong> — 897 calls logged as "refused" lasted long enough that Q1 was answered before hang-up. 8,327 consented + 897 = 9,224 ✓
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

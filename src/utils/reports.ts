@@ -291,8 +291,8 @@ export async function downloadStatePDF(userEmail?: string) {
       ['Valid Schemes', '615', '25.9%', 'Sufficient usable calls (≥6) for analysis'],
       ['Flagged Schemes', '1,426', '60.1%', 'Insufficient calls — data quality concern'],
       ['No Data', '332', '14.0%', 'Zero calls connected'],
-      ['Functional (of valid)', '108', '17.6%', 'Q1 ≥50% AND Q2 ≥70% AND Q3 ≥70%'],
-      ['Non-Functional (of valid)', '507', '82.4%', 'Fail at least one functionality criterion'],
+      ['Regular Supply (of valid)', '108', '17.6%', 'Households report receiving water regularly'],
+      ['Irregular Supply (of valid)', '507', '82.4%', 'Households report irregular or no daily supply'],
     ],
     styles: { fontSize: 9, cellPadding: 3 },
     headStyles: { fillColor: C.blue, textColor: C.white, fontStyle: 'bold', fontSize: 8 },
@@ -311,8 +311,8 @@ export async function downloadStatePDF(userEmail?: string) {
       body: 'Q1 (Gets Water Daily) at 30.95% is the single largest contributor to low BSI. Target re-calling households in lowest-BSI districts. Prioritise BTAD and Barak Valley zones for operational intervention.',
     },
     {
-      n: '02', title: 'Inspect Non-Functional Schemes',
-      body: '507 of 615 valid schemes (82.4%) fail functionality criteria. Field verification needed. 1,426 flagged schemes require re-calling to gather sufficient data. Recommend scheme-level audit in Phase 2.',
+      n: '02', title: 'Address Irregular Supply Schemes',
+      body: '507 of 615 valid schemes (82.4%) report irregular water supply. Field verification needed. 1,426 flagged schemes require re-calling to gather sufficient data. Recommend scheme-level audit in Phase 2.',
     },
     {
       n: '03', title: 'Zone-Targeted Phase 2 Campaigns',

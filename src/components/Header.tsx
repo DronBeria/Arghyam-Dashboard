@@ -17,7 +17,7 @@ const QUICK_LINKS = [
       { id: 'calls', label: 'Call Analysis', icon: '📞', desc: 'Funnel, attempts, repeat callers' },
       { id: 'records', label: 'Call Records', icon: '🎙️', desc: 'Browse calls + play recordings' },
       { id: 'survey', label: 'Survey Results', icon: '📋', desc: 'Q1–Q5 satisfaction breakdown' },
-      { id: 'schemes', label: 'Scheme Coverage', icon: '🏗️', desc: 'Functional vs non-functional' },
+      { id: 'schemes', label: 'Scheme Coverage', icon: '🏗️', desc: 'Valid, flagged and no-data schemes' },
       { id: 'geographic', label: 'Zone & Districts', icon: '🗺️', desc: 'BSI rankings by geography' },
     ],
   },
@@ -26,7 +26,7 @@ const QUICK_LINKS = [
     items: [
       { id: 'records', label: 'Dissatisfied calls with recordings', icon: '😞', desc: 'Call Records → Dissatisfied + Recording preset' },
       { id: 'geographic', label: 'Critical zones deep-dive', icon: '🔴', desc: 'BTAD & Barak Valley districts' },
-      { id: 'schemes', label: 'Non-functional schemes', icon: '⚠️', desc: '507 schemes failing functionality test' },
+      { id: 'schemes', label: 'Irregular supply schemes', icon: '⚠️', desc: '507 schemes with irregular water supply' },
     ],
   },
 ]

@@ -29,7 +29,7 @@ const cards = [
     bg: 'bg-amber-50',
   },
   {
-    label: 'Functional Schemes',
+    label: 'Regular Supply',
     value: `${KPI_HEADLINE.functionalSchemes}%`,
     sub: '108 of 615 valid schemes',
     accent: 'border-t-red-500',

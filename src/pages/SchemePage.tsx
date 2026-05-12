@@ -10,8 +10,8 @@ const PIE = [
 ]
 
 const FUNC_PIE = [
-  { name: 'Functional',     value: SCHEME_COVERAGE.functional,    fill: '#10b981' },
-  { name: 'Non-Functional', value: SCHEME_COVERAGE.nonFunctional, fill: '#ef4444' },
+  { name: 'Regular Supply',   value: SCHEME_COVERAGE.functional,    fill: '#10b981' },
+  { name: 'Irregular Supply', value: SCHEME_COVERAGE.nonFunctional, fill: '#ef4444' },
 ]
 
 export function SchemePage() {
@@ -51,9 +51,9 @@ export function SchemePage() {
           </div>
         </div>
 
-        {/* Functional donut */}
+        {/* Regular supply donut */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <p className="text-sm font-semibold text-gray-700 mb-1">Valid Scheme Functionality</p>
+          <p className="text-sm font-semibold text-gray-700 mb-1">Regular vs Irregular Supply</p>
           <p className="text-xs text-gray-400 mb-3">Of 615 valid schemes only</p>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
@@ -70,11 +70,11 @@ export function SchemePage() {
 
         {/* Key stats */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col justify-between">
-          <p className="text-sm font-semibold text-gray-700 mb-3">Functionality Rate</p>
+          <p className="text-sm font-semibold text-gray-700 mb-3">Regular Supply Rate</p>
           <div className="flex-1 flex flex-col justify-center space-y-4">
             <div className="text-center">
               <div className="text-5xl font-bold text-red-600">{SCHEME_COVERAGE.functionalRate}%</div>
-              <div className="text-xs text-gray-500 mt-1">of valid schemes are functional</div>
+              <div className="text-xs text-gray-500 mt-1">of valid schemes supply water regularly</div>
               <div className="text-xs text-gray-400">{SCHEME_COVERAGE.functional} of {SCHEME_COVERAGE.valid} valid schemes</div>
             </div>
             <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -82,89 +82,12 @@ export function SchemePage() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-amber-600">{SCHEME_COVERAGE.nonFunctional}</div>
-              <div className="text-xs text-gray-500">non-functional schemes identified</div>
+              <div className="text-xs text-gray-500">schemes with irregular supply</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Definitions + thresholds */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <p className="text-sm font-semibold text-gray-700 mb-4">Scheme Classification Criteria</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            {
-              title: 'Valid',
-              color: 'text-emerald-700',
-              bg: 'bg-emerald-50 border-emerald-200',
-              criteria: [
-                'Minimum 6 usable calls received',
-                'Sufficient data for BSI scoring',
-                'At least 1 answered Q1 response',
-              ],
-              count: `${SCHEME_COVERAGE.valid} schemes`,
-            },
-            {
-              title: 'Flagged / Suspect',
-              color: 'text-amber-700',
-              bg: 'bg-amber-50 border-amber-200',
-              criteria: [
-                'Fewer than 6 usable calls',
-                'High refusal / no-consent rate',
-                'Potential IMIS data quality issues',
-              ],
-              count: `${SCHEME_COVERAGE.flagged.toLocaleString()} schemes`,
-            },
-            {
-              title: 'No Data',
-              color: 'text-gray-600',
-              bg: 'bg-gray-50 border-gray-200',
-              criteria: [
-                'Zero calls reached or connected',
-                'Not included in BSI calculation',
-                'Targeted for Phase 2 re-call',
-              ],
-              count: `${SCHEME_COVERAGE.noData} schemes`,
-            },
-          ].map(c => (
-            <div key={c.title} className={`rounded-xl border p-4 ${c.bg}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-sm font-bold ${c.color}`}>{c.title}</span>
-                <span className="text-xs text-gray-400">{c.count}</span>
-              </div>
-              <ul className="space-y-1">
-                {c.criteria.map((cr, i) => (
-                  <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
-                    <span className="mt-0.5 text-gray-400">•</span>
-                    {cr}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Functional scheme definition */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <p className="text-sm font-semibold text-gray-700 mb-3">What Makes a Scheme "Functional"?</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2 text-xs text-gray-600">
-            <p>A scheme is classified as <strong className="text-emerald-700">functional</strong> when it meets all three minimum criteria:</p>
-            <ul className="space-y-1 ml-3">
-              <li>• <strong>Q1 ≥ 50%</strong> — Water supplied at least 4 of last 7 days</li>
-              <li>• <strong>Q2 ≥ 70%</strong> — Water quality rated clean by majority</li>
-              <li>• <strong>Q3 ≥ 70%</strong> — Sufficient quantity reported</li>
-            </ul>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <div className="text-2xl font-bold text-red-600 mb-1">82.4%</div>
-            <div className="text-xs text-gray-700 font-medium">of valid schemes are <strong>NOT functional</strong></div>
-            <div className="text-xs text-gray-400 mt-1">507 of 615 valid schemes fail at least one criterion</div>
-            <div className="text-xs text-gray-400">Minimum threshold: {SCHEME_COVERAGE.minThreshold} usable calls per scheme</div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

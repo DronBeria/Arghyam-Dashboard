@@ -7,8 +7,8 @@ const PIE_DATA = [
   { name: 'No data',             value: SCHEME_COVERAGE.noData,   color: '#d1d5db' },
 ]
 const FUNC_DATA = [
-  { name: 'Functional',     value: SCHEME_COVERAGE.functional,    color: '#10b981' },
-  { name: 'Non-functional', value: SCHEME_COVERAGE.nonFunctional, color: '#ef4444' },
+  { name: 'Regular Supply',   value: SCHEME_COVERAGE.functional,    color: '#10b981' },
+  { name: 'Irregular Supply', value: SCHEME_COVERAGE.nonFunctional, color: '#ef4444' },
 ]
 
 export function SchemeCoverage() {
