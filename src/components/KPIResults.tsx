@@ -50,13 +50,12 @@ export function KPIResults() {
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="th">Q</th>
+              <th className="th w-10">Q</th>
               <th className="th">Indicator</th>
               <th className="th text-right">Yes %</th>
-              <th className="th text-right">Yes N</th>
-              <th className="th text-right">No N</th>
-              <th className="th text-right hidden sm:table-cell">Base</th>
-              <th className="th text-right hidden sm:table-cell">Weight</th>
+              <th className="th text-right hidden sm:table-cell">Yes / No</th>
+              <th className="th text-right hidden md:table-cell">Base</th>
+              <th className="th text-right hidden md:table-cell">Weight</th>
               <th className="th text-center">Status</th>
             </tr>
           </thead>
@@ -67,17 +66,20 @@ export function KPIResults() {
                 <td className="td">
                   <span className="font-medium text-gray-800 text-xs">{q.label}</span>
                   {(q as any).askedOf && (
-                    <div className="text-[10px] text-blue-500 mt-0.5">base = {fmt((q as any).askedOf)} Q1=Yes callers</div>
+                    <div className="text-[10px] text-blue-500 mt-0.5">of {fmt((q as any).askedOf)} Q1=Yes callers</div>
                   )}
                 </td>
-                <td className={`td-mono text-right font-bold ${
+                <td className={`td-mono text-right font-bold text-sm ${
                   q.status === 'Good' ? 'text-emerald-700' :
                   q.status === 'Critical' ? 'text-red-600' : 'text-amber-700'
-                }`}>{q.yesPct.toFixed(2)}%</td>
-                <td className="td-mono text-right text-emerald-600 text-xs">{fmt(q.yesCount)}</td>
-                <td className="td-mono text-right text-red-500 text-xs">{fmt(q.noCount)}</td>
-                <td className="td-mono text-right text-gray-400 text-xs hidden sm:table-cell">{fmt(q.base)}</td>
-                <td className="td-mono text-right text-gray-400 text-xs hidden sm:table-cell">{q.weight}</td>
+                }`}>{q.yesPct.toFixed(1)}%</td>
+                <td className="td-mono text-right text-xs hidden sm:table-cell">
+                  <span className="text-emerald-600">{fmt(q.yesCount)}</span>
+                  <span className="text-gray-300 mx-1">/</span>
+                  <span className="text-red-400">{fmt(q.noCount)}</span>
+                </td>
+                <td className="td-mono text-right text-gray-400 text-xs hidden md:table-cell">{fmt(q.base)}</td>
+                <td className="td-mono text-right text-gray-400 text-xs hidden md:table-cell">{q.weight}</td>
                 <td className="td text-center"><StatusBadge status={q.status} /></td>
               </tr>
             ))}
