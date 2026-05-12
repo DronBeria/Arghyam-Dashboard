@@ -86,6 +86,78 @@ function calcBsi(q1: number, q1a: number, q2: number, q3: number, q5: number) {
   return +((q1*0.75 + q1a*0.75 + q2*1.5 + q3*1.5 + q5*0.5) / 5.0).toFixed(4)
 }
 
+function generateActionPlan(scope: ScopeData, qBars: any[]) {
+  const w = window.open('', '_blank')!
+  const bsi5 = scope.bsi5
+  const gap  = (3.50 - +bsi5).toFixed(2)
+  const q2   = qBars.find(q => q.q === 'Q2')
+  const q3   = qBars.find(q => q.q === 'Q3')
+  const q1   = qBars.find(q => q.q === 'Q1')
+  const weakest = [...qBars].sort((a, b) => a.pct - b.pct)[0]
+
+  w.document.write(`<!DOCTYPE html><html><head><title>Action Plan — ${scope.label}</title>
+  <style>
+    body{font-family:sans-serif;max-width:700px;margin:40px auto;color:#0f172a;font-size:14px}
+    h1{font-size:22px;font-weight:900;margin:0 0 4px}
+    .sub{color:#64748b;font-size:12px;margin-bottom:24px}
+    .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+    .kpi{border:1px solid #e2e8f0;border-radius:10px;padding:14px}
+    .kpi .val{font-size:26px;font-weight:900;margin:4px 0}
+    .kpi .lbl{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+    .bar-wrap{background:#f1f5f9;height:8px;border-radius:4px;margin:4px 0;overflow:hidden}
+    .bar{height:100%;border-radius:4px}
+    .red{background:#ef4444}.amber{background:#f59e0b}.green{background:#10b981}
+    .section{margin:24px 0;border-top:1px solid #f1f5f9;padding-top:16px}
+    h2{font-size:14px;font-weight:700;margin:0 0 10px;color:#475569}
+    ul{margin:0;padding:0 0 0 16px;color:#475569;font-size:13px;line-height:2}
+    .footer{margin-top:40px;border-top:1px solid #f1f5f9;padding-top:12px;font-size:11px;color:#94a3b8;text-align:center}
+    @media print{body{margin:20px}}
+  </style></head><body>
+  <p style="font-size:11px;color:#94a3b8;margin-bottom:4px">ARAGHYAM · JJM CSAT AI · DISTRICT ACTION PLAN</p>
+  <h1>${scope.label}</h1>
+  <p class="sub">Phase 1 · April 2026 · Zone: ${scope.zone ?? 'All Assam'} · Generated ${new Date().toLocaleDateString('en-IN')}</p>
+
+  <div class="grid">
+    <div class="kpi">
+      <div class="lbl">BSI Score</div>
+      <div class="val" style="color:${+bsi5>=3.5?'#10b981':+bsi5>=2?'#f59e0b':'#ef4444'}">${bsi5}/5</div>
+      <div class="bar-wrap"><div class="bar ${+bsi5>=3.5?'green':+bsi5>=2?'amber':'red'}" style="width:${(+bsi5/5)*100}%"></div></div>
+      <div style="font-size:11px;color:#94a3b8">Target: 3.50 · Gap: ${gap}</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Usable Calls</div>
+      <div class="val" style="color:#2563eb">${scope.usableCalls?.toLocaleString() ?? '—'}</div>
+      <div style="font-size:11px;color:#94a3b8">Valid scheme calls</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Valid Schemes</div>
+      <div class="val" style="color:#7c3aed">${scope.validSchemes ?? '—'}</div>
+      <div style="font-size:11px;color:#94a3b8">Of 2,373 IMIS total</div>
+    </div>
+  </div>
+
+  ${qBars.length > 0 ? `<div class="section"><h2>Service Area Performance</h2>
+  ${qBars.map(q=>`<div style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;font-size:12px"><span><b>${q.q}</b> ${q.label}</span><b style="color:${q.pct>=70?'#10b981':q.pct>=40?'#f59e0b':'#ef4444'}">${q.pct}%</b></div>
+    <div class="bar-wrap"><div class="bar ${q.pct>=70?'green':q.pct>=40?'amber':'red'}" style="width:${q.pct}%"></div></div>
+    <div style="font-size:10px;color:#94a3b8">Benchmark: 70% · Status: ${q.status}</div>
+  </div>`).join('')}</div>` : ''}
+
+  <div class="section"><h2>Priority Actions</h2><ul>
+    ${weakest ? `<li><b>Highest priority:</b> ${weakest.label} is at ${weakest.pct}% — the biggest gap from the 70% benchmark</li>` : ''}
+    ${q1 && q1.pct < 50 ? `<li>Water regularity (Q1) is critically low at ${q1.pct}% — verify scheme infrastructure and supply schedule</li>` : ''}
+    ${q2 && q2.pct < 70 ? `<li>Water quality (Q2) at ${q2.pct}% — inspect treatment and source quality</li>` : ''}
+    ${q3 && q3.pct < 70 ? `<li>Water quantity (Q3) at ${q3.pct}% — check distribution coverage and pressure</li>` : ''}
+    <li>Target re-call in Phase 2 to verify improvement</li>
+    <li>BSI gap of ${gap} points to target 3.50 — focus on bottom two indicators</li>
+  </ul></div>
+
+  <div class="footer">Araghyam · Assam Jal Jeevan Mission · Confidential · Government of Assam</div>
+  <script>window.onload=()=>window.print()</script>
+  </body></html>`)
+  w.document.close()
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function OverviewPage() {
   const [scopeType, setScopeType] = useState<'state' | 'zone' | 'district'>('state')
@@ -94,7 +166,35 @@ export function OverviewPage() {
   const [schemeFilter, setSchemeFilter] = useState('')
   const [schemeStats, setSchemeStats]   = useState<SchemeStats | null>(null)
   const [loadingSchemes, setLoadingSchemes] = useState(false)
-  const [bsiMode, setBsiMode] = useState<BsiMode>('standard')
+  const [bsiMode, setBsiMode]               = useState<BsiMode>('standard')
+  const [linkCopied, setLinkCopied]         = useState(false)
+
+  // Restore scope from URL params on first load
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const s = p.get('scope') as 'zone' | 'district' | null
+    const v = p.get('v') || ''
+    if (s === 'zone' || s === 'district') { setScopeType(s); setScopeValue(v) }
+  }, [])
+
+  // Keep URL in sync with current scope (for sharing)
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (scopeType === 'state') {
+      url.searchParams.delete('scope'); url.searchParams.delete('v')
+    } else {
+      url.searchParams.set('scope', scopeType)
+      if (scopeValue) url.searchParams.set('v', scopeValue)
+      else url.searchParams.delete('v')
+    }
+    window.history.replaceState({}, '', url.toString())
+  }, [scopeType, scopeValue])
+
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href)
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 2000)
+  }
 
   // Listen for scope changes from command palette
   useEffect(() => {
@@ -331,7 +431,7 @@ export function OverviewPage() {
           <p className="text-[10px] text-gray-400 ml-auto italic">Select a scheme above to compare BSI bases</p>
         ) : null}
 
-        {/* Breadcrumb label */}
+        {/* Breadcrumb label + copy link */}
         {!(scopeType === 'district' || activeScheme) && (
           <div className="flex items-center gap-2 ml-auto">
             {isScoped && (
@@ -339,10 +439,17 @@ export function OverviewPage() {
                 {activeStatus}
               </span>
             )}
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 hidden sm:block">
               {scopeType === 'state' ? '45,863 calls · 35 districts · 7 zones'
                : `${scope.usableCalls ? fmt(scope.usableCalls) : '—'} usable calls · ${scope.validSchemes ?? '—'} valid schemes`}
             </span>
+            {/* Copy link button */}
+            <button onClick={copyLink} title="Copy link to this view"
+              className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 hover:text-blue-600 border border-gray-200 hover:border-blue-300 px-2 py-1 rounded-lg transition-all">
+              {linkCopied
+                ? <><span className="text-emerald-500">✓</span> Copied</>
+                : <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Share</>}
+            </button>
           </div>
         )}
       </div>
@@ -589,10 +696,19 @@ export function OverviewPage() {
                   : 'Sorted by BSI · click a district to drill down'}
             </p>
           </div>
-          <button onClick={() => nav('geographic')}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-            Full map →
-          </button>
+          <div className="flex items-center gap-3">
+            {scopeType === 'district' && scopeValue && (
+              <button onClick={() => generateActionPlan(scope, qBars)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg transition-colors no-print">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Action Plan PDF
+              </button>
+            )}
+            <button onClick={() => nav('geographic')}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+              Full map →
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -605,6 +721,7 @@ export function OverviewPage() {
                   <th className="th text-left hidden sm:table-cell">Zone</th>
                 )}
                 <th className="th text-right">BSI /5</th>
+                <th className="th hidden lg:table-cell">Trend</th>
                 <th className="th text-right hidden sm:table-cell">Quality</th>
                 <th className="th text-right hidden sm:table-cell">Quantity</th>
                 {scopeType !== 'district' && <th className="th text-right hidden md:table-cell">Usable Calls</th>}
@@ -638,6 +755,16 @@ export function OverviewPage() {
                     )}
                     <td className="td-mono text-right">
                       <span className={`font-black text-sm ${rc.text}`}>{bsi5}</span>
+                    </td>
+                    {/* BSI sparkline — Phase 1 progress bar + Ph2 pending indicator */}
+                    <td className="td hidden lg:table-cell">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${rc.bar}`}
+                            style={{ width: `${Math.min((+(bsi5) / 5) * 100, 100)}%` }} />
+                        </div>
+                        <span className="text-[9px] text-gray-300 font-medium whitespace-nowrap">Ph2 —</span>
+                      </div>
                     </td>
                     <td className="td-mono text-right text-xs text-gray-500 hidden sm:table-cell">
                       {row.quality ? (row.quality / 1.5 * 100).toFixed(1) + '%' : '—'}

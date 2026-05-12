@@ -1,7 +1,20 @@
+import { useState } from 'react'
 import { SCHEME_COVERAGE } from '../data/csatData'
+import { supabase } from '../lib/supabase'
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
+
+function fmt(n: number) { return n.toLocaleString() }
+
+interface SchemeResult {
+  scheme_name: string | null
+  district: string | null
+  zone: string | null
+  total: number
+  usable: number
+  consented: number
+}
 
 const PIE = [
   { name: 'Valid',    value: SCHEME_COVERAGE.valid,   fill: '#10b981' },
@@ -15,8 +28,102 @@ const FUNC_PIE = [
 ]
 
 export function SchemePage() {
+  const [query, setQuery]           = useState('')
+  const [results, setResults]       = useState<SchemeResult[]>([])
+  const [searching, setSearching]   = useState(false)
+  const [searched, setSearched]     = useState(false)
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault()
+    if (!query.trim()) return
+    setSearching(true); setSearched(false)
+    const { data } = await supabase
+      .from('call_records')
+      .select('scheme_name, district, zone')
+      .or(`scheme_name.ilike.%${query.trim()}%`)
+      .limit(200)
+    if (data) {
+      // Group by scheme_name
+      const map: Record<string, SchemeResult> = {}
+      for (const r of data as any[]) {
+        const key = r.scheme_name || 'Unknown'
+        if (!map[key]) map[key] = { scheme_name: r.scheme_name, district: r.district, zone: r.zone, total: 0, usable: 0, consented: 0 }
+        map[key].total++
+      }
+      // Get usable + consented counts per scheme
+      const names = Object.keys(map)
+      if (names.length > 0) {
+        const { data: u } = await supabase.from('call_records')
+          .select('scheme_name').in('scheme_name', names).eq('is_usable', true)
+        const { data: c } = await supabase.from('call_records')
+          .select('scheme_name').in('scheme_name', names).eq('consented', true)
+        ;(u ?? []).forEach((r: any) => { if (map[r.scheme_name]) map[r.scheme_name].usable++ })
+        ;(c ?? []).forEach((r: any) => { if (map[r.scheme_name]) map[r.scheme_name].consented++ })
+      }
+      setResults(Object.values(map).sort((a, b) => b.usable - a.usable))
+    }
+    setSearching(false); setSearched(true)
+  }
+
   return (
     <div className="space-y-5">
+
+      {/* ── IMIS / Scheme Search ─────────────────────────────────────────── */}
+      <div className="card p-4">
+        <p className="panel-title mb-3">Search Schemes</p>
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Scheme name or IMIS ID…"
+            className="flex-1 bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2.5
+              placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <button type="submit" disabled={searching}
+            className="btn-primary px-5 py-2.5 rounded-xl disabled:opacity-50">
+            {searching ? '…' : 'Search'}
+          </button>
+        </form>
+
+        {searched && (
+          <div className="mt-3">
+            {results.length === 0 ? (
+              <p className="text-xs text-gray-400 py-2">No schemes found for "{query}"</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-gray-200 mt-2">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="th text-left">Scheme Name</th>
+                      <th className="th text-left">District</th>
+                      <th className="th text-left">Zone</th>
+                      <th className="th text-right">Total Calls</th>
+                      <th className="th text-right">Usable</th>
+                      <th className="th text-right">Consented</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.slice(0, 20).map((r, i) => (
+                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/60">
+                        <td className="td font-medium text-gray-800 max-w-[200px] truncate">{r.scheme_name || '—'}</td>
+                        <td className="td text-gray-500">{r.district || '—'}</td>
+                        <td className="td text-gray-500">{r.zone || '—'}</td>
+                        <td className="td-mono text-right">{fmt(r.total)}</td>
+                        <td className="td-mono text-right text-blue-600">{fmt(r.usable)}</td>
+                        <td className="td-mono text-right text-emerald-600">{fmt(r.consented)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {results.length > 20 && (
+                  <p className="text-[10px] text-gray-400 text-center py-2">Showing 20 of {results.length} results — refine your search</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       {/* Coverage overview cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[

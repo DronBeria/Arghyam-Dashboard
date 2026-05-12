@@ -282,7 +282,7 @@ function StatusStep({
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export function DataIngestionPage() {
+export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = {}) {
   const [uploadState, setUploadState]   = useState<UploadState>('idle')
   const [dragActive, setDragActive]     = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -336,6 +336,7 @@ export function DataIngestionPage() {
         setUploadState('complete')
         clearInterval(pollRef.current!)
         fetchHistory()
+        onUploaded?.()
       } else if (job.status === 'error') {
         setUploadState('error')
         setErrorMsg(job.error_detail || job.message)

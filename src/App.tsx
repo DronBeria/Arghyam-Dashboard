@@ -135,9 +135,10 @@ export default function App() {
   const [authLoading, setAuthLoading]   = useState(true)
   const [phase, setPhase]               = useState<Phase>('phase1')
   const [page, setPage]                 = useState<PageId>('overview')
-  const [sidebarOpen, setSidebarOpen]   = useState(true)
+  const [sidebarOpen, setSidebarOpen]   = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
   const [paletteOpen, setPaletteOpen]   = useState(false)
+  const [phase2HasData, setPhase2HasData] = useState(false)
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -184,7 +185,13 @@ export default function App() {
   function switchPhase(p: Phase) {
     setPhase(p)
     if (p === 'phase1' && page === 'ingestion') setPage('overview')
-    if (p === 'phase2') setPage('overview')
+    if (p === 'phase2') {
+      setPage('overview')
+      // Check if Phase 2 data has been uploaded
+      supabase.from('phase2_kpi_summary').select('id', { count: 'exact', head: true })
+        .eq('is_active', true)
+        .then(({ count }) => setPhase2HasData((count ?? 0) > 0))
+    }
   }
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -220,8 +227,14 @@ export default function App() {
     <div className="flex h-screen overflow-hidden" style={{ background: '#0f172a' }}>
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
 
+      {/* Mobile overlay — closes sidebar on tap */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
       {/* ── Sidebar ───────────────────────────────────────────────────────── */}
-      <aside className={`${sidebarOpen ? 'w-56' : 'w-[52px]'} h-full flex-shrink-0 flex flex-col transition-all duration-200 z-40 border-r border-white/[0.06]`}
+      <aside className={`${sidebarOpen ? 'w-56' : 'w-[52px]'} h-full flex-shrink-0 flex flex-col transition-all duration-200 z-40 border-r border-white/[0.06]
+        ${sidebarOpen ? 'fixed lg:relative' : 'relative'}`}
         style={{ background: '#0f172a' }}>
 
         {/* Logo */}
@@ -408,13 +421,19 @@ export default function App() {
             {phase === 'phase1' && page === 'geographic' && <GeographicPage />}
 
             {/* Phase 2 pages */}
-            {phase === 'phase2' && page === 'ingestion'  && <DataIngestionPage />}
-            {isPhase2NonIngestion && (
+            {phase === 'phase2' && page === 'ingestion' && <DataIngestionPage onUploaded={() => setPhase2HasData(true)} />}
+            {isPhase2NonIngestion && !phase2HasData && (
               <Phase2EmptyState
                 pageName={PAGE_META[page].title}
                 onGoToIngestion={() => navigate('ingestion')}
               />
             )}
+            {/* Phase 2 data is live — reuse Phase 1 pages but they read from Supabase */}
+            {phase === 'phase2' && phase2HasData && page === 'overview'   && <OverviewPage />}
+            {phase === 'phase2' && phase2HasData && page === 'calls'      && <CallAnalysisPage />}
+            {phase === 'phase2' && phase2HasData && page === 'survey'     && <SurveyResultsPage />}
+            {phase === 'phase2' && phase2HasData && page === 'schemes'    && <SchemePage />}
+            {phase === 'phase2' && phase2HasData && page === 'geographic' && <GeographicPage />}
 
             <footer className="mt-12 pt-6 border-t border-slate-200/60 text-center">
               <p className="panel-label">
