@@ -5,9 +5,7 @@ import {
   ReferenceLine, ResponsiveContainer, Cell,
 } from 'recharts'
 import { StatusBadge, statusColor } from '../components/StatusBadge'
-import { AssamZoneMap } from '../components/AssamZoneMap'
-
-type View = 'zones' | 'districts' | 'map'
+type View = 'zones' | 'districts'
 const ZONES = ['All', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC']
 
 function bsiColor(bsi: number | null) {
@@ -40,7 +38,6 @@ export function GeographicPage() {
         {([
           { id: 'zones',     label: 'Zone Overview' },
           { id: 'districts', label: 'District Deep-Dive' },
-          { id: 'map',       label: '🗺 Zone Map' },
         ] as { id: View; label: string }[]).map(v => (
           <button
             key={v.id}
@@ -57,14 +54,6 @@ export function GeographicPage() {
       </div>
 
       {view === 'zones' && <ZonesView chartData={zoneChartData} />}
-      {view === 'map'   && (
-        <div className="card p-5">
-          <AssamZoneMap
-            selectedZone={selectedZone !== 'All' ? selectedZone : undefined}
-            onZoneClick={z => { setSelectedZone(z); setView('districts') }}
-          />
-        </div>
-      )}
 
       {view === 'districts' && (
         <DistrictsView
