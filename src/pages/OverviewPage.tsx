@@ -602,7 +602,7 @@ export function OverviewPage() {
                   <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div className={`h-full ${c.color} rounded-full`} style={{ width: `${(c.val / c.max) * 100}%` }} />
                   </div>
-                  <span className="text-xs font-mono text-gray-500 w-12 text-right">{c.val}/{c.max}</span>
+                  <span className="text-xs font-mono text-gray-400 w-8 text-right flex-shrink-0">{+(c.val / c.max * 100).toFixed(0)}%</span>
                 </div>
               ))}
             </div>
