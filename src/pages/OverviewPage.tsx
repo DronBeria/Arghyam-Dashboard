@@ -833,8 +833,8 @@ export function OverviewPage() {
             </div>
             <div className="mt-3 pt-2 border-t border-gray-100 flex justify-between text-xs">
               <span className="text-gray-500">Of 615 valid schemes:</span>
-              <span className="text-emerald-700 font-bold">17.6% functional</span>
-              <span className="text-red-600 font-bold">82.4% non-functional</span>
+              <span className="text-emerald-700 font-bold">17.6% regular supply</span>
+              <span className="text-red-600 font-bold">82.4% irregular supply</span>
             </div>
           </div>
 

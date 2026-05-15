@@ -47,7 +47,7 @@ export function SchemeCoverage() {
         </div>
 
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Of 615 Valid Schemes — Functional Status</p>
+          <p className="text-xs font-semibold text-gray-600 mb-2">Of 615 Valid Schemes — Supply Regularity</p>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -63,15 +63,15 @@ export function SchemeCoverage() {
           <div className="grid grid-cols-2 gap-2 mt-1 text-center">
             <div>
               <div className="text-lg font-bold text-emerald-700">{SCHEME_COVERAGE.functional}</div>
-              <div className="text-xs text-gray-500">Functional · {SCHEME_COVERAGE.functionalRate}%</div>
+              <div className="text-xs text-gray-500">Regular Supply · {SCHEME_COVERAGE.functionalRate}%</div>
             </div>
             <div>
               <div className="text-lg font-bold text-red-600">{SCHEME_COVERAGE.nonFunctional}</div>
-              <div className="text-xs text-gray-500">Non-functional · {(100 - SCHEME_COVERAGE.functionalRate).toFixed(1)}%</div>
+              <div className="text-xs text-gray-500">Irregular Supply · {(100 - SCHEME_COVERAGE.functionalRate).toFixed(1)}%</div>
             </div>
           </div>
           <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-700 text-center font-medium">
-            Only 17.6% of valid schemes are functional — 82.4% need intervention
+            Only 17.6% of valid schemes supply water regularly — 82.4% have irregular supply
           </div>
         </div>
       </div>

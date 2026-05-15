@@ -517,7 +517,7 @@ function QuestionFunnelTab() {
                     <td className="td-mono text-right text-gray-500 hidden sm:table-cell">{q.responsePct.toFixed(1)}%</td>
                     <td className="td-mono text-right text-emerald-700 hidden sm:table-cell">{q.yesCount.toLocaleString()}</td>
                     <td className="td-mono text-right text-red-500 hidden sm:table-cell">{q.noCount.toLocaleString()}</td>
-                    <td className={`td-mono text-right font-bold ${yesPctColor}`}>{(q.yesPct * 100).toFixed(2)}%</td>
+                    <td className={`td-mono text-right font-bold ${yesPctColor}`}>{q.yesPct.toFixed(1)}%</td>
                     <td className="td text-xs text-gray-400 hidden lg:table-cell">{q.askedLabel}</td>
                   </tr>
                 )
