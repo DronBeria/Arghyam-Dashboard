@@ -174,9 +174,22 @@ export function CallRecordsPage() {
     return () => clearTimeout(t)
   }, [search])
 
+  // ── Fix: reset to page 0 whenever any FILTER changes (not page itself) ────────
+  // Without this, changing zone while on page 3 returns 0 results because
+  // filtered data may only have 1 page.
+  useEffect(() => {
+    setPage(0)
+  }, [zone, district, sat, q1Filter, q2Filter, q3Filter, q4Filter,
+      hasRecording, callbackOnly, consentedOnly, usableOnly,
+      minDuration, maxDuration, attemptFilter, earlyEndFilter,
+      dateFrom, dateTo, debouncedSearch])
+
+  // ── Fetch records (race-condition safe via sequence counter) ──────────────────
+  const fetchSeqRef = useRef(0)
   useEffect(() => { fetchRecords() }, [zone, district, sat, q1Filter, q2Filter, q3Filter, q4Filter, hasRecording, callbackOnly, consentedOnly, usableOnly, minDuration, maxDuration, attemptFilter, earlyEndFilter, dateFrom, dateTo, page, debouncedSearch, sortCol, sortDir])
 
   async function fetchRecords() {
+    const mySeq = ++fetchSeqRef.current   // claim this request slot
     setLoading(true)
     let q = supabase
       .from('call_records')
@@ -225,7 +238,14 @@ export function CallRecordsPage() {
     }
 
     const { data, count, error } = await q
-    if (!error && data) { setRecords(data); setTotal(count ?? 0) }
+    if (mySeq !== fetchSeqRef.current) return   // stale — a newer request is in flight, discard
+
+    if (error) {
+      console.error('CallRecords fetch error:', error)
+      setRecords([]); setTotal(0)
+    } else if (data) {
+      setRecords(data); setTotal(count ?? 0)
+    }
 
     // Parallel count of survey-usable records (Q1 answered) with same zone/district/search filters
     let uq = supabase.from('call_records')
@@ -538,11 +558,37 @@ export function CallRecordsPage() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center h-48 text-gray-400 text-sm gap-2">
-              <span className="animate-spin inline-block">⟳</span> Loading…
+            /* Skeleton rows — shows structure while loading */
+            <div className="divide-y divide-gray-50">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse">
+                  <div className="w-16 h-3 bg-gray-100 rounded" />
+                  <div className="w-24 h-3 bg-gray-100 rounded hidden sm:block" />
+                  <div className="w-20 h-3 bg-gray-100 rounded hidden sm:block" />
+                  <div className="flex-1 h-3 bg-gray-100 rounded hidden lg:block" />
+                  <div className="w-16 h-5 bg-gray-100 rounded-full" />
+                  <div className="w-16 h-5 bg-gray-100 rounded-full" />
+                </div>
+              ))}
             </div>
           ) : records.length === 0 ? (
-            <EmptyState zone={zone} />
+            <EmptyState
+              activeFilters={[
+                zone !== 'All Zones' && `Zone: ${zone}`,
+                district !== 'All Districts' && `District: ${district}`,
+                sat !== 'All' && `Q5: ${sat}`,
+                q1Filter !== 'All' && `Q1: ${q1Filter}`,
+                q2Filter !== 'All' && `Q2: ${q2Filter}`,
+                q3Filter !== 'All' && `Q3: ${q3Filter}`,
+                q4Filter !== 'All' && `Q1A: ${q4Filter}`,
+                hasRecording === true && 'Has Recording',
+                callbackOnly && 'Callback Requested',
+                consentedOnly && 'Consented Only',
+                usableOnly && 'Usable Only',
+                debouncedSearch.trim() && `Search: "${debouncedSearch.trim()}"`,
+              ].filter(Boolean) as string[]}
+              onReset={resetFilters}
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -604,12 +650,25 @@ export function CallRecordsPage() {
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
-function EmptyState({ zone }: { zone: string }) {
+function EmptyState({ activeFilters, onReset }: { activeFilters: string[]; onReset: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center h-56 gap-3 text-center px-6">
-      <span className="text-4xl">📭</span>
-      <p className="text-sm font-medium text-gray-600">No records match{zone !== 'All Zones' ? ` in ${zone}` : ''}</p>
-      <p className="text-xs text-gray-400">Try adjusting the filters above, or use Reset to return to defaults.</p>
+    <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-6">
+      <span className="text-4xl">🔍</span>
+      <div>
+        <p className="text-sm font-semibold text-gray-700">No records match your filters</p>
+        <p className="text-xs text-gray-400 mt-1">
+          {activeFilters.length > 0
+            ? `Active filters: ${activeFilters.join(' · ')}`
+            : 'No records found in this view.'}
+        </p>
+      </div>
+      {activeFilters.length > 0 && (
+        <button
+          onClick={onReset}
+          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-500 transition-colors">
+          Clear all filters
+        </button>
+      )}
     </div>
   )
 }
