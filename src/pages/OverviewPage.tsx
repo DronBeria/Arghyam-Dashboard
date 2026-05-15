@@ -362,8 +362,35 @@ export function OverviewPage() {
   const activeLabel  = activeScheme ? schemeStats!.schemeName : scope.label
   const activeGap5   = +(TARGET_5 - +activeBsi5).toFixed(2)
 
+  // Derive top 5 / bottom 5 districts for state scope
+  const sortedDistricts = [...DISTRICT_SCORES].sort((a, b) => b.bsi - a.bsi)
+  const top5    = sortedDistricts.slice(0, 5)
+  const bottom5 = sortedDistricts.slice(-5).reverse()
+  const criticalZones = ZONE_SCORES.filter(z => z.status === 'Critical' && z.zone !== 'Assam (State)')
+
   return (
     <div className="space-y-4">
+
+      {/* ── Priority Alert Banner (state scope only) ────────────────────── */}
+      {scopeType === 'state' && !activeScheme && criticalZones.length > 0 && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex flex-wrap items-start gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+            <span className="text-xs font-black text-red-700 uppercase tracking-wide">Priority Action Required</span>
+          </div>
+          <div className="flex flex-wrap gap-2 flex-1">
+            {criticalZones.map(z => (
+              <span key={z.zone} className="inline-flex items-center gap-1.5 bg-red-100 border border-red-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-red-700">
+                <span className="font-black">⚠</span>
+                {z.zone} — BSI {+(z.bsi! * 5).toFixed(2)}/5 · {z.usableCalls?.toLocaleString()} calls
+              </span>
+            ))}
+            <span className="text-xs text-red-500 self-center">
+              · {bottom5[0]?.district} is the lowest district at {+(bottom5[0]?.bsi * 5).toFixed(2)}/5
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ── Scope selector ──────────────────────────────────────────────── */}
       <div className="card p-3 flex flex-wrap items-center gap-3">
@@ -524,6 +551,40 @@ export function OverviewPage() {
           </div>
         ))}
       </div>
+
+      {/* ── Key Findings (state scope only) ─────────────────────────────── */}
+      {scopeType === 'state' && !activeScheme && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-black text-slate-500 uppercase tracking-wide">Key Findings — Phase 1 · April 2026</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[
+              {
+                icon: '🚱', color: 'border-l-red-400 bg-red-50',
+                text: 'Only 1 in 3 households (30.95%) received water every day — the single biggest gap in the BSI score.',
+              },
+              {
+                icon: '⚠️', color: 'border-l-amber-400 bg-amber-50',
+                text: 'BTAD and Barak Valley zones are Critical (BSI < 2.0). Barak Valley is affected by a language mismatch — Bengali households called by an Assamese bot.',
+              },
+              {
+                icon: '💧', color: 'border-l-amber-400 bg-amber-50',
+                text: '82.4% of surveyed schemes supply water irregularly. Only 108 of 615 valid schemes meet regular supply criteria.',
+              },
+              {
+                icon: '✅', color: 'border-l-emerald-400 bg-emerald-50',
+                text: 'Water quality (72.33%) is the strongest indicator — the only one above the 70% benchmark. Focus on regularity and quantity.',
+              },
+            ].map((f, i) => (
+              <div key={i} className={`flex gap-3 rounded-lg border-l-4 p-3 text-xs leading-relaxed ${f.color}`}>
+                <span className="flex-shrink-0 text-base">{f.icon}</span>
+                <span className="text-gray-700">{f.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── BSI gauge + Service areas ───────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -794,6 +855,75 @@ export function OverviewPage() {
           </table>
         </div>
       </div>
+
+      {/* ── Top 5 / Bottom 5 Districts (state scope only) ───────────────── */}
+      {scopeType === 'state' && !activeScheme && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Top performers */}
+          <div className="card overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 bg-emerald-50/60 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-emerald-800">Top Performing Districts</p>
+                <p className="text-xs text-emerald-600 mt-0.5">Highest BSI scores · Phase 1</p>
+              </div>
+              <span className="text-emerald-500 text-lg">🏆</span>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {top5.map((d, i) => (
+                <div key={d.district}
+                  onClick={() => { setScopeType('district'); setScopeValue(d.district) }}
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-emerald-50/40 cursor-pointer transition-colors">
+                  <span className="text-xs font-black text-emerald-300 w-4 text-center">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-semibold text-gray-800 truncate block">{d.district}</span>
+                    <span className="text-[10px] text-gray-400">{d.zone}</span>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-sm font-black text-emerald-700">{+(d.bsi * 5).toFixed(2)}</span>
+                    <span className="text-[10px] text-gray-400">/5</span>
+                  </div>
+                  <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${(d.bsi / 0.7) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom performers */}
+          <div className="card overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 bg-red-50/60 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-red-800">Districts Needing Attention</p>
+                <p className="text-xs text-red-500 mt-0.5">Lowest BSI scores · Priority intervention</p>
+              </div>
+              <span className="text-red-400 text-lg">🎯</span>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {bottom5.map((d, i) => (
+                <div key={d.district}
+                  onClick={() => { setScopeType('district'); setScopeValue(d.district) }}
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-red-50/40 cursor-pointer transition-colors">
+                  <span className="text-xs font-black text-red-200 w-4 text-center">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-semibold text-gray-800 truncate block">{d.district}</span>
+                    <span className="text-[10px] text-gray-400">{d.zone}</span>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-sm font-black text-red-600">{+(d.bsi * 5).toFixed(2)}</span>
+                    <span className="text-[10px] text-gray-400">/5</span>
+                  </div>
+                  <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-red-400 rounded-full" style={{ width: `${(d.bsi / 0.7) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
 
       {/* ── Scheme coverage + Call consent breakdown ────────────────────── */}
       {scopeType === 'state' && (
