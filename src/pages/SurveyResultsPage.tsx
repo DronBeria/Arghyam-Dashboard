@@ -8,7 +8,8 @@ import { StatusBadge } from '../components/StatusBadge'
 
 type Tab = 'kpi' | 'q5' | 'funnel'
 
-const SORTED_Q = [...KPI_QUESTIONS].sort((a, b) => b.yesPct - a.yesPct)
+// Survey flow order: Q1 → Q1A → Q2 → Q3 → Q5 (matches how questions were asked)
+const SORTED_Q = KPI_QUESTIONS
 
 export function SurveyResultsPage() {
   const [tab, setTab] = useState<Tab>('kpi')
@@ -126,11 +127,10 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
             <tr>
               <th className="th w-8">Q</th>
               <th className="th">Indicator</th>
-              <th className="th text-right">Yes %</th>
-              <th className="th text-right hidden sm:table-cell">Yes n</th>
-              <th className="th text-right hidden md:table-cell">No n</th>
-              <th className="th text-right hidden md:table-cell">Base</th>
-              <th className="th hidden lg:table-cell text-right">Weight</th>
+              <th className="th text-right">Satisfied %</th>
+              <th className="th text-right hidden sm:table-cell">Satisfied</th>
+              <th className="th text-right hidden md:table-cell">Not Satisfied</th>
+              <th className="th text-right hidden md:table-cell">Respondents</th>
               <th className="th text-center">Status</th>
             </tr>
           </thead>
@@ -146,11 +146,10 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
                 <td className={`td-mono text-right font-bold ${
                   q.status === 'Good' ? 'text-emerald-700' :
                   q.status === 'Critical' ? 'text-red-600' : 'text-amber-700'
-                }`}>{q.yesPct.toFixed(2)}%</td>
-                <td className="td-mono text-right text-gray-500 hidden sm:table-cell">{q.yesCount.toLocaleString()}</td>
-                <td className="td-mono text-right text-gray-400 hidden md:table-cell">{q.noCount.toLocaleString()}</td>
+                }`}>{q.yesPct.toFixed(1)}%</td>
+                <td className="td-mono text-right text-emerald-600 hidden sm:table-cell">{q.yesCount.toLocaleString()}</td>
+                <td className="td-mono text-right text-red-400 hidden md:table-cell">{q.noCount.toLocaleString()}</td>
                 <td className="td-mono text-right text-gray-400 hidden md:table-cell">{q.base.toLocaleString()}</td>
-                <td className="td-mono text-right text-gray-400 hidden lg:table-cell">{q.weight}</td>
                 <td className="td text-center"><StatusBadge status={q.status} /></td>
               </tr>
             ))}
