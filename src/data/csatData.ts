@@ -195,7 +195,7 @@ export const CALL_ATTEMPTS = [
   { attempt: '3',   totalCalls: 1220,  pctOfAll: 2.66,  consentedN: 285,   consentPct: 23,   q5Respondents: 99,   satisfiedN: 47,   satisfiedPct: 47.47 },
   { attempt: '4',   totalCalls: 479,   pctOfAll: 1.04,  consentedN: 103,   consentPct: 22,   q5Respondents: 26,   satisfiedN: 10,   satisfiedPct: 38.46 },
   { attempt: '5',   totalCalls: 307,   pctOfAll: 0.67,  consentedN: 70,    consentPct: 23,   q5Respondents: 27,   satisfiedN: 17,   satisfiedPct: 62.96 },
-  { attempt: 'All', totalCalls: 45863, pctOfAll: 100,   consentedN: 12583, consentPct: 27.4, q5Respondents: 4410, satisfiedN: 2281, satisfiedPct: 51.7  },
+  { attempt: 'All', totalCalls: 45863, pctOfAll: 100,   consentedN: 12583, consentPct: 27.4, q5Respondents: 4284, satisfiedN: 2233, satisfiedPct: 52.1  },
 ]
 
 // ─── QUESTION FUNNEL — verified from Excel ────────────────────────────────────
@@ -205,7 +205,7 @@ export const CALL_ATTEMPTS = [
 export const QUESTION_FUNNEL = [
   { q: 'Q1',  label: 'Water Daily',         answered: 9224, yesCount: 2855, noCount: 6369, yesPct: 30.95, askedN: 45863, askedLabel: 'All 45,863 calls (any call where Q1 was captured)',       responsePct: 20.1, note: 'Only answered calls counted (yes or no) — 9,224 of 45,863' },
   { q: 'Q1A', label: 'Consistent Timing',   answered: 2254, yesCount: 1289, noCount: 965,  yesPct: 57.2,  askedN: 2855,  askedLabel: '2,855 callers who answered Q1 = Yes (follow-up only)', responsePct: 79.0, note: 'Asked only when Q1 = Yes · 2,254 of 2,855 responded (79%) · bot failed to ask 601 (21%)' },
-  { q: 'Q2',  label: 'Water Quality',       answered: 4553, yesCount: 3293, noCount: 1260, yesPct: 72.33, askedN: 12583, askedLabel: '12,583 consented callers',                               responsePct: 36.2, note: '7,030 consented callers gave no Q2 response' },
+  { q: 'Q2',  label: 'Water Quality',       answered: 4553, yesCount: 3293, noCount: 1260, yesPct: 72.33, askedN: 12583, askedLabel: '12,583 consented callers',                               responsePct: 36.2, note: '8,030 consented callers gave no Q2 response' },
   { q: 'Q3',  label: 'Water Quantity',      answered: 4745, yesCount: 2953, noCount: 1792, yesPct: 62.23, askedN: 12583, askedLabel: '12,583 consented callers',                               responsePct: 37.7, note: '7,838 consented callers gave no Q3 response' },
   { q: 'Q5',  label: 'Overall Satisfaction',answered: 4410, yesCount: 2281, noCount: 2129, yesPct: 51.7,  askedN: 12583, askedLabel: '12,583 consented callers (+ 126 non-consented who also reached Q5)', responsePct: 35.1, note: '4,410 total reached Q5 (incl. 126 non-consented) · 8,173 consented gave no Q5 response' },
 ]

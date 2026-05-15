@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CALL_SUMMARY, CALL_ATTEMPTS, REPEAT_CALLERS, QUESTION_FUNNEL } from '../data/csatData'
+import { CALL_ATTEMPTS, REPEAT_CALLERS, QUESTION_FUNNEL } from '../data/csatData'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
@@ -273,6 +273,10 @@ function AttemptsTab() {
         </div>
       </div>
 
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-500 leading-relaxed">
+        <strong className="text-slate-600">Note on Q5 base:</strong> The table uses consented-only Q5 respondents per attempt (4,284 total, 52.1% satisfied).
+        The global Q5 figure shown elsewhere (4,410 respondents, 51.7% satisfied) is higher because 126 non-consented callers also reached Q5 but cannot be attributed to a specific attempt number.
+      </div>
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-700 leading-relaxed">
         <strong>Insight:</strong> Attempt 4 shows the lowest satisfaction (38.5%) — households requiring 4+ calls may be less engaged or have worse service.
         Attempt 5's 63.0% is based on a very small sample (27 respondents) and is not statistically reliable.
