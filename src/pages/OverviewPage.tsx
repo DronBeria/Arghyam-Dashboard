@@ -489,7 +489,7 @@ export function OverviewPage() {
                 : scope.satisfaction !== null && scope.satisfaction !== undefined
                   ? `${+(scope.satisfaction / 0.5 * 100).toFixed(1)}%`
                   : '—',
-            label: scopeType === 'state' && !activeScheme ? 'Completed Survey' : 'Q5 Satisfied',
+            label: scopeType === 'state' && !activeScheme ? 'Q5 Respondents' : 'Q5 Satisfied',
             insight: activeScheme
               ? `Overall satisfaction for ${schemeStats!.schemeName}`
               : scopeType === 'state'

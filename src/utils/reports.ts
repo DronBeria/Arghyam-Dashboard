@@ -100,7 +100,7 @@ export async function downloadStatePDF(userEmail?: string) {
   const stats = [
     { label: 'Total Calls', val: '45,863' },
     { label: 'Usable Calls', val: '9,224' },
-    { label: 'Completed Surveys', val: '1,578' },
+    { label: 'Reached Q5', val: '4,410' },
     { label: 'Districts Covered', val: '31' },
   ]
   const boxW = (W - M*2) / 4
