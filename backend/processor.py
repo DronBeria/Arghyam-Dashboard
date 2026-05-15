@@ -15,9 +15,18 @@ Pipeline steps:
 import io
 import traceback
 from datetime import datetime, timezone
+from typing import List
 
 import pandas as pd
 from supabase import Client
+
+BATCH_SIZE = 200   # max rows per Supabase insert call
+
+
+def _batch_insert(supabase: Client, table: str, records: List[dict]) -> None:
+    """Insert records in chunks to avoid Supabase payload limits."""
+    for i in range(0, len(records), BATCH_SIZE):
+        supabase.table(table).insert(records[i : i + BATCH_SIZE]).execute()
 
 
 # ── Column requirements ───────────────────────────────────────────────────────
@@ -137,10 +146,11 @@ def process_csv_background(job_id: str, content: bytes, supabase: Client) -> Non
                     message="Computing state-level BSI…")
         state_bsi = compute_bsi(df)
 
-        # Q5 three-way split
-        q5_base      = consented[consented["overall_satisfaction"].isin(["satisfied", "neutral", "dissatisfied"])]
-        q5_satisfied = int((q5_base["overall_satisfaction"] == "satisfied").sum())
-        q5_neutral   = int((q5_base["overall_satisfaction"] == "neutral").sum())
+        # Q5 three-way split — ALL who answered (consented + non-consented)
+        # Matches Phase 1: 4,410 = 4,284 consented + 126 non-consented who reached Q5
+        q5_base         = df[df["overall_satisfaction"].isin(["satisfied", "neutral", "dissatisfied"])]
+        q5_satisfied    = int((q5_base["overall_satisfaction"] == "satisfied").sum())
+        q5_neutral      = int((q5_base["overall_satisfaction"] == "neutral").sum())
         q5_dissatisfied = int((q5_base["overall_satisfaction"] == "dissatisfied").sum())
 
         # ── Step 5: Insert KPI summary ────────────────────────────────────
@@ -158,7 +168,7 @@ def process_csv_background(job_id: str, content: bytes, supabase: Client) -> Non
             "q2_yes_pct":         _safe_pct(consented, "quality_satisfied"),
             "q3_yes_pct":         _safe_pct(consented, "quantity_satisfied"),
             "q1a_yes_pct":        _safe_pct(q1_yes, "consistent_timing"),
-            "q5_satisfied_pct":   _safe_pct(consented, "overall_satisfaction", ("satisfied",)),
+            "q5_satisfied_pct":   _safe_pct(df, "overall_satisfaction", ("satisfied",)),
             "q5_satisfied_count": q5_satisfied,
             "q5_neutral_count":   q5_neutral,
             "q5_dissatisfied_count": q5_dissatisfied,
@@ -191,7 +201,7 @@ def process_csv_background(job_id: str, content: bytes, supabase: Client) -> Non
         if districts:
             supabase.table("phase2_district_scores").update({"is_active": False}) \
                 .eq("is_active", True).execute()
-            supabase.table("phase2_district_scores").insert(districts).execute()
+            _batch_insert(supabase, "phase2_district_scores", districts)
 
         # ── Step 7: Zone scores ───────────────────────────────────────────
         _update_job(supabase, job_id, progress=85,
@@ -214,7 +224,7 @@ def process_csv_background(job_id: str, content: bytes, supabase: Client) -> Non
         if zones:
             supabase.table("phase2_zone_scores").update({"is_active": False}) \
                 .eq("is_active", True).execute()
-            supabase.table("phase2_zone_scores").insert(zones).execute()
+            _batch_insert(supabase, "phase2_zone_scores", zones)
 
         # ── Step 8: Scheme scores (by IMIS ID) ───────────────────────────
         _update_job(supabase, job_id, progress=93,
@@ -237,17 +247,17 @@ def process_csv_background(job_id: str, content: bytes, supabase: Client) -> Non
                     "consented":    len(g_consented),
                     "usable_calls": len(g_usable),
                     "bsi":          compute_bsi(group),
-                    "q1_yes_pct":   _safe_pct(g_usable,    "water_received_daily"),
-                    "q1a_yes_pct":  _safe_pct(g_q1_yes,    "consistent_timing"),
-                    "q2_yes_pct":   _safe_pct(g_consented,  "quality_satisfied"),
-                    "q3_yes_pct":   _safe_pct(g_consented,  "quantity_satisfied"),
-                    "q5_sat_pct":   _safe_pct(g_consented,  "overall_satisfaction", ("satisfied",)),
+                    "q1_yes_pct":   _safe_pct(g_usable,   "water_received_daily"),
+                    "q1a_yes_pct":  _safe_pct(g_q1_yes,   "consistent_timing"),
+                    "q2_yes_pct":   _safe_pct(g_consented, "quality_satisfied"),
+                    "q3_yes_pct":   _safe_pct(g_consented, "quantity_satisfied"),
+                    "q5_sat_pct":   _safe_pct(g_consented, "overall_satisfaction", ("satisfied",)),
                     "is_active":    True,
                 })
             if schemes:
                 supabase.table("phase2_scheme_scores").update({"is_active": False}) \
                     .eq("is_active", True).execute()
-                supabase.table("phase2_scheme_scores").insert(schemes).execute()
+                _batch_insert(supabase, "phase2_scheme_scores", schemes)
 
         # ── Done ──────────────────────────────────────────────────────────
         _update_job(supabase, job_id,

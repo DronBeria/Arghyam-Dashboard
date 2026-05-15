@@ -1,6 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { supabase } from '../lib/supabase'
 
 const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:8000'
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 // ─── Column definitions ───────────────────────────────────────────────────────
 const REQUIRED_COLUMNS = [
@@ -321,14 +328,14 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
 
   async function fetchHistory() {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/uploads`)
+      const res = await fetch(`${BACKEND_URL}/api/uploads`, { headers: await authHeaders() })
       if (res.ok) setUploadHistory(await res.json())
     } catch { /* backend offline — silently skip */ }
   }
 
   async function pollStatus(id: string) {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/status/${id}`)
+      const res = await fetch(`${BACKEND_URL}/api/status/${id}`, { headers: await authHeaders() })
       if (!res.ok) return
       const job: UploadJob = await res.json()
       setJobStatus(job)
@@ -392,7 +399,7 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
     const form = new FormData()
     form.append('file', selectedFile)
     try {
-      const res = await fetch(`${BACKEND_URL}/api/upload`, { method: 'POST', body: form })
+      const res = await fetch(`${BACKEND_URL}/api/upload`, { method: 'POST', body: form, headers: await authHeaders() })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         setUploadState('error')
