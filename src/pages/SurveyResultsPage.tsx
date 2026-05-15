@@ -122,6 +122,12 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="px-4 py-2.5 bg-blue-50 border-b border-blue-100 text-xs text-blue-700 leading-relaxed">
+          <strong>Why do respondent counts differ?</strong> — Each question was asked to a different group.
+          Q1 was captured from all 45,863 calls (9,224 answered). Q1A is a follow-up asked only to
+          Q1=Yes callers (2,855 eligible). Q2–Q5 were asked only to the 12,583 who consented, but many
+          callers hung up before reaching later questions — so fewer people answered Q2/Q3/Q5.
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr>
@@ -130,7 +136,7 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
               <th className="th text-right">Satisfied %</th>
               <th className="th text-right hidden sm:table-cell">Satisfied</th>
               <th className="th text-right hidden md:table-cell">Not Satisfied</th>
-              <th className="th text-right hidden md:table-cell">Respondents</th>
+              <th className="th text-right hidden md:table-cell">Who answered</th>
               <th className="th text-center">Status</th>
             </tr>
           </thead>
@@ -149,7 +155,16 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
                 }`}>{q.yesPct.toFixed(1)}%</td>
                 <td className="td-mono text-right text-emerald-600 hidden sm:table-cell">{q.yesCount.toLocaleString()}</td>
                 <td className="td-mono text-right text-red-400 hidden md:table-cell">{q.noCount.toLocaleString()}</td>
-                <td className="td-mono text-right text-gray-400 hidden md:table-cell">{q.base.toLocaleString()}</td>
+                <td className="td hidden md:table-cell text-right">
+                  <span className="text-xs font-mono text-gray-600">{q.base.toLocaleString()}</span>
+                  <div className="text-[9px] text-gray-400 leading-tight mt-0.5">
+                    {q.id === 'Q1'  && 'all calls where Q1 was captured'}
+                    {q.id === 'Q1A' && 'Q1=Yes callers who were asked'}
+                    {q.id === 'Q2'  && 'consented callers who answered Q2'}
+                    {q.id === 'Q3'  && 'consented callers who answered Q3'}
+                    {q.id === 'Q5'  && 'callers who reached Q5'}
+                  </div>
+                </td>
                 <td className="td text-center"><StatusBadge status={q.status} /></td>
               </tr>
             ))}
