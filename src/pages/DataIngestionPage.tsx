@@ -1,7 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:8000'
+// Guard against Vercel env vars accidentally set as "KEY=VALUE" instead of just "VALUE"
+const _rawBackend = import.meta.env.VITE_BACKEND_URL as string | undefined
+const BACKEND_URL = (_rawBackend?.includes('=')
+  ? _rawBackend.split('=').slice(1).join('=')
+  : _rawBackend
+)?.replace(/\/+$/, '') || 'http://localhost:8000'
 
 async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession()
@@ -416,7 +421,7 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         setUploadState('error')
-        setErrorMsg((err as { detail?: string }).detail || 'Upload failed. Check the backend logs.')
+        setErrorMsg((err as { detail?: string }).detail || 'Upload failed. Please try again.')
         return
       }
       const { job_id } = (await res.json()) as { job_id: string }
@@ -424,7 +429,7 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
       setUploadState('processing')
     } catch {
       setUploadState('error')
-      setErrorMsg(`Could not reach backend at ${BACKEND_URL}. Is it running?`)
+      setErrorMsg('Could not reach the data processing service. Please try again in a few minutes.')
     }
   }
 
@@ -482,7 +487,7 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
                 backendOk === false ? 'text-red-400' :
                 backendWaking       ? 'text-amber-400' : 'text-slate-500'
               }`}>
-                {backendOk === true ? 'Backend Online' : backendOk === false ? 'Backend Offline' : backendWaking ? 'Waking up…' : 'Checking…'}
+                {backendOk === true ? 'Service Online' : backendOk === false ? 'Service Unavailable' : backendWaking ? 'Connecting…' : 'Checking…'}
               </span>
             </div>
             <button onClick={downloadTemplate}
@@ -517,14 +522,14 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
 
       {/* ── Backend waking banner ────────────────────────────────────────── */}
       {backendWaking && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
-          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
           <div>
-            <p className="text-[12px] font-bold text-amber-800">Backend is waking up — please wait (~30–60 s)</p>
-            <p className="text-[11px] text-amber-700 mt-0.5">
-              The Render free-tier server spins down after inactivity. It's starting now and will be ready shortly.
+            <p className="text-[12px] font-bold text-blue-800">Connecting to data processing service…</p>
+            <p className="text-[11px] text-blue-700 mt-0.5">
+              This may take up to 60 seconds on first use. Please wait.
             </p>
           </div>
         </div>
@@ -532,16 +537,16 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
 
       {/* ── Backend offline warning ───────────────────────────────────────── */}
       {backendOk === false && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
-          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
           <div>
-            <p className="text-[12px] font-bold text-amber-800">Backend not reachable at <span className="font-mono">{BACKEND_URL}</span></p>
-            <p className="text-[11px] text-amber-700 mt-0.5">
-              The server didn't respond after 60 s. It may have crashed or been stopped.
+            <p className="text-[12px] font-bold text-red-800">Data processing service is currently unavailable</p>
+            <p className="text-[11px] text-red-700 mt-0.5">
+              The service did not respond. Please try again in a few minutes.
             </p>
-            <button onClick={checkBackend} className="mt-2 text-[11px] font-semibold text-amber-700 hover:text-amber-900 underline">
+            <button onClick={checkBackend} className="mt-2 text-[11px] font-semibold text-red-700 hover:text-red-900 underline">
               Retry connection
             </button>
           </div>
