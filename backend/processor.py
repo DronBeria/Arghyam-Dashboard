@@ -13,7 +13,6 @@ Features:
 
 import io
 import traceback
-from datetime import datetime, timezone
 from difflib import get_close_matches
 import pandas as pd
 from supabase import Client
@@ -331,34 +330,46 @@ def _batch_insert(supabase: Client, table: str, records: list[dict]) -> None:
 # ── Raw record storage ────────────────────────────────────────────────────────
 
 def insert_raw_records(supabase: Client, upload_id: str, df: pd.DataFrame) -> int:
-    """Store every row as an individual record in phase2_call_records."""
+    """
+    Store every row into phase2_raw_records as JSONB (preserves ALL columns).
+    Also stores into phase2_call_records for typed access.
+    After this, call recompute_phase2_aggregates() SQL RPC to compute BSI.
+    """
     known_cols = set(COLUMN_ALIASES.keys())
-    records = []
+
+    # ── JSONB records (flexible, any structure) ────────────────────────────────
+    raw_records = []
+    typed_records = []
 
     for idx, row in df.iterrows():
+        # Build JSONB payload — include EVERY column from the original file
+        row_data = {}
+        for col in row.index:
+            v = row[col]
+            if v is not None and not (isinstance(v, float) and pd.isna(v)):
+                row_data[col] = str(v)
+
+        raw_records.append({
+            "upload_id": upload_id,
+            "row_num":   int(idx) + 2,
+            "data":      row_data,
+        })
+
+        # Also populate typed table for direct SQL queries
         def sv(col):
-            v = row.get(col)
-            if v is None or (isinstance(v, float) and pd.isna(v)):
-                return None
-            s = str(v).strip()
-            return s if s not in ("nan","none","") else None
+            v = row_data.get(col) or row_data.get(col.lower()) or row_data.get(col.upper())
+            return v if v and v not in ("nan","none","") else None
 
         def int_v(col):
-            v = sv(col)
             try:
-                return int(float(v)) if v else None
+                return int(float(sv(col))) if sv(col) else None
             except (ValueError, TypeError):
                 return None
 
-        # Preserve extra columns as JSONB
-        extra = {
-            c: str(row[c])
-            for c in row.index
-            if c not in known_cols and row[c] is not None
-            and not (isinstance(row[c], float) and pd.isna(row[c]))
-        }
+        extra = {c: str(row[c]) for c in row.index if c not in known_cols
+                 and row[c] is not None and not (isinstance(row[c], float) and pd.isna(row[c]))}
 
-        records.append({
+        typed_records.append({
             "upload_id":             upload_id,
             "row_number":            int(idx) + 2,
             "consent":               sv("consent"),
@@ -378,8 +389,9 @@ def insert_raw_records(supabase: Client, upload_id: str, df: pd.DataFrame) -> in
             "extra_data":            extra or None,
         })
 
-    _batch_insert(supabase, "phase2_call_records", records)
-    return len(records)
+    _batch_insert(supabase, "phase2_raw_records",  raw_records)
+    _batch_insert(supabase, "phase2_call_records", typed_records)
+    return len(raw_records)
 
 
 # ── Aggregate insertion ───────────────────────────────────────────────────────
@@ -497,9 +509,8 @@ def process_file_background(
     content:    bytes,
     filename:   str,
     column_map: dict | None,
-    mode:       str,           # "replace" | "append"
+    mode:       str,        # "replace" | "append"
     supabase:   Client,
-    weights:    dict | None = None,
 ) -> None:
     try:
         # 1. Parse
@@ -546,54 +557,21 @@ def process_file_background(
                         "phase2_zone_scores", "phase2_scheme_scores"]:
                 supabase.table(tbl).update({"is_active": False}).eq("is_active", True).execute()
 
-        # 5. Store raw records
+        # 5. Store raw records (both JSONB + typed)
         _update_job(supabase, job_id, progress=42,
-                    message=f"Storing {row_count:,} raw records…")
+                    message=f"Storing {row_count:,} records…")
         insert_raw_records(supabase, job_id, df)
 
-        # 6. State KPI
-        _update_job(supabase, job_id, progress=65, message="Computing BSI scores…")
-        comps = compute_bsi_components(df, weights)
+        # 6. Hand off all BSI computation to Postgres SQL engine
+        _update_job(supabase, job_id, progress=72,
+                    message="Running SQL aggregation engine…")
+        result = supabase.rpc(
+            "recompute_phase2_aggregates",
+            {"p_upload_id": job_id}
+        ).execute()
 
-        completed_mask = (
-            df["water_received_daily"].isin(["yes","no"]) &
-            df["quality_satisfied"].isin(["yes","no"]) &
-            df["quantity_satisfied"].isin(["yes","no"]) &
-            df["consistent_timing"].isin(["yes","no"]) &
-            df["overall_satisfaction"].isin(["satisfied","neutral","dissatisfied"])
-        )
-
-        supabase.table("phase2_kpi_summary").insert({
-            "upload_id":               job_id,
-            "total_calls":             row_count,
-            "consented":               comps["consented_rows"],
-            "usable_calls":            comps["usable_rows"],
-            "completed_all_5":         int(completed_mask.sum()),
-            "state_bsi":               comps["bsi"],
-            "q1_yes_pct":              comps["q1"]["pct"],
-            "q2_yes_pct":              comps["q2"]["pct"],
-            "q3_yes_pct":              comps["q3"]["pct"],
-            "q1a_yes_pct":             comps["q1a"]["pct"],
-            "q5_satisfied_pct":        comps["q5"]["pct"],
-            "q5_satisfied_count":      comps["q5"]["three_way"]["satisfied"],
-            "q5_neutral_count":        comps["q5"]["three_way"]["neutral"],
-            "q5_dissatisfied_count":   comps["q5"]["three_way"]["dissatisfied"],
-            "is_active":               True,
-        }).execute()
-
-        # 7. Aggregates
-        _update_job(supabase, job_id, progress=80,
-                    message="Aggregating district / zone / scheme scores…")
-        n_d, n_z, n_s = _insert_aggregates(supabase, job_id, df, weights)
-
-        _update_job(supabase, job_id,
-                    status="complete", progress=100,
-                    message=(f"Done — {row_count:,} rows · BSI {comps['bsi_5']}/5 · "
-                             f"{n_d} districts · {n_z} zones · {n_s} schemes"),
-                    completed_at=datetime.now(timezone.utc).isoformat())
-
-        print(f"[{job_id}] Complete — {row_count:,} rows, BSI={comps['bsi']}, "
-              f"{n_d}d / {n_z}z / {n_s}s")
+        summary = result.data or {}
+        print(f"[{job_id}] SQL engine done — {summary}")
 
     except Exception:
         err = traceback.format_exc()
@@ -605,58 +583,19 @@ def process_file_background(
 
 # ── Re-process from stored records ───────────────────────────────────────────
 
-def reprocess_from_records(
-    job_id:   str,
-    supabase: Client,
-    weights:  dict | None = None,
-) -> None:
-    """Re-run BSI computation from already-stored raw records (no re-upload needed)."""
+def reprocess_from_records(job_id: str, supabase: Client) -> None:
+    """Re-run BSI via the SQL engine — no re-upload, no Python computation."""
     try:
-        _update_job(supabase, job_id, status="processing", progress=10,
-                    message="Loading stored records…")
-
-        df = df_from_stored_records(supabase, job_id)
-        if df.empty:
-            _update_job(supabase, job_id, status="error", progress=0,
-                        message="No raw records found for this upload.")
-            return
-
-        _update_job(supabase, job_id, progress=35,
-                    message=f"Recomputing BSI for {len(df):,} records…")
-
-        # Deactivate this upload's old aggregates
-        for tbl in ["phase2_kpi_summary", "phase2_district_scores",
-                    "phase2_zone_scores", "phase2_scheme_scores"]:
-            supabase.table(tbl).update({"is_active": False}).eq("upload_id", job_id).execute()
-
-        comps = compute_bsi_components(df, weights)
-
-        supabase.table("phase2_kpi_summary").insert({
-            "upload_id":             job_id,
-            "total_calls":           len(df),
-            "consented":             comps["consented_rows"],
-            "usable_calls":          comps["usable_rows"],
-            "state_bsi":             comps["bsi"],
-            "q1_yes_pct":            comps["q1"]["pct"],
-            "q2_yes_pct":            comps["q2"]["pct"],
-            "q3_yes_pct":            comps["q3"]["pct"],
-            "q1a_yes_pct":           comps["q1a"]["pct"],
-            "q5_satisfied_pct":      comps["q5"]["pct"],
-            "q5_satisfied_count":    comps["q5"]["three_way"]["satisfied"],
-            "q5_neutral_count":      comps["q5"]["three_way"]["neutral"],
-            "q5_dissatisfied_count": comps["q5"]["three_way"]["dissatisfied"],
-            "is_active":             True,
-        }).execute()
-
-        _update_job(supabase, job_id, progress=70, message="Recomputing aggregates…")
-        n_d, n_z, n_s = _insert_aggregates(supabase, job_id, df, weights)
-
-        _update_job(supabase, job_id,
-                    status="complete", progress=100,
-                    message=f"Reprocessed {len(df):,} records · BSI {comps['bsi_5']}/5",
-                    completed_at=datetime.now(timezone.utc).isoformat())
-
+        _update_job(supabase, job_id, status="processing", progress=20,
+                    message="Running SQL aggregation engine…")
+        result = supabase.rpc(
+            "recompute_phase2_aggregates",
+            {"p_upload_id": job_id}
+        ).execute()
+        summary = result.data or {}
+        print(f"[{job_id}] Reprocess done — {summary}")
     except Exception:
         err = traceback.format_exc()
+        print(f"[{job_id}] Reprocess ERROR:\n{err}")
         _update_job(supabase, job_id, status="error", progress=0,
                     message="Reprocessing failed.", error_detail=err[:4000])

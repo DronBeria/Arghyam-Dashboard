@@ -94,9 +94,6 @@ async def require_auth(authorization: str | None = Header(default=None)):
 
 
 # ── Request / response models ─────────────────────────────────────────────────
-class ReprocessRequest(BaseModel):
-    weights: dict[str, float] | None = None   # optional custom BSI weights
-
 class RecordUpdate(BaseModel):
     consent:               str | None = None
     water_received_daily:  str | None = None
@@ -176,10 +173,9 @@ async def upload_file(
     _user=Depends(require_auth),
     mode:           str  = Query("replace", enum=["replace", "append"]),
     column_map:     str  = Query(None, description="JSON object mapping canonical→original column names"),
-    weights:        str  = Query(None, description="JSON object with custom BSI weights"),
 ):
     """
-    Upload CSV or XLSX. Accepts optional column_map and BSI weights as JSON query params.
+    Upload CSV or XLSX. BSI is computed by the SQL engine after upload.
     mode=replace (default): deactivates previous data. mode=append: keeps previous data.
     """
     fname = (file.filename or "").lower()
@@ -192,9 +188,8 @@ async def upload_file(
     if not content:
         raise HTTPException(400, "File is empty.")
 
-    col_map_dict  = json.loads(column_map) if column_map else None
-    weights_dict  = json.loads(weights)    if weights    else None
-    job_id        = str(uuid.uuid4())
+    col_map_dict = json.loads(column_map) if column_map else None
+    job_id       = str(uuid.uuid4())
 
     supabase.table("phase2_uploads").insert({
         "id":              job_id,
@@ -210,7 +205,7 @@ async def upload_file(
     background_tasks.add_task(
         process_file_background,
         job_id, content, file.filename or "",
-        col_map_dict, mode, supabase, weights_dict,
+        col_map_dict, mode, supabase,
     )
 
     return {"job_id": job_id, "status": "queued", "mode": mode}
@@ -265,14 +260,10 @@ def get_report(job_id: str, _user=Depends(require_auth)):
 @app.post("/api/uploads/{job_id}/reprocess")
 async def reprocess_upload(
     job_id: str,
-    body:   ReprocessRequest,
     background_tasks: BackgroundTasks,
     _user=Depends(require_auth),
 ):
-    """
-    Re-run BSI computation from stored raw records — no re-upload needed.
-    Optionally pass custom weights to change the BSI formula.
-    """
+    """Re-run BSI computation from stored raw records via the SQL engine — no re-upload needed."""
     r = supabase.table("phase2_uploads").select("status").eq("id", job_id).maybe_single().execute()
     if not r.data:
         raise HTTPException(404, "Upload not found.")
@@ -280,7 +271,7 @@ async def reprocess_upload(
         raise HTTPException(409, "Job is already running.")
 
     from processor import reprocess_from_records
-    background_tasks.add_task(reprocess_from_records, job_id, supabase, body.weights)
+    background_tasks.add_task(reprocess_from_records, job_id, supabase)
     return {"job_id": job_id, "status": "reprocessing"}
 
 
@@ -373,14 +364,47 @@ def export_upload(
         )
 
 
-# ── Delete upload ─────────────────────────────────────────────────────────────
+# ── Delete one upload + all its data ─────────────────────────────────────────
 @app.delete("/api/uploads/{job_id}")
 def delete_upload(job_id: str, _user=Depends(require_auth)):
-    for tbl in ["phase2_call_records", "phase2_scheme_scores",
-                "phase2_district_scores", "phase2_zone_scores", "phase2_kpi_summary"]:
-        supabase.table(tbl).delete().eq("upload_id", job_id).execute()
-    supabase.table("phase2_uploads").delete().eq("id", job_id).execute()
-    return {"deleted": job_id}
+    """Delete a single upload and every row it produced (raw records + all aggregates)."""
+    r = supabase.rpc("delete_phase2_upload", {"p_upload_id": job_id}).execute()
+    return r.data or {"deleted": job_id}
+
+
+# ── Delete ALL Phase 2 data ───────────────────────────────────────────────────
+@app.delete("/api/phase2/all")
+def delete_all_phase2(_user=Depends(require_auth)):
+    """
+    Wipe every upload, raw record, and aggregate from all Phase 2 tables.
+    This cannot be undone.
+    """
+    r = supabase.rpc("delete_all_phase2_data", {}).execute()
+    return r.data or {"status": "all Phase 2 data deleted"}
+
+
+# ── Delete specific rows within an upload (by field filter) ──────────────────
+class FilterDeleteRequest(BaseModel):
+    filter: dict    # e.g. {"district": "Kamrup"} or {"zone": "Lower Assam", "consent": "no"}
+
+@app.post("/api/uploads/{job_id}/delete-rows")
+def delete_rows_by_filter(
+    job_id: str,
+    body:   FilterDeleteRequest,
+    _user=Depends(require_auth),
+):
+    """
+    Delete raw records within an upload that match specific field values.
+    After deleting, call /reprocess to refresh BSI scores.
+    Example body: {"filter": {"district": "Kamrup Metro", "consent": "no"}}
+    """
+    if not body.filter:
+        raise HTTPException(400, "filter must not be empty.")
+    r = supabase.rpc(
+        "delete_phase2_records_where",
+        {"p_upload_id": job_id, "p_filter": body.filter}
+    ).execute()
+    return r.data or {"deleted_rows": 0}
 
 
 # ── Raw records — list ────────────────────────────────────────────────────────
