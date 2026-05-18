@@ -8,13 +8,15 @@ from fastapi import FastAPI, UploadFile, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from pathlib import Path
 from supabase import create_client, Client
 import asyncio
 import httpx
 import os
 import uuid
 
-load_dotenv()
+# Load backend/.env regardless of the working directory uvicorn is started from
+load_dotenv(Path(__file__).parent / ".env", override=False)
 
 SUPABASE_URL         = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
@@ -29,14 +31,25 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024   # 50 MB hard cap
 
+# CORS — default allows local dev + Vercel deploy; override via ALLOWED_ORIGINS env var
+_raw_origins = os.environ.get(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000,http://localhost:4173,https://arghyam-dashboard.vercel.app"
+)
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 
 # ── Keep-alive loop (prevents Render free-tier spin-down) ─────────────────────
 async def _keep_alive():
-    """Ping own /health every 10 minutes so Render never marks the service idle."""
-    await asyncio.sleep(30)
-    port = os.environ.get("PORT", "8000")
-    url  = f"http://localhost:{port}/health"
-    async with httpx.AsyncClient(timeout=10) as client:
+    """Ping own public URL every 10 minutes to keep Render free-tier awake.
+    Render measures *external* requests; localhost pings do not count."""
+    await asyncio.sleep(60)
+    # RENDER_EXTERNAL_URL is set automatically by Render on all services
+    self_url = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
+    if not self_url:
+        return   # not on Render — nothing to keep alive
+    url = f"{self_url}/health"
+    async with httpx.AsyncClient(timeout=15) as client:
         while True:
             try:
                 await client.get(url)
@@ -56,7 +69,7 @@ app = FastAPI(title="JJM Phase 2 Data Pipeline", version="1.1.0", lifespan=lifes
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://arghyam-dashboard.vercel.app"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

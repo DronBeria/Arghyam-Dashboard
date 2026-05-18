@@ -299,6 +299,7 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
   const [uploadHistory, setUploadHistory] = useState<UploadJob[]>([])
   const [errorMsg, setErrorMsg]         = useState<string | null>(null)
   const [backendOk, setBackendOk]       = useState<boolean | null>(null)
+  const [backendWaking, setBackendWaking] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pollRef      = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -318,12 +319,24 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
   }, [jobId, uploadState])
 
   async function checkBackend() {
+    setBackendWaking(false)
+    // First quick check (4 s) — if it passes we're done
     try {
       const res = await fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(4000) })
-      setBackendOk(res.ok)
-    } catch {
-      setBackendOk(false)
+      if (res.ok) { setBackendOk(true); return }
+    } catch { /* fall through to slow retry */ }
+
+    // Render free-tier cold-start can take up to 60 s — show "waking" and wait
+    setBackendWaking(true)
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 6000))
+      try {
+        const res = await fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(8000) })
+        if (res.ok) { setBackendOk(true); setBackendWaking(false); return }
+      } catch { /* keep retrying */ }
     }
+    setBackendOk(false)
+    setBackendWaking(false)
   }
 
   async function fetchHistory() {
@@ -454,19 +467,22 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${
-              backendOk === true  ? 'bg-emerald-500/10 border-emerald-500/20' :
-              backendOk === false ? 'bg-red-500/10 border-red-500/20' :
+              backendOk === true    ? 'bg-emerald-500/10 border-emerald-500/20' :
+              backendOk === false   ? 'bg-red-500/10 border-red-500/20' :
+              backendWaking         ? 'bg-amber-500/10 border-amber-500/20' :
               'bg-white/5 border-white/10'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${
-                backendOk === true ? 'bg-emerald-400 animate-pulse' :
-                backendOk === false ? 'bg-red-400' : 'bg-slate-500'
+                backendOk === true  ? 'bg-emerald-400 animate-pulse' :
+                backendOk === false ? 'bg-red-400' :
+                backendWaking       ? 'bg-amber-400 animate-pulse' : 'bg-slate-500'
               }`} />
               <span className={`text-[10px] font-bold uppercase tracking-wide ${
-                backendOk === true ? 'text-emerald-400' :
-                backendOk === false ? 'text-red-400' : 'text-slate-500'
+                backendOk === true  ? 'text-emerald-400' :
+                backendOk === false ? 'text-red-400' :
+                backendWaking       ? 'text-amber-400' : 'text-slate-500'
               }`}>
-                {backendOk === true ? 'Backend Online' : backendOk === false ? 'Backend Offline' : 'Checking…'}
+                {backendOk === true ? 'Backend Online' : backendOk === false ? 'Backend Offline' : backendWaking ? 'Waking up…' : 'Checking…'}
               </span>
             </div>
             <button onClick={downloadTemplate}
@@ -499,6 +515,21 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
         </div>
       </div>
 
+      {/* ── Backend waking banner ────────────────────────────────────────── */}
+      {backendWaking && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <div>
+            <p className="text-[12px] font-bold text-amber-800">Backend is waking up — please wait (~30–60 s)</p>
+            <p className="text-[11px] text-amber-700 mt-0.5">
+              The Render free-tier server spins down after inactivity. It's starting now and will be ready shortly.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Backend offline warning ───────────────────────────────────────── */}
       {backendOk === false && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
@@ -508,8 +539,7 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
           <div>
             <p className="text-[12px] font-bold text-amber-800">Backend not reachable at <span className="font-mono">{BACKEND_URL}</span></p>
             <p className="text-[11px] text-amber-700 mt-0.5">
-              Start the FastAPI server: <span className="font-mono bg-amber-100 px-1 rounded">cd backend &amp;&amp; uvicorn main:app --reload</span>.
-              Set <span className="font-mono">VITE_BACKEND_URL</span> in <span className="font-mono">.env</span> if running on a different port.
+              The server didn't respond after 60 s. It may have crashed or been stopped.
             </p>
             <button onClick={checkBackend} className="mt-2 text-[11px] font-semibold text-amber-700 hover:text-amber-900 underline">
               Retry connection
