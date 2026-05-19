@@ -13,7 +13,7 @@ import { SchemePage } from './pages/SchemePage'
 import { GeographicPage } from './pages/GeographicPage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Phase = 'phase1' | 'phase2'
+type Phase = 'phase1' | 'phase2' | 'fullcampaign'
 type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic'
 
 interface NavItem {
@@ -194,27 +194,31 @@ export default function App() {
         <div className={`flex-shrink-0 border-b border-white/[0.06] ${sidebarOpen ? 'p-3' : 'p-2'}`}>
           {sidebarOpen ? (
             <div className="flex rounded-lg overflow-hidden border border-white/[0.08] p-0.5 gap-0.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
-              {(['phase1', 'phase2'] as const).map(p => (
-                <button key={p} onClick={() => switchPhase(p)}
-                  className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all ${
-                    phase === p
-                      ? 'bg-blue-500 text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-300'
+              {([
+                { id: 'phase1',      label: 'Phase 1', color: 'bg-emerald-500' },
+                { id: 'phase2',      label: 'Phase 2', color: 'bg-blue-500'    },
+                { id: 'fullcampaign',label: 'Full',    color: 'bg-violet-500'  },
+              ] as const).map(p => (
+                <button key={p.id} onClick={() => switchPhase(p.id)}
+                  className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${
+                    phase === p.id ? `${p.color} text-white shadow-sm` : 'text-slate-500 hover:text-slate-300'
                   }`}>
-                  {p === 'phase1' ? 'Phase 1' : 'Phase 2'}
+                  {p.label}
                 </button>
               ))}
             </div>
           ) : (
             <div className="flex flex-col gap-1">
-              {(['phase1', 'phase2'] as const).map(p => (
-                <button key={p} onClick={() => switchPhase(p)} title={p === 'phase1' ? 'Phase 1' : 'Phase 2'}
+              {([
+                { id: 'phase1',      label: '1', title: 'Phase 1',      color: 'bg-emerald-500' },
+                { id: 'phase2',      label: '2', title: 'Phase 2',      color: 'bg-blue-500'    },
+                { id: 'fullcampaign',label: '∑', title: 'Full Campaign', color: 'bg-violet-500'  },
+              ] as const).map(p => (
+                <button key={p.id} onClick={() => switchPhase(p.id)} title={p.title}
                   className={`w-full py-1 rounded-md text-[10px] font-black transition-all ${
-                    phase === p
-                      ? 'bg-blue-500 text-white'
-                      : 'text-slate-600 hover:text-slate-400'
-                  }`} style={phase !== p ? { background: 'rgba(255,255,255,0.04)' } : {}}>
-                  {p === 'phase1' ? '1' : '2'}
+                    phase === p.id ? `${p.color} text-white` : 'text-slate-600 hover:text-slate-400'
+                  }`} style={phase !== p.id ? { background: 'rgba(255,255,255,0.04)' } : {}}>
+                  {p.label}
                 </button>
               ))}
             </div>
@@ -222,11 +226,11 @@ export default function App() {
           {sidebarOpen && (
             <div className="mt-1.5 flex items-center justify-center">
               <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${
-                phase === 'phase1'
-                  ? 'text-emerald-500 bg-emerald-500/10'
-                  : 'text-blue-400 bg-blue-500/10'
+                phase === 'phase1' ? 'text-emerald-500 bg-emerald-500/10'
+                : phase === 'phase2' ? 'text-blue-400 bg-blue-500/10'
+                : 'text-violet-400 bg-violet-500/10'
               }`}>
-                {phase === 'phase1' ? '● Active · Apr 2026' : '● Active · May 2026'}
+                {phase === 'phase1' ? '● Active · Apr 2026' : phase === 'phase2' ? '● Active · May 2026' : '● Combined · Apr–May 2026'}
               </span>
             </div>
           )}
@@ -319,10 +323,10 @@ export default function App() {
               <span>Araghyam</span>
               <span className="text-slate-300">/</span>
               <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                phase === 'phase1'
-                  ? 'text-emerald-700 bg-emerald-100'
-                  : 'text-blue-700 bg-blue-100'
-              }`}>{phase === 'phase1' ? 'Phase 1' : 'Phase 2'}</span>
+                phase === 'phase1' ? 'text-emerald-700 bg-emerald-100'
+                : phase === 'phase2' ? 'text-blue-700 bg-blue-100'
+                : 'text-violet-700 bg-violet-100'
+              }`}>{phase === 'phase1' ? 'Phase 1' : phase === 'phase2' ? 'Phase 2' : 'Full Campaign'}</span>
               <span className="text-slate-300">/</span>
               <span className="text-slate-600 font-semibold">{PAGE_META[page].title}</span>
             </div>
@@ -352,7 +356,7 @@ export default function App() {
               </PhaseDataProvider>
             )}
 
-            {/* Phase 2 pages — static data + Supabase call records (May 2026) */}
+            {/* Phase 2 pages — new May 2026 calls only */}
             {phase === 'phase2' && (
               <PhaseDataProvider phase="phase2">
                 {page === 'overview'   && <OverviewPage />}
@@ -364,9 +368,21 @@ export default function App() {
               </PhaseDataProvider>
             )}
 
+            {/* Full Campaign — Phase 1 + Phase 2 combined with comparison section */}
+            {phase === 'fullcampaign' && (
+              <PhaseDataProvider phase="fullcampaign">
+                {page === 'overview'   && <OverviewPage />}
+                {page === 'calls'      && <CallAnalysisPage />}
+                {page === 'records'    && <CallRecordsPage />}
+                {page === 'survey'     && <SurveyResultsPage />}
+                {page === 'schemes'    && <SchemePage />}
+                {page === 'geographic' && <GeographicPage />}
+              </PhaseDataProvider>
+            )}
+
             <footer className="mt-12 pt-6 border-t border-slate-200/60 text-center">
               <p className="panel-label">
-                Araghyam · CSAT AI · Assam JJM · {phase === 'phase1' ? 'Phase 1 · 45,863 calls · April 2026' : 'Phase 2 · 125,588 calls · May 2026'}
+                Araghyam · CSAT AI · Assam JJM · {phase === 'phase1' ? 'Phase 1 · 45,863 calls · April 2026' : phase === 'phase2' ? 'Phase 2 · 79,725 calls · May 2026' : 'Full Campaign · 125,588 calls · Apr–May 2026'}
               </p>
             </footer>
           </div>

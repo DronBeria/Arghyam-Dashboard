@@ -868,6 +868,110 @@ export function OverviewPage() {
         </div>
       )}
 
+      {/* ── Phase Comparison (Full Campaign only) ───────────────────────── */}
+      {data.comparison && <PhaseComparisonSection comparison={data.comparison} />}
+
+    </div>
+  )
+}
+
+// ─── Phase Comparison Section ─────────────────────────────────────────────────
+function PhaseComparisonSection({ comparison }: { comparison: NonNullable<ReturnType<typeof usePhaseData>['comparison']> }) {
+  const trendIcon  = (trend: string, isGoodUp: boolean) => {
+    if (trend === 'neutral') return { icon: '→', cls: 'text-gray-500' }
+    const isPositive = (trend === 'up' && isGoodUp) || (trend === 'down' && !isGoodUp)
+    return {
+      icon: trend === 'up' ? '↑' : '↓',
+      cls: isPositive ? 'text-emerald-600' : 'text-red-600',
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="card p-4">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-black">≈</span>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-800">Phase 1 vs Phase 2 Comparison</p>
+            <p className="text-xs text-gray-400">
+              Phase 1: 45,863 calls · Apr 2026 · BSI {comparison.p1Bsi5}/5 &nbsp;|&nbsp;
+              Phase 2: 79,725 calls · May 2026 · BSI {comparison.p2Bsi5}/5
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI comparison grid */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100">
+          <p className="panel-title">Key Metric Changes  Phase 1 → Phase 2</p>
+          <p className="panel-sub mt-0.5">Arrow colour: green = improvement · red = regression</p>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {comparison.metrics.map(m => {
+            const { icon, cls } = trendIcon(m.trend, m.isGoodUp)
+            return (
+              <div key={m.label} className="px-5 py-3 flex items-center gap-3">
+                <span className="text-xs font-semibold text-gray-600 w-36 flex-shrink-0 truncate">{m.label}</span>
+                <span className="text-xs font-mono text-gray-500 w-16 text-right flex-shrink-0">{m.p1}</span>
+                <span className="text-gray-300 text-xs flex-shrink-0">→</span>
+                <span className="text-xs font-mono font-bold text-gray-800 w-16 text-right flex-shrink-0">{m.p2}</span>
+                <span className={`text-sm font-black w-6 flex-shrink-0 ${cls}`}>{icon}</span>
+                <span className={`text-xs font-bold w-16 flex-shrink-0 ${cls}`}>{m.change}</span>
+                <span className="text-[10px] text-gray-400 flex-1 leading-snug hidden md:block">{m.note}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Zone BSI changes */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100">
+          <p className="panel-title">Zone BSI Changes  Phase 1 → Phase 2</p>
+          <p className="panel-sub mt-0.5">BSI out of 5.0 · Phase 2 zone data based on limited May 2026 sample</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/60">
+                <th className="th text-left">Zone</th>
+                <th className="th text-right">Phase 1 BSI</th>
+                <th className="th text-right">Phase 2 BSI</th>
+                <th className="th text-center">Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.zoneChanges.map(z => {
+                const isUp = z.direction === 'up'
+                const isNoData = z.direction === 'nodata'
+                return (
+                  <tr key={z.zone} className="border-b border-gray-50 last:border-0">
+                    <td className="td font-medium text-gray-800">{z.zone}</td>
+                    <td className="td-mono text-right text-gray-600">{z.p1Bsi5 === '—' ? '—' : `${z.p1Bsi5}/5`}</td>
+                    <td className="td-mono text-right text-gray-600">{isNoData || !z.p2Bsi5 ? <span className="text-gray-300">No data</span> : `${z.p2Bsi5}/5`}</td>
+                    <td className="td text-center">
+                      {isNoData ? (
+                        <span className="text-gray-300 text-xs">—</span>
+                      ) : (
+                        <span className={`text-xs font-bold ${isUp ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {isUp ? '↑' : '↓'} {z.changePp}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-5 py-2.5 bg-amber-50 border-t border-amber-100">
+          <p className="text-[10px] text-amber-700">Phase 2 zone scores are based on 800 usable calls across 5 zones (vs 9,224 in Phase 1). Results are directional indicators — sample sizes are limited for some zones.</p>
+        </div>
+      </div>
     </div>
   )
 }

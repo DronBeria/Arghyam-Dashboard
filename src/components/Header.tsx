@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 interface HeaderProps {
   pageTitle: string
-  phase?: 'phase1' | 'phase2'
+  phase?: 'phase1' | 'phase2' | 'fullcampaign'
   onNavigate: (page: string) => void
   userEmail?: string
 }

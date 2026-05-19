@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import * as p1 from '../data/csatData'
 import * as p2 from '../data/csatData2'
+import * as pFull from '../data/csatDataFull'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface ConsentBreakdownItem {
@@ -78,9 +79,23 @@ export interface PhaseData {
   q5BaseNote: string
 
   // For CallRecordsPage — Supabase date filter to isolate this phase
-  phaseGteDate: string | null   // gte filter (Phase 2: '2026-05-01', Phase 1: null)
-  phaseLtDate:  string | null   // lt  filter (Phase 1: '2026-05-01', Phase 2: null)
-  dbRecordCount: number         // actual records in Supabase for this phase
+  phaseGteDate: string | null
+  phaseLtDate:  string | null
+  dbRecordCount: number
+
+  // Phase 1 vs Phase 2 comparison (populated only for fullcampaign)
+  comparison: PhaseComparison | null
+}
+
+export interface ComparisonMetric {
+  label: string; p1: string; p2: string; change: string
+  trend: 'up' | 'down' | 'neutral'; isGoodUp: boolean; note: string
+}
+
+export interface PhaseComparison {
+  p1Calls: number; p2Calls: number; p1Bsi5: string; p2Bsi5: string
+  metrics: ComparisonMetric[]
+  zoneChanges: Array<{ zone: string; p1Bsi5: string; p2Bsi5: string | null; changePp: string; direction: 'up' | 'down' | 'nodata' }>
 }
 
 // ─── Phase 1 full data ────────────────────────────────────────────────────────
@@ -159,14 +174,118 @@ const PHASE1_DATA: PhaseData = {
   phaseGteDate:  null,
   phaseLtDate:   '2026-05-01',
   dbRecordCount: 45863,
+  comparison:    null,
 }
 
-// ─── Phase 2 full data ────────────────────────────────────────────────────────
+// ─── Phase 2 data (79,725 new May 2026 calls only) ───────────────────────────
 const PHASE2_DATA: PhaseData = {
   ...p2,
   phase: 'phase2',
   phaseLabel: 'Phase 2',
   dateLabel: 'May 2026',
+  hasSchemeSearch: false,
+
+  stateInsightCalls:   '16.1% consented · 83.9% refused or no response',
+  stateInsightQuality: '55.0% satisfied · 24.0% dissatisfied · 21.0% neutral',
+  usableCallsLabel:    '6,408',
+  usableInsightText:   '8.0% of 79,725 dialled · Q1 answered yes or no',
+  usableYieldText:     '8.0% yield',
+  baseConsented:       12861,
+  stateScopeText:      '79,725 calls · 23 districts · 5 zones',
+  consentBreakdown: [
+    { label: 'Consented',       pct: '16.1%', n: '12,861', dot: 'bg-indigo-500', color: 'text-indigo-700' },
+    { label: 'Refused',         pct: '82.7%', n: '65,949', dot: 'bg-red-400',    color: 'text-red-600'   },
+    { label: 'No response',     pct: '0.4%',  n: '297',    dot: 'bg-amber-300',  color: 'text-amber-600' },
+    { label: 'Unknown/invalid', pct: '0.8%',  n: '618',    dot: 'bg-gray-300',   color: 'text-gray-500'  },
+  ],
+  consentNoteText:   '16.1 + 82.7 + 0.4 + 0.8 = 100.0% ✓',
+  validSchemesText:  'Of 106 valid schemes:',
+  bestDistrict:      { name: 'Dhubri',     bsi5: '3.674' },
+  worstDistrict:     { name: 'Bongaigaon', bsi5: '1.591' },
+  districtCountLabel:'23',
+  dhacNote:          'Barak Valley and DHAC excluded: no valid schemes (≥6 usable calls) in Phase 2 May data · BSI shown out of 5.0 (Good ≥ 3.50)',
+
+  ATTEMPT_CHART: [
+    { attempt: '1st', consent: 13, satisfied: 53.9, calls: 54729 },
+    { attempt: '2nd', consent: 22, satisfied: 56.4, calls: 23928 },
+    { attempt: '3rd', consent: 29, satisfied: 48.9, calls: 1030  },
+    { attempt: '4th', consent: 45, satisfied: 40.0, calls: 38    },
+  ],
+  CONSENT_PATH: [
+    { label: 'Total Dialled',     val: 79725, pct: 100,  note: 'All Phase 2 calls attempted' },
+    { label: 'Consented',         val: 12861, pct: 16.1, note: 'consent = "yes" · Q2–Q5 base' },
+    { label: 'Completed All 5 Q', val: 1669,  pct: 13.0, note: '13.0% of consented · not % of total' },
+  ],
+  USABLE_PATH: [
+    { label: 'Total Dialled', val: 79725, pct: 100, note: 'All Phase 2 calls attempted' },
+    { label: 'Q1 Answered',   val: 6408,  pct: 8.0, note: 'Q1 base · includes consented and non-consented' },
+  ],
+  OUTCOME_BREAKDOWN: [
+    { label: 'Answered – Consented',  val: 12861, pct: 16.1, color: 'bg-emerald-400' },
+    { label: 'Answered – Refused',    val: 65949, pct: 82.7, color: 'bg-orange-400'  },
+    { label: 'No Response (blank)',    val: 297,   pct: 0.4,  color: 'bg-red-300'     },
+    { label: 'Unknown / Invalid',      val: 618,   pct: 0.8,  color: 'bg-gray-300'    },
+  ],
+  attemptsInsight: "Attempt 4 shows the lowest satisfaction (40.0%) based on 5 respondents — too small to be reliable. Attempt 3 consent rate (29%) is notably higher than attempt 1 (13%), suggesting persistent households are more open to engaging.",
+  repeatInsight:   'Phase 1 re-contacted households (3,788) show 73% higher usable call rate (13.5% vs 7.8%) and more than double the completion rate (4.5% vs 2.1%). Re-targeting Phase 1 contacts yields significantly richer data.',
+  funnelCards: [
+    { label: 'Consented base (Q2–Q5)', val: '12,861', sub: 'Agreed to survey',   color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200'   },
+    { label: 'Usable base (Q1)',        val: '6,408',  sub: 'Answered Q1',         color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'       },
+    { label: 'Q5 respondents',          val: '2,212',  sub: '17.2% of consented',  color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200'     },
+    { label: 'Completed all 5',         val: '1,669',  sub: '13.0% of consented',  color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
+  ],
+  liftCards: [
+    { label: 'Consent Rate', first: 15.9, repeat: 21.2, unit: '%', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+    { label: 'Usable Calls', first: 7.8,  repeat: 13.5, unit: '%', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+    { label: 'Completion',   first: 2.1,  repeat: 4.5,  unit: '%', color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200'       },
+  ],
+  repeatTrend: [
+    { name: 'Consent',    first: 15.9, repeat: 21.2 },
+    { name: 'Usable',     first: 7.8,  repeat: 13.5 },
+    { name: 'Completion', first: 2.1,  repeat: 4.5  },
+  ],
+  q5NoteText:  '2,212 total reached Q5 (2,041 consented + 171 non-consented who stayed through the call). Overall: 55.0% satisfied.',
+  q5BaseLabel: '2,212 respondents',
+  q5BaseNote:  '2,212 total reached Q5 (2,041 consented + 171 non-consented who answered). The 6,408 usable calls are the Q1 base — a separate population. Of those who reached Q5: 55.0% satisfied · 24.0% dissatisfied · 21.0% neutral.',
+
+  phaseGteDate:  '2026-05-01',
+  phaseLtDate:   null,
+  dbRecordCount: 79725,
+  comparison:    null,
+}
+
+// ─── Full Campaign data (Phase 1 + Phase 2 combined) ─────────────────────────
+const COMPARISON_DATA: PhaseComparison = {
+  p1Calls: 45863,
+  p2Calls: 79725,
+  p1Bsi5:  '2.20',
+  p2Bsi5:  '2.72',
+  metrics: [
+    { label: 'State BSI',          p1: '2.20 / 5', p2: '2.72 / 5', change: '+24%',    trend: 'up',   isGoodUp: true,  note: 'Significant improvement across both phases' },
+    { label: 'Q5 Overall Satisfied',p1: '51.7%',   p2: '55.0%',    change: '+3.3pp',  trend: 'up',   isGoodUp: true,  note: 'Household satisfaction rose in Phase 2' },
+    { label: 'Q3 Water Quantity',   p1: '62.23%',  p2: '64.93%',   change: '+2.7pp',  trend: 'up',   isGoodUp: true,  note: 'Quantity satisfaction improving' },
+    { label: 'Q2 Water Quality',    p1: '72.33%',  p2: '73.09%',   change: '+0.8pp',  trend: 'up',   isGoodUp: true,  note: 'Quality already good in Phase 1, marginally better' },
+    { label: 'Q1 Daily Water',      p1: '30.95%',  p2: '30.34%',   change: '-0.6pp',  trend: 'down', isGoodUp: true,  note: 'Daily supply remains the critical gap — no improvement' },
+    { label: 'Consent Rate',        p1: '27.4%',   p2: '16.1%',    change: '-11.3pp', trend: 'down', isGoodUp: true,  note: 'Lower consent in Phase 2 reflects expanded reach to harder-to-contact households' },
+    { label: 'Usable Call Rate',    p1: '20.1%',   p2: '8.0%',     change: '-12.1pp', trend: 'down', isGoodUp: true,  note: 'Larger Phase 2 campaign reached many first-time contacts who rarely answered Q1' },
+    { label: 'Total Calls',         p1: '45,863',  p2: '79,725',   change: '+74%',    trend: 'up',   isGoodUp: true,  note: 'Phase 2 coverage expanded significantly' },
+  ],
+  zoneChanges: [
+    { zone: 'North Assam',  p1Bsi5: '2.418', p2Bsi5: '2.553', changePp: '+0.135', direction: 'up' },
+    { zone: 'Upper Assam',  p1Bsi5: '2.393', p2Bsi5: '2.971', changePp: '+0.578', direction: 'up' },
+    { zone: 'Lower Assam',  p1Bsi5: '2.277', p2Bsi5: '2.557', changePp: '+0.280', direction: 'up' },
+    { zone: 'BTAD',         p1Bsi5: '1.921', p2Bsi5: '2.505', changePp: '+0.584', direction: 'up' },
+    { zone: 'KAAC',         p1Bsi5: '2.316', p2Bsi5: '3.125', changePp: '+0.809', direction: 'up' },
+    { zone: 'Barak Valley', p1Bsi5: '1.895', p2Bsi5: null,    changePp: 'No data', direction: 'nodata' },
+    { zone: 'DHAC',         p1Bsi5: '—',     p2Bsi5: null,    changePp: 'No data', direction: 'nodata' },
+  ],
+}
+
+const FULL_CAMPAIGN_DATA: PhaseData = {
+  ...pFull,
+  phase: 'phase2', // treated as phase2 for Supabase filters (both months)
+  phaseLabel: 'Full Campaign',
+  dateLabel: 'Apr–May 2026',
   hasSchemeSearch: false,
 
   stateInsightCalls:   '20.4% consented · 79.6% refused or no response',
@@ -187,7 +306,7 @@ const PHASE2_DATA: PhaseData = {
   bestDistrict:      { name: 'Dhubri',     bsi5: '3.305' },
   worstDistrict:     { name: 'Hailakandi', bsi5: '1.539' },
   districtCountLabel:'33',
-  dhacNote:          'DHAC excluded: no valid schemes (≥6 usable calls) in Phase 2 data · BSI shown out of 5.0 (Good ≥ 3.50)',
+  dhacNote:          'DHAC excluded: no valid schemes across the full campaign · BSI shown out of 5.0 (Good ≥ 3.50)',
 
   ATTEMPT_CHART: [
     { attempt: '1st', consent: 20, satisfied: 52.8, calls: 94362 },
@@ -197,13 +316,13 @@ const PHASE2_DATA: PhaseData = {
     { attempt: '5th', consent: 23, satisfied: 60.7, calls: 307   },
   ],
   CONSENT_PATH: [
-    { label: 'Total Dialled',      val: 125588, pct: 100,  note: 'All calls attempted' },
-    { label: 'Consented',          val: 25617,  pct: 20.4, note: 'consent = "yes" · Q2–Q5 base' },
-    { label: 'Completed All 5 Q',  val: 5222,   pct: 20.4, note: '20.4% of consented · not % of total' },
+    { label: 'Total Dialled',     val: 125588, pct: 100,  note: 'All Phase 1 + Phase 2 calls' },
+    { label: 'Consented',         val: 25617,  pct: 20.4, note: 'consent = "yes" · Q2–Q5 base' },
+    { label: 'Completed All 5 Q', val: 5222,   pct: 20.4, note: '20.4% of consented · not % of total' },
   ],
   USABLE_PATH: [
-    { label: 'Total Dialled', val: 125588, pct: 100,  note: 'All calls attempted' },
-    { label: 'Q1 Answered',   val: 15660,  pct: 12.5, note: 'Q1 base · 14,065 consented + 1,595 not' },
+    { label: 'Total Dialled', val: 125588, pct: 100,  note: 'All Phase 1 + Phase 2 calls' },
+    { label: 'Q1 Answered',   val: 15660,  pct: 12.5, note: 'Q1 base across both phases' },
   ],
   OUTCOME_BREAKDOWN: [
     { label: 'Answered – Consented',        val: 25617, pct: 20.4, color: 'bg-emerald-400' },
@@ -212,13 +331,13 @@ const PHASE2_DATA: PhaseData = {
     { label: 'No Response (blank)',          val: 1257,  pct: 1.0,  color: 'bg-red-300'     },
     { label: 'Unknown / Invalid',            val: 1103,  pct: 0.9,  color: 'bg-gray-300'    },
   ],
-  attemptsInsight: "Attempt 4 shows the lowest satisfaction (42.4%) — households requiring 4+ calls may be less engaged or have worse service. Attempt 5's 60.7% is based on a very small sample (28 respondents) and is not statistically reliable.",
-  repeatInsight:   'Repeat callers (previously contacted in Phase 1) show modest improvements: 14.5% usable rate vs 12.4% for first-time calls. BSI is marginally lower for repeat contacts (-2%), suggesting persistent service quality issues across both phases.',
+  attemptsInsight: "Attempt 4 shows the lowest satisfaction (42.4%) across the full campaign. Attempt 5's 60.7% is based on only 28 respondents and should not be treated as statistically reliable.",
+  repeatInsight:   'Phase 1 re-contacted households show modest but consistent improvements across both phases: higher consent, better data yield, and more completions than first-time contacts.',
   funnelCards: [
-    { label: 'Consented base (Q2–Q5)', val: '25,617', sub: 'Agreed to survey',   color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200'   },
-    { label: 'Usable base (Q1)',        val: '15,660', sub: 'Answered Q1',         color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'       },
-    { label: 'Q5 respondents',          val: '6,840',  sub: '26.7% of consented',  color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200'     },
-    { label: 'Completed all 5',         val: '5,222',  sub: '20.4% of consented',  color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
+    { label: 'Consented base (Q2–Q5)', val: '25,617', sub: 'Agreed to survey (both phases)', color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200'   },
+    { label: 'Usable base (Q1)',        val: '15,660', sub: 'Answered Q1 (both phases)',       color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'       },
+    { label: 'Q5 respondents',          val: '6,840',  sub: '26.7% of consented',              color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200'     },
+    { label: 'Completed all 5',         val: '5,222',  sub: '20.4% of consented',              color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
   ],
   liftCards: [
     { label: 'Consent Rate', first: 20.3, repeat: 22.2, unit: '%', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
@@ -230,20 +349,21 @@ const PHASE2_DATA: PhaseData = {
     { name: 'Usable',     first: 12.4, repeat: 14.5 },
     { name: 'Completion', first: 4.3,  repeat: 5.0  },
   ],
-  q5NoteText:  'Note on Q5 base: 6,840 total reached Q5 across all attempts (6,317 consented + 523 non-consented). Overall satisfied: 53.1%.',
+  q5NoteText:  '6,840 total reached Q5 (6,317 consented + 523 non-consented). Campaign-wide satisfaction: 53.1% satisfied.',
   q5BaseLabel: '6,840 respondents',
-  q5BaseNote:  '6,840 total reached Q5 (6,317 consented + 523 non-consented who answered). The 15,660 usable calls are the Q1 base — a separate population. Of those who reached Q5: 53.1% satisfied · 24.7% dissatisfied · 22.1% neutral.',
+  q5BaseNote:  '6,840 total reached Q5 across both phases (6,317 consented + 523 non-consented who answered). Of those who reached Q5: 53.1% satisfied · 24.7% dissatisfied · 22.1% neutral.',
 
-  phaseGteDate:  '2026-05-01',
+  phaseGteDate:  null,   // show all records (both phases) in call records
   phaseLtDate:   null,
-  dbRecordCount: 79725,
+  dbRecordCount: 125588,
+  comparison:    COMPARISON_DATA,
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const PhaseDataContext = createContext<PhaseData>(PHASE1_DATA)
 
-export function PhaseDataProvider({ phase, children }: { phase: 'phase1' | 'phase2'; children: React.ReactNode }) {
-  const data = phase === 'phase2' ? PHASE2_DATA : PHASE1_DATA
+export function PhaseDataProvider({ phase, children }: { phase: 'phase1' | 'phase2' | 'fullcampaign'; children: React.ReactNode }) {
+  const data = phase === 'fullcampaign' ? FULL_CAMPAIGN_DATA : phase === 'phase2' ? PHASE2_DATA : PHASE1_DATA
   return <PhaseDataContext.Provider value={data}>{children}</PhaseDataContext.Provider>
 }
 
