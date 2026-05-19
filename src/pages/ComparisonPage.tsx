@@ -1,0 +1,336 @@
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
+import * as p1 from '../data/csatData'
+import * as p2 from '../data/csatData2'
+
+function fmt(n: number) { return n.toLocaleString() }
+
+// ─── Phase headline summary ───────────────────────────────────────────────────
+const HEADLINE = [
+  {
+    phase: 'Phase 1', period: 'April 2026', color: 'emerald',
+    calls: 45863, consent: 27.4, bsi5: 2.20, satisfied: 51.7,
+    usable: 9224, usablePct: 20.1, validSchemes: 615, districts: 31,
+    border: 'border-emerald-200', bg: 'bg-emerald-50', badge: 'bg-emerald-600',
+    text: 'text-emerald-700',
+  },
+  {
+    phase: 'Phase 2', period: 'May 2026', color: 'blue',
+    calls: 79725, consent: 16.1, bsi5: 2.72, satisfied: 55.0,
+    usable: 6408, usablePct: 8.0, validSchemes: 106, districts: 23,
+    border: 'border-blue-200', bg: 'bg-blue-50', badge: 'bg-blue-600',
+    text: 'text-blue-700',
+  },
+]
+
+// ─── Survey Q1–Q5 side-by-side ────────────────────────────────────────────────
+const SURVEY_CHART = [
+  { q: 'Q1 Daily', p1: 30.95, p2: 30.34, benchmark: 70 },
+  { q: 'Q1A Timing', p1: 57.2, p2: 56.7, benchmark: 70 },
+  { q: 'Q2 Quality', p1: 72.33, p2: 73.09, benchmark: 70 },
+  { q: 'Q3 Quantity', p1: 62.23, p2: 64.93, benchmark: 70 },
+  { q: 'Q5 Satisfied', p1: 51.7, p2: 55.02, benchmark: 70 },
+]
+
+// ─── Zone BSI comparison ──────────────────────────────────────────────────────
+const ZONE_CHART = [
+  { zone: 'North Assam', p1: 2.418, p2: 2.553 },
+  { zone: 'Upper Assam', p1: 2.393, p2: 2.971 },
+  { zone: 'Lower Assam', p1: 2.277, p2: 2.557 },
+  { zone: 'BTAD',        p1: 1.921, p2: 2.505 },
+  { zone: 'KAAC',        p1: 2.316, p2: 3.125 },
+  { zone: 'Barak Valley',p1: 1.895, p2: null  },
+]
+
+// ─── What improved / what didn't ─────────────────────────────────────────────
+const IMPROVED = [
+  { label: 'State BSI score',         p1: '2.20/5', p2: '2.72/5', change: '+24%', note: 'Significant across-the-board improvement' },
+  { label: 'Q5 Overall Satisfaction', p1: '51.7%',  p2: '55.0%',  change: '+3.3pp', note: 'More households satisfied with supply' },
+  { label: 'Q3 Water Quantity',       p1: '62.23%', p2: '64.93%', change: '+2.7pp', note: 'Availability improved slightly' },
+  { label: 'Q2 Water Quality',        p1: '72.33%', p2: '73.09%', change: '+0.8pp', note: 'Already good — stayed good' },
+  { label: 'Upper Assam BSI',         p1: '2.39/5', p2: '2.97/5', change: '+24%', note: 'Biggest zone improvement' },
+  { label: 'BTAD Zone BSI',           p1: '1.92/5', p2: '2.51/5', change: '+31%', note: 'Previously critical — now Moderate' },
+]
+
+const NEEDS_WORK = [
+  { label: 'Q1 Daily Water Supply',   p1: '30.95%', p2: '30.34%', note: 'No progress — only 1 in 3 households get water daily' },
+  { label: 'Consent Rate',            p1: '27.4%',  p2: '16.1%',  note: 'Phase 2 reached harder-to-contact new households' },
+  { label: 'Usable Call Yield',       p1: '20.1%',  p2: '8.0%',   note: 'Larger campaign area means fewer responses per call' },
+  { label: 'Barak Valley',            p1: '1.90/5', p2: 'No data',note: 'Insufficient Phase 2 calls in the zone for BSI' },
+  { label: 'Valid Scheme Coverage',   p1: '615',     p2: '106',    note: 'Phase 2 spread thinner — fewer schemes with ≥6 usable calls' },
+]
+
+// ─── Key insight callouts ──────────────────────────────────────────────────────
+const INSIGHTS = [
+  {
+    emoji: '📈',
+    title: 'BSI improved by 24%',
+    body: 'The state Basic Service Index rose from 2.20 to 2.72 out of 5. Every zone tracked in Phase 2 showed improvement.',
+    color: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+  },
+  {
+    emoji: '🚱',
+    title: 'Daily water still the critical gap',
+    body: 'Only 30% of households get water daily — unchanged from Phase 1. This single indicator is the biggest drag on overall BSI.',
+    color: 'bg-red-50 border-red-200 text-red-800',
+  },
+  {
+    emoji: '📞',
+    title: 'Phase 2 reached 74% more households',
+    body: '79,725 new calls in May vs 45,863 in April. Lower consent (16% vs 27%) is expected when reaching first-time contacts at scale.',
+    color: 'bg-blue-50 border-blue-200 text-blue-800',
+  },
+  {
+    emoji: '🔄',
+    title: 'Re-contacting Phase 1 households pays off',
+    body: 'Phase 1 contacts called again in Phase 2 showed 73% higher usable rate (13.5% vs 7.8%) and 4.5% completion vs 2.1%.',
+    color: 'bg-violet-50 border-violet-200 text-violet-800',
+  },
+]
+
+// ─── Call attempts comparison ─────────────────────────────────────────────────
+const ATTEMPTS_COMPARE = [
+  { attempt: '1st', p1Consent: 28, p2Consent: 13, p1Sat: 52.3, p2Sat: 53.9 },
+  { attempt: '2nd', p1Consent: 25, p2Consent: 22, p1Sat: 51.7, p2Sat: 56.4 },
+  { attempt: '3rd', p1Consent: 23, p2Consent: 29, p1Sat: 47.5, p2Sat: 48.9 },
+  { attempt: '4th', p1Consent: 22, p2Consent: 45, p1Sat: 38.5, p2Sat: 40.0 },
+]
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export function ComparisonPage() {
+  return (
+    <div className="space-y-6">
+
+      {/* ── 1. Phase Headlines ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {HEADLINE.map(h => (
+          <div key={h.phase} className={`card p-5 border-2 ${h.border}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className={`inline-block text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded ${h.badge} mb-1`}>{h.phase}</span>
+                <p className="text-xs text-gray-400">{h.period}</p>
+              </div>
+              <div className={`text-3xl font-black ${h.text}`}>{h.bsi5.toFixed(2)}<span className="text-base font-medium text-gray-400">/5</span></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Total Calls',     val: fmt(h.calls) },
+                { label: 'Consent Rate',    val: `${h.consent}%` },
+                { label: 'Q5 Satisfied',    val: `${h.satisfied}%` },
+                { label: 'Usable Call Rate',val: `${h.usablePct}%` },
+                { label: 'Valid Schemes',   val: fmt(h.validSchemes) },
+                { label: 'Districts',       val: `${h.districts}` },
+              ].map(m => (
+                <div key={m.label} className={`rounded-lg p-2 ${h.bg}`}>
+                  <p className={`text-sm font-bold ${h.text}`}>{m.val}</p>
+                  <p className="text-[10px] text-gray-500">{m.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── 2. Key Insights ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {INSIGHTS.map(ins => (
+          <div key={ins.title} className={`rounded-xl border p-4 ${ins.color}`}>
+            <div className="flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">{ins.emoji}</span>
+              <div>
+                <p className="text-sm font-bold mb-1">{ins.title}</p>
+                <p className="text-xs leading-relaxed opacity-80">{ins.body}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── 3. Survey Q1–Q5 Satisfaction Chart ─────────────────────────── */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-gray-100">
+          <p className="panel-title">Survey Results Comparison — Q1 through Q5</p>
+          <p className="panel-sub mt-0.5">% of respondents who answered YES (satisfied) · 70% = Good benchmark</p>
+        </div>
+        <div className="p-5">
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={SURVEY_CHART} margin={{ top: 4, right: 16, bottom: 0, left: -16 }} barGap={6}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="q" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 10 }} unit="%" axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
+                  formatter={(val: number, name: string) => [`${val.toFixed(1)}%`, name === 'p1' ? 'Phase 1' : 'Phase 2']}
+                />
+                <ReferenceLine y={70} stroke="#10b981" strokeDasharray="4 2" label={{ value: '70% target', fill: '#10b981', fontSize: 10, position: 'right' }} />
+                <Legend formatter={v => <span className="text-xs text-gray-600">{v === 'p1' ? 'Phase 1 (Apr 2026)' : 'Phase 2 (May 2026)'}</span>} />
+                <Bar dataKey="p1" name="p1" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                <Bar dataKey="p2" name="p2" fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={28} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-3 grid grid-cols-5 gap-2">
+            {SURVEY_CHART.map(q => {
+              const diff = q.p2 - q.p1
+              const isUp = diff > 0.1
+              const isDown = diff < -0.1
+              return (
+                <div key={q.q} className="text-center">
+                  <p className="text-[10px] text-gray-500 font-medium mb-0.5">{q.q}</p>
+                  <p className={`text-xs font-bold ${isUp ? 'text-emerald-600' : isDown ? 'text-red-500' : 'text-gray-400'}`}>
+                    {isUp ? '↑' : isDown ? '↓' : '→'} {Math.abs(diff).toFixed(1)}pp
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4. Zone BSI Comparison ──────────────────────────────────────── */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-gray-100">
+          <p className="panel-title">Zone BSI Comparison — Phase 1 vs Phase 2</p>
+          <p className="panel-sub mt-0.5">BSI out of 5.0 · Every tracked zone improved · Barak Valley had no Phase 2 data</p>
+        </div>
+        <div className="p-5">
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={ZONE_CHART.filter(z => z.p2 !== null)} layout="vertical" margin={{ top: 0, right: 48, bottom: 0, left: 80 }} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                <XAxis type="number" domain={[0, 3.5]} tick={{ fill: '#9ca3af', fontSize: 10 }} tickCount={8} />
+                <YAxis type="category" dataKey="zone" tick={{ fill: '#374151', fontSize: 11 }} width={78} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8 }}
+                  formatter={(val: number, name: string) => [`${val.toFixed(3)}/5.0`, name === 'p1' ? 'Phase 1' : 'Phase 2']}
+                />
+                <ReferenceLine x={3.5} stroke="#10b981" strokeDasharray="4 2" />
+                <Bar dataKey="p1" name="p1" fill="#10b981" radius={[0, 3, 3, 0]} maxBarSize={14} />
+                <Bar dataKey="p2" name="p2" fill="#3b82f6" radius={[0, 3, 3, 0]} maxBarSize={14} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="th text-left">Zone</th>
+                  <th className="th text-right">Phase 1 BSI</th>
+                  <th className="th text-right">Phase 2 BSI</th>
+                  <th className="th text-center">Change</th>
+                  <th className="th text-left hidden md:table-cell">What changed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { zone: 'Upper Assam',  p1: 2.393, p2: 2.971, note: 'Biggest improvement — quality and quantity both rose' },
+                  { zone: 'BTAD',         p1: 1.921, p2: 2.505, note: 'Was Critical in P1, now Moderate — strong recovery' },
+                  { zone: 'KAAC',         p1: 2.316, p2: 3.125, note: 'Near target threshold — small sample though' },
+                  { zone: 'North Assam',  p1: 2.418, p2: 2.553, note: 'Steady improvement across its many districts' },
+                  { zone: 'Lower Assam',  p1: 2.277, p2: 2.557, note: 'Good improvement; Dhubri district standout' },
+                  { zone: 'Barak Valley', p1: 1.895, p2: null,  note: 'No Phase 2 data — Hailakandi was worst in Phase 1' },
+                ].map(z => {
+                  const diff = z.p2 !== null ? z.p2 - z.p1 : null
+                  return (
+                    <tr key={z.zone} className={`border-b border-gray-50 last:border-0 ${z.p2 === null ? 'opacity-50' : ''}`}>
+                      <td className="td font-medium text-gray-800">{z.zone}</td>
+                      <td className="td-mono text-right text-emerald-700 font-bold">{z.p1.toFixed(3)}/5</td>
+                      <td className="td-mono text-right text-blue-700 font-bold">{z.p2 !== null ? `${z.p2.toFixed(3)}/5` : '—'}</td>
+                      <td className="td text-center">
+                        {diff !== null
+                          ? <span className={`text-xs font-bold ${diff > 0 ? 'text-emerald-600' : 'text-red-600'}`}>{diff > 0 ? '↑' : '↓'} +{diff.toFixed(3)}</span>
+                          : <span className="text-xs text-gray-300">No data</span>}
+                      </td>
+                      <td className="td text-xs text-gray-400 hidden md:table-cell">{z.note}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5. What Improved / What Needs Work ──────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div className="card overflow-hidden">
+          <div className="px-5 py-3 border-b border-emerald-100 bg-emerald-50/50">
+            <p className="text-sm font-bold text-emerald-800">What Improved ↑</p>
+            <p className="text-xs text-emerald-600">Metrics that got better from Phase 1 to Phase 2</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {IMPROVED.map(m => (
+              <div key={m.label} className="px-5 py-3">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs font-semibold text-gray-700">{m.label}</span>
+                  <span className="text-xs font-bold text-emerald-600">{m.change}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                  <span className="text-emerald-700 font-mono">{m.p1}</span>
+                  <span>→</span>
+                  <span className="text-blue-700 font-mono font-bold">{m.p2}</span>
+                  <span className="ml-1">· {m.note}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card overflow-hidden">
+          <div className="px-5 py-3 border-b border-red-100 bg-red-50/50">
+            <p className="text-sm font-bold text-red-800">Still Needs Work ↓</p>
+            <p className="text-xs text-red-600">Metrics that didn't improve or need attention</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {NEEDS_WORK.map(m => (
+              <div key={m.label} className="px-5 py-3">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs font-semibold text-gray-700">{m.label}</span>
+                  <span className="text-xs text-gray-400">P1: {m.p1}</span>
+                </div>
+                <p className="text-[10px] text-gray-400">{m.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 6. Call Attempts Comparison ─────────────────────────────────── */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-gray-100">
+          <p className="panel-title">Call Attempt Behaviour — Phase 1 vs Phase 2</p>
+          <p className="panel-sub mt-0.5">Consent rate and satisfaction by attempt number (Phase 2 had max 4 attempts)</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/60">
+                <th className="th">Attempt</th>
+                <th className="th text-center">P1 Consent %</th>
+                <th className="th text-center">P2 Consent %</th>
+                <th className="th text-center">P1 Satisfied %</th>
+                <th className="th text-center">P2 Satisfied %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ATTEMPTS_COMPARE.map(a => (
+                <tr key={a.attempt} className="border-b border-gray-50 last:border-0">
+                  <td className="td font-mono text-gray-600">{a.attempt}</td>
+                  <td className="td-mono text-center text-emerald-700">{a.p1Consent}%</td>
+                  <td className="td-mono text-center text-blue-700">{a.p2Consent}%</td>
+                  <td className="td-mono text-center text-emerald-700">{a.p1Sat}%</td>
+                  <td className="td-mono text-center text-blue-700">{a.p2Sat}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-5 py-3 bg-slate-50 border-t border-gray-100 text-xs text-gray-500">
+          Phase 2 consent rate rises sharply at attempt 4 (45%) — households that persisted through 4 calls are highly engaged. Phase 1 had a 5th attempt; Phase 2 did not.
+        </div>
+      </div>
+
+    </div>
+  )
+}

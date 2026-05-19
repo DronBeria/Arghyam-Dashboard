@@ -54,12 +54,17 @@ export function Header({ pageTitle, phase = 'phase1', onNavigate, userEmail }: H
           {phase === 'phase1' ? (
             <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Phase 1 · Apr 2026</span>
+              <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Phase 1 · Apr 2026 · 45,863 calls</span>
+            </div>
+          ) : phase === 'phase2' ? (
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide">Phase 2 · May 2026 · 79,725 calls</span>
             </div>
           ) : (
-            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide">Phase 2 · Awaiting data</span>
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 border border-violet-200/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-violet-700 uppercase tracking-wide">Full Campaign · Apr–May 2026 · 125,588 calls</span>
             </div>
           )}
 

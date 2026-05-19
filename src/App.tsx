@@ -11,13 +11,15 @@ import { CallRecordsPage } from './pages/CallRecordsPage'
 import { SurveyResultsPage } from './pages/SurveyResultsPage'
 import { SchemePage } from './pages/SchemePage'
 import { GeographicPage } from './pages/GeographicPage'
+import { ComparisonPage } from './pages/ComparisonPage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Phase = 'phase1' | 'phase2' | 'fullcampaign'
-type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic'
+type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'comparison'
 
 interface NavItem {
   id: PageId
+  fullCampaignOnly?: boolean
   label: string
   description: string
 }
@@ -63,7 +65,14 @@ const NAV: NavGroup[] = [
     label: 'Geography',
     icon: '🗺️',
     items: [
-      { id: 'geographic', label: 'Zone & Districts', description: 'BSI by zone + 31 districts' },
+      { id: 'geographic', label: 'Zone & Districts', description: 'BSI by zone + districts' },
+    ],
+  },
+  {
+    label: 'Analysis',
+    icon: '⚖️',
+    items: [
+      { id: 'comparison', label: 'Phase Comparison', description: 'Phase 1 vs Phase 2 side-by-side', fullCampaignOnly: true },
     ],
   },
 ]
@@ -74,7 +83,8 @@ const PAGE_META: Record<PageId, { title: string; sub: string }> = {
   records:    { title: 'Call Records',           sub: 'Browse, filter and play individual calls' },
   survey:     { title: 'Survey Results',         sub: 'Q1–Q5 satisfaction indicators' },
   schemes:    { title: 'Scheme Coverage',        sub: 'IMIS schemes analysed' },
-  geographic: { title: 'Zone & District Scores', sub: 'BSI by geography' },
+  geographic:  { title: 'Zone & District Scores', sub: 'BSI by geography' },
+  comparison:  { title: 'Phase Comparison',       sub: 'Phase 1 vs Phase 2 side-by-side analysis' },
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -152,7 +162,10 @@ export default function App() {
 
   const userEmail = session.user?.email
 
-  const visibleNav = NAV
+  const visibleNav = NAV.map(group => ({
+    ...group,
+    items: group.items.filter(item => !item.fullCampaignOnly || phase === 'fullcampaign'),
+  })).filter(group => group.items.length > 0)
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#0f172a' }}>
@@ -371,12 +384,13 @@ export default function App() {
             {/* Full Campaign — Phase 1 + Phase 2 combined with comparison section */}
             {phase === 'fullcampaign' && (
               <PhaseDataProvider phase="fullcampaign">
-                {page === 'overview'   && <OverviewPage />}
-                {page === 'calls'      && <CallAnalysisPage />}
-                {page === 'records'    && <CallRecordsPage />}
-                {page === 'survey'     && <SurveyResultsPage />}
-                {page === 'schemes'    && <SchemePage />}
-                {page === 'geographic' && <GeographicPage />}
+                {page === 'overview'    && <OverviewPage />}
+                {page === 'calls'       && <CallAnalysisPage />}
+                {page === 'records'     && <CallRecordsPage />}
+                {page === 'survey'      && <SurveyResultsPage />}
+                {page === 'schemes'     && <SchemePage />}
+                {page === 'geographic'  && <GeographicPage />}
+                {page === 'comparison'  && <ComparisonPage />}
               </PhaseDataProvider>
             )}
 
@@ -403,6 +417,7 @@ function NavIcon({ id, active }: { id: string; active: boolean }) {
     schemes:    <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>,
     geographic: <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/><circle cx="12" cy="12" r="9"/></svg>,
     ingestion:  <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>,
+    comparison: <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>,
   }
   return icons[id] ?? <div className={`w-4 h-4 rounded-sm ${active ? 'bg-blue-400' : 'bg-slate-600'}`} />
 }
