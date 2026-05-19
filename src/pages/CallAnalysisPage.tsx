@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CALL_ATTEMPTS, REPEAT_CALLERS, QUESTION_FUNNEL } from '../data/csatData'
+import { usePhaseData } from '../context/PhaseDataContext'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine,
@@ -9,41 +9,8 @@ function fmt(n: number) { return n.toLocaleString() }
 
 type Tab = 'summary' | 'attempts' | 'repeat' | 'funnel'
 
-// Derived from CALL_ATTEMPTS source — consent/satisfied pcts verified against Excel
-const ATTEMPT_CHART = [
-  { attempt: '1st', consent: 28, satisfied: 52.3, calls: 39633 },
-  { attempt: '2nd', consent: 25, satisfied: 51.7, calls: 4224  },
-  { attempt: '3rd', consent: 23, satisfied: 47.5, calls: 1220  },
-  { attempt: '4th', consent: 22, satisfied: 38.5, calls: 479   },
-  { attempt: '5th', consent: 23, satisfied: 63.0, calls: 307   },
-]
-
-// Two independent analysis paths — NOT a sequential funnel.
-// Consent path: base for Q2–Q5. Usable path: base for Q1.
-// 8,327 calls appear in BOTH (consented AND answered Q1).
-// 897 calls are in Usable only (answered Q1 without consenting).
-const CONSENT_PATH = [
-  { label: 'Total Dialled',      val: 45863, pct: 100,   note: 'All calls attempted' },
-  { label: 'Consented',          val: 12583, pct: 27.4,  note: 'consent = "yes" · Q2–Q5 base' },
-  { label: 'Completed All 5 Q',  val: 1578,  pct: 12.5,  note: '12.5% of consented · not % of total' },
-]
-const USABLE_PATH = [
-  { label: 'Total Dialled',      val: 45863, pct: 100,   note: 'All calls attempted' },
-  { label: 'Q1 Answered',        val: 9224,  pct: 20.1,  note: 'Q1 base · 8,327 consented + 897 not' },
-]
-
-// Derived from CALL_SUMMARY — explicitly refused: 31,710 of which 897 were usable
-// 31,710 − 897 = 30,813 clean refused; no response: 1,208; unknown: 362
-// Total: 12,583 + 897 + 30,813 + 1,208 + 362 = 45,863 ✓
-const OUTCOME_BREAKDOWN = [
-  { label: 'Answered – Consented',        val: 12583, pct: 27.4, color: 'bg-emerald-400' },
-  { label: 'Answered – Refused (usable)', val: 897,   pct: 2.0,  color: 'bg-amber-400'   },
-  { label: 'Answered – Refused (clean)',  val: 30813, pct: 67.2, color: 'bg-orange-400'  },
-  { label: 'No Response (blank)',          val: 1208,  pct: 2.6,  color: 'bg-red-300'     },
-  { label: 'Unknown / Invalid',            val: 362,   pct: 0.8,  color: 'bg-gray-300'    },
-]
-
 export function CallAnalysisPage() {
+  const data = usePhaseData()
   const [tab, setTab] = useState<Tab>('summary')
 
   return (
@@ -72,26 +39,35 @@ export function CallAnalysisPage() {
         ))}
       </div>
 
-      {tab === 'summary'  && <CallSummaryTab />}
-      {tab === 'attempts' && <AttemptsTab />}
-      {tab === 'repeat'   && <RepeatTab />}
-      {tab === 'funnel'   && <QuestionFunnelTab />}
+      {tab === 'summary'  && <CallSummaryTab data={data} />}
+      {tab === 'attempts' && <AttemptsTab data={data} />}
+      {tab === 'repeat'   && <RepeatTab data={data} />}
+      {tab === 'funnel'   && <QuestionFunnelTab data={data} />}
     </div>
   )
 }
 
 // ─── Call Summary ─────────────────────────────────────────────────────────────
 
-function CallSummaryTab() {
+function CallSummaryTab({ data }: { data: ReturnType<typeof usePhaseData> }) {
+  const { KPI_HEADLINE, CALL_SUMMARY, OUTCOME_BREAKDOWN } = data
+  const summaryRows = [
+    { label: 'Total calls dialled',       count: KPI_HEADLINE.totalCalls,   pct: 100.0,                              bold: true  },
+    { label: 'Consented',                  count: Math.round(KPI_HEADLINE.totalCalls * KPI_HEADLINE.consentRate / 100), pct: KPI_HEADLINE.consentRate, bold: false },
+    { label: 'Did not consent',            count: KPI_HEADLINE.totalCalls - Math.round(KPI_HEADLINE.totalCalls * KPI_HEADLINE.consentRate / 100), pct: +(100 - KPI_HEADLINE.consentRate).toFixed(1), bold: false },
+    { label: 'Usable calls (Q1 answered)', count: CALL_SUMMARY.find(r => r.group.startsWith('Usable'))?.count ?? 0, pct: CALL_SUMMARY.find(r => r.group.startsWith('Usable'))?.pct ?? 0, bold: true  },
+    { label: 'Reached Q5 (Overall)',       count: KPI_HEADLINE.completedSurvey, pct: +(KPI_HEADLINE.completedSurvey / KPI_HEADLINE.totalCalls * 100).toFixed(1), bold: false },
+    { label: 'Completed all 5 questions',  count: CALL_SUMMARY.find(r => r.group.includes('Completed'))?.count ?? 0, pct: CALL_SUMMARY.find(r => r.group.includes('Completed'))?.pct ?? 0, bold: false },
+  ]
+
   return (
     <div className="space-y-4">
 
       {/* Outcome breakdown */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <h3 className="text-sm font-bold text-gray-800 mb-1">Call Outcome Breakdown</h3>
-        <p className="text-xs text-gray-400 mb-4">How all 45,863 calls resolved</p>
+        <p className="text-xs text-gray-400 mb-4">How all {fmt(KPI_HEADLINE.totalCalls)} calls resolved</p>
 
-        {/* Stacked bar */}
         <div className="h-4 rounded-full overflow-hidden flex mb-3">
           {OUTCOME_BREAKDOWN.map(o => (
             <div key={o.label} className={`${o.color} h-full`} style={{ width: `${o.pct}%` }} title={`${o.label}: ${o.pct}%`} />
@@ -131,14 +107,7 @@ function CallSummaryTab() {
             </tr>
           </thead>
           <tbody>
-            {[
-              { label: 'Total calls dialled',       count: 45863, pct: 100.0, bold: true  },
-              { label: 'Consented',                  count: 12583, pct: 27.4,  bold: false },
-              { label: 'Did not consent',            count: 33280, pct: 72.6,  bold: false },
-              { label: 'Usable calls (Q1 answered)', count: 9224,  pct: 20.1,  bold: true  },
-              { label: 'Reached Q5 (Overall)',       count: 4410,  pct: 9.6,   bold: false },
-              { label: 'Completed all 5 questions',  count: 1578,  pct: 3.4,   bold: false },
-            ].map((row, i) => (
+            {summaryRows.map((row, i) => (
               <tr key={i} className={`border-b border-gray-50 last:border-0 ${row.bold ? 'bg-slate-50/80' : ''}`}>
                 <td className={`td text-xs ${row.bold ? 'font-bold text-gray-800' : 'text-gray-500 pl-5'}`}>{row.label}</td>
                 <td className="td-mono text-right font-semibold">{fmt(row.count)}</td>
@@ -154,7 +123,8 @@ function CallSummaryTab() {
 
 // ─── Call Attempts ────────────────────────────────────────────────────────────
 
-function AttemptsTab() {
+function AttemptsTab({ data }: { data: ReturnType<typeof usePhaseData> }) {
+  const { CALL_ATTEMPTS, ATTEMPT_CHART, attemptsInsight } = data
   return (
     <div className="space-y-4">
 
@@ -274,12 +244,10 @@ function AttemptsTab() {
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-500 leading-relaxed">
-        <strong className="text-slate-600">Note on Q5 base:</strong> The table uses consented-only Q5 respondents per attempt (4,284 total, 52.1% satisfied).
-        The global Q5 figure shown elsewhere (4,410 respondents, 51.7% satisfied) is higher because 126 non-consented callers also reached Q5 but cannot be attributed to a specific attempt number.
+        <strong className="text-slate-600">Note on Q5 base:</strong> {data.q5NoteText}
       </div>
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-700 leading-relaxed">
-        <strong>Insight:</strong> Attempt 4 shows the lowest satisfaction (38.5%) — households requiring 4+ calls may be less engaged or have worse service.
-        Attempt 5's 63.0% is based on a very small sample (27 respondents) and is not statistically reliable.
+        <strong>Insight:</strong> {attemptsInsight}
       </div>
     </div>
   )
@@ -287,18 +255,9 @@ function AttemptsTab() {
 
 // ─── Repeat Callers ───────────────────────────────────────────────────────────
 
-function RepeatTab() {
-  const LIFT_CARDS = [
-    { label: 'Consent Rate',  first: 27.4, repeat: 44.7, unit: '%', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-    { label: 'Usable Calls',  first: 20.0, repeat: 37.1, unit: '%', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-    { label: 'Completion',    first: 3.4,  repeat: 5.9,  unit: '%', color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200'       },
-  ]
-
-  const TREND = [
-    { name: 'Consent',    first: 27.4, repeat: 44.7 },
-    { name: 'Usable',     first: 20.0, repeat: 37.1 },
-    { name: 'Completion', first: 3.4,  repeat: 5.9  },
-  ]
+function RepeatTab({ data }: { data: ReturnType<typeof usePhaseData> }) {
+  const LIFT_CARDS = data.liftCards
+  const TREND      = data.repeatTrend
 
   return (
     <div className="space-y-4">
@@ -308,10 +267,10 @@ function RepeatTab() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-sm font-bold text-gray-800">First-Time vs Repeat Callers</h3>
-            <p className="text-xs text-gray-400 mt-0.5">170 households (0.37%) received more than one call — key metric comparison</p>
+            <p className="text-xs text-gray-400 mt-0.5">{data.REPEAT_CALLERS[0]?.repeat} households previously contacted — key metric comparison</p>
           </div>
           <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold flex-shrink-0 ml-3">
-            170 repeat HH
+            {data.REPEAT_CALLERS[0]?.repeat} repeat HH
           </span>
         </div>
 
@@ -383,7 +342,7 @@ function RepeatTab() {
               </tr>
             </thead>
             <tbody>
-              {REPEAT_CALLERS.map((row, i) => (
+              {data.REPEAT_CALLERS.map((row, i) => (
                 <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
                   <td className="td font-medium text-gray-700">{row.metric}</td>
                   <td className="td-mono text-center text-gray-500">{row.firstTime}</td>
@@ -400,8 +359,7 @@ function RepeatTab() {
       </div>
 
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-xs text-indigo-700 leading-relaxed">
-        <strong>Key insight:</strong> Repeat callers yield nearly double the data at 37.1% usable rate vs 20.0% for first-time calls.
-        Phase 2 should prioritize re-contacting non-responding households from Phase 1.
+        <strong>Key insight:</strong> {data.repeatInsight}
       </div>
     </div>
   )
@@ -409,21 +367,15 @@ function RepeatTab() {
 
 // ─── Question Funnel ──────────────────────────────────────────────────────────
 
-function QuestionFunnelTab() {
-  const BASE_CONSENTED = 12583
-  const BASE_USABLE    = 9224
+function QuestionFunnelTab({ data }: { data: ReturnType<typeof usePhaseData> }) {
+  const { QUESTION_FUNNEL, funnelCards } = data
 
   return (
     <div className="space-y-4">
 
       {/* Context header */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Consented base (Q2–Q5)', val: '12,583', sub: 'Agreed to survey',    color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200'   },
-          { label: 'Usable base (Q1)',        val: '9,224',  sub: 'Answered Q1',          color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'       },
-          { label: 'Q5 respondents',          val: '4,410',  sub: '35.1% of consented',   color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-200'     },
-          { label: 'Completed all 5',         val: '1,578',  sub: '12.5% of consented',   color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
-        ].map(k => (
+        {funnelCards.map(k => (
           <div key={k.label} className={`rounded-xl border p-3.5 ${k.bg}`}>
             <p className={`text-xl font-black leading-none ${k.color}`}>{k.val}</p>
             <p className="text-xs text-gray-500 mt-1 font-medium">{k.label}</p>
@@ -435,9 +387,7 @@ function QuestionFunnelTab() {
       {/* Per-question visual bars */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <h3 className="text-sm font-bold text-gray-800 mb-1">Response Rate + Yes/No Split per Question</h3>
-        <p className="text-xs text-gray-400 mb-1">
-          Two separate metrics per question:
-        </p>
+        <p className="text-xs text-gray-400 mb-1">Two separate metrics per question:</p>
         <div className="flex gap-4 text-xs text-gray-500 mb-4">
           <span className="flex items-center gap-1.5"><span className="w-3 h-2 bg-slate-300 rounded-sm inline-block"/>Response rate = answered ÷ asked (how many responded)</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-2 bg-emerald-400 rounded-sm inline-block"/>Yes % = yes ÷ answered (of those who responded, how many said yes)</span>
@@ -530,8 +480,7 @@ function QuestionFunnelTab() {
           </table>
         </div>
         <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500 leading-relaxed">
-          Q5 note: 4,410 total reached Q5 (4,284 consented + 126 non-consented who stayed engaged).
-          35.1% of 12,583 consented — this broader base is used for all satisfaction figures.
+          Q5 note: {data.q5BaseNote}
         </div>
       </div>
 

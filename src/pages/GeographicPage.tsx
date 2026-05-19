@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { ZONE_SCORES, DISTRICT_SCORES } from '../data/csatData'
+import { usePhaseData } from '../context/PhaseDataContext'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ReferenceLine, ResponsiveContainer, Cell,
 } from 'recharts'
 import { StatusBadge, statusColor } from '../components/StatusBadge'
 type View = 'zones' | 'districts'
-const ZONES = ['All', 'North Assam', 'Upper Assam', 'Lower Assam', 'BTAD', 'Barak Valley', 'KAAC']
 
 function bsiColor(bsi: number | null) {
   if (bsi === null) return '#d1d5db'
@@ -16,6 +15,9 @@ function bsiColor(bsi: number | null) {
 }
 
 export function GeographicPage() {
+  const { ZONE_SCORES, DISTRICT_SCORES, bestDistrict, worstDistrict, districtCountLabel, dhacNote } = usePhaseData()
+  const ZONES = ['All', ...new Set(DISTRICT_SCORES.map(d => d.zone))]
+
   const [view, setView] = useState<View>('zones')
   const [selectedZone, setSelectedZone] = useState('All')
   const [sortBy, setSortBy] = useState<'bsi' | 'name'>('bsi')
@@ -53,11 +55,12 @@ export function GeographicPage() {
         ))}
       </div>
 
-      {view === 'zones' && <ZonesView chartData={zoneChartData} />}
+      {view === 'zones' && <ZonesView chartData={zoneChartData} ZONE_SCORES={ZONE_SCORES} dhacNote={dhacNote} />}
 
       {view === 'districts' && (
         <DistrictsView
           filteredDistricts={filteredDistricts}
+          ZONES={ZONES}
           selectedZone={selectedZone}
           setSelectedZone={setSelectedZone}
           sortBy={sortBy}
@@ -65,13 +68,16 @@ export function GeographicPage() {
           selectedDistrict={selectedDistrict}
           setSelectedDistrict={setSelectedDistrict}
           activeDistrict={activeDistrict}
+          bestDistrict={bestDistrict}
+          worstDistrict={worstDistrict}
+          districtCountLabel={districtCountLabel}
         />
       )}
     </div>
   )
 }
 
-function ZonesView({ chartData }: { chartData: { zone: string; bsi: number; color: string }[] }) {
+function ZonesView({ chartData, ZONE_SCORES, dhacNote }: { chartData: any[]; ZONE_SCORES: any[]; dhacNote: string }) {
   return (
     <div className="space-y-5">
       {/* Bar chart */}
@@ -144,9 +150,7 @@ function ZonesView({ chartData }: { chartData: { zone: string; bsi: number; colo
           </table>
         </div>
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
-          <p className="text-xs text-gray-400">
-            DHAC excluded: only 95 calls made · 1.1% consent rate · to be re-called in Phase 2 · BSI shown out of 5.0 (Good ≥ 3.50)
-          </p>
+          <p className="text-xs text-gray-400">{dhacNote}</p>
         </div>
       </div>
     </div>
@@ -154,17 +158,22 @@ function ZonesView({ chartData }: { chartData: { zone: string; bsi: number; colo
 }
 
 function DistrictsView({
-  filteredDistricts, selectedZone, setSelectedZone, sortBy, setSortBy,
+  filteredDistricts, ZONES, selectedZone, setSelectedZone, sortBy, setSortBy,
   selectedDistrict, setSelectedDistrict, activeDistrict,
+  bestDistrict, worstDistrict, districtCountLabel,
 }: {
-  filteredDistricts: typeof DISTRICT_SCORES
+  filteredDistricts: any[]
+  ZONES: string[]
   selectedZone: string
   setSelectedZone: (z: string) => void
   sortBy: 'bsi' | 'name'
   setSortBy: (s: 'bsi' | 'name') => void
   selectedDistrict: string | null
   setSelectedDistrict: (d: string | null) => void
-  activeDistrict: (typeof DISTRICT_SCORES)[0] | undefined
+  activeDistrict: any
+  bestDistrict: { name: string; bsi5: string }
+  worstDistrict: { name: string; bsi5: string }
+  districtCountLabel: string
 }) {
   return (
     <div className="space-y-4">
@@ -278,9 +287,9 @@ function DistrictsView({
           </table>
         </div>
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500">
-          <span><span className="text-emerald-600 font-semibold">Best:</span> Sivasagar — BSI 2.660/5.0</span>
-          <span><span className="text-red-600 font-semibold">Worst:</span> Hailakandi — BSI 1.393/5.0</span>
-          <span className="text-gray-400">Showing {filteredDistricts.length} of 31 districts</span>
+          <span><span className="text-emerald-600 font-semibold">Best:</span> {bestDistrict.name} — BSI {bestDistrict.bsi5}/5.0</span>
+          <span><span className="text-red-600 font-semibold">Worst:</span> {worstDistrict.name} — BSI {worstDistrict.bsi5}/5.0</span>
+          <span className="text-gray-400">Showing {filteredDistricts.length} of {districtCountLabel} districts</span>
         </div>
       </div>
     </div>

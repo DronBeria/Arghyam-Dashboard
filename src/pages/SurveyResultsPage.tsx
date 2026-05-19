@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { KPI_QUESTIONS, Q5_SPLIT, QUESTION_FUNNEL } from '../data/csatData'
+import { usePhaseData } from '../context/PhaseDataContext'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
   ReferenceLine, ResponsiveContainer, PieChart, Pie, Legend,
@@ -8,10 +8,9 @@ import { StatusBadge } from '../components/StatusBadge'
 
 type Tab = 'kpi' | 'q5' | 'funnel'
 
-// Survey flow order: Q1 → Q1A → Q2 → Q3 → Q5 (matches how questions were asked)
-const SORTED_Q = KPI_QUESTIONS
-
 export function SurveyResultsPage() {
+  const data = usePhaseData()
+  const { KPI_QUESTIONS, Q5_SPLIT, QUESTION_FUNNEL } = data
   const [tab, setTab] = useState<Tab>('kpi')
   const [selectedQ, setSelectedQ] = useState<string | null>(null)
 
@@ -42,19 +41,20 @@ export function SurveyResultsPage() {
         </div>
 
         <div className="p-6">
-          {tab === 'kpi' && <KPITab selectedQ={selectedQ} setSelectedQ={setSelectedQ} activeQ={activeQ} />}
-          {tab === 'q5' && <Q5Tab />}
-          {tab === 'funnel' && <FunnelTab />}
+          {tab === 'kpi' && <KPITab selectedQ={selectedQ} setSelectedQ={setSelectedQ} activeQ={activeQ} KPI_QUESTIONS={KPI_QUESTIONS} />}
+          {tab === 'q5' && <Q5Tab Q5_SPLIT={Q5_SPLIT} q5BaseLabel={data.q5BaseLabel} q5BaseNote={data.q5BaseNote} />}
+          {tab === 'funnel' && <FunnelTab QUESTION_FUNNEL={QUESTION_FUNNEL} />}
         </div>
       </div>
     </div>
   )
 }
 
-function KPITab({ selectedQ, setSelectedQ, activeQ }: {
+function KPITab({ selectedQ, setSelectedQ, activeQ, KPI_QUESTIONS }: {
   selectedQ: string | null
   setSelectedQ: (id: string | null) => void
-  activeQ: (typeof KPI_QUESTIONS)[0] | undefined
+  activeQ: any
+  KPI_QUESTIONS: any[]
 }) {
   return (
     <div className="space-y-5">
@@ -65,7 +65,7 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
 
       <div className="h-52">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={SORTED_Q.map(q => ({ name: q.id, label: q.label, pct: q.yesPct, color: q.color, status: q.status }))}
+          <BarChart data={KPI_QUESTIONS.map(q => ({ name: q.id, label: q.label, pct: q.yesPct, color: q.color, status: q.status }))}
             margin={{ top: 4, right: 16, bottom: 0, left: -16 }}
             onClick={(d) => d?.activePayload && setSelectedQ(d.activePayload[0]?.payload?.name)}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -80,7 +80,7 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
             />
             <ReferenceLine y={70} stroke="#10b981" strokeDasharray="4 2" label={{ value: '70% benchmark', fill: '#10b981', fontSize: 10 }} />
             <Bar dataKey="pct" radius={[4, 4, 0, 0]} cursor="pointer">
-              {SORTED_Q.map((q, i) => <Cell key={i} fill={q.color} opacity={selectedQ && selectedQ !== q.id ? 0.3 : 1} />)}
+              {KPI_QUESTIONS.map((q, i) => <Cell key={i} fill={q.color} opacity={selectedQ && selectedQ !== q.id ? 0.3 : 1} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -124,8 +124,8 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <div className="px-4 py-2.5 bg-blue-50 border-b border-blue-100 text-xs text-blue-700 leading-relaxed">
           <strong>Why do respondent counts differ?</strong> — Each question was asked to a different group.
-          Q1 was captured from all 45,863 calls (9,224 answered). Q1A is a follow-up asked only to
-          Q1=Yes callers (2,855 eligible). Q2–Q5 were asked only to the 12,583 who consented, but many
+          Q1 was captured from completed calls (those answering yes or no). Q1A is a follow-up asked only to
+          Q1=Yes callers. Q2–Q5 were asked only to consented callers, but many
           callers hung up before reaching later questions — so fewer people answered Q2/Q3/Q5.
         </div>
         <table className="w-full text-sm">
@@ -141,7 +141,7 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
             </tr>
           </thead>
           <tbody>
-            {SORTED_Q.map((q) => (
+            {KPI_QUESTIONS.map((q) => (
               <tr
                 key={q.id}
                 onClick={() => setSelectedQ(selectedQ === q.id ? null : q.id)}
@@ -175,18 +175,17 @@ function KPITab({ selectedQ, setSelectedQ, activeQ }: {
   )
 }
 
-const PIE_DATA = [
-  { name: 'Satisfied',    value: Q5_SPLIT.satisfied.pct,    fill: '#10b981' },
-  { name: 'Neutral',      value: Q5_SPLIT.neutral.pct,      fill: '#94a3b8' },
-  { name: 'Dissatisfied', value: Q5_SPLIT.dissatisfied.pct, fill: '#ef4444' },
-]
-
-function Q5Tab() {
+function Q5Tab({ Q5_SPLIT, q5BaseLabel, q5BaseNote }: { Q5_SPLIT: any; q5BaseLabel: string; q5BaseNote: string }) {
+  const PIE_DATA = [
+    { name: 'Satisfied',    value: Q5_SPLIT.satisfied.pct,    fill: '#10b981' },
+    { name: 'Neutral',      value: Q5_SPLIT.neutral.pct,      fill: '#94a3b8' },
+    { name: 'Dissatisfied', value: Q5_SPLIT.dissatisfied.pct, fill: '#ef4444' },
+  ]
   return (
     <div className="space-y-5">
       <div>
         <h3 className="text-base font-semibold text-gray-800 mb-1">Q5 — Overall Satisfaction Split</h3>
-        <p className="text-xs text-gray-400">4,410 respondents · 3-way satisfaction breakdown</p>
+        <p className="text-xs text-gray-400">{q5BaseLabel} · 3-way satisfaction breakdown</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -223,21 +222,19 @@ function Q5Tab() {
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-gray-600">
-        <strong>Q5 base:</strong> 4,410 total reached Q5 (4,284 consented + 126 non-consented who answered).
-        The 9,224 usable calls are the Q1 base — a separate population.
-        Of those who answered Q5: 51.7% satisfied · 25.6% dissatisfied · 22.7% neutral.
+        <strong>Q5 base:</strong> {q5BaseNote}
       </div>
     </div>
   )
 }
 
-function FunnelTab() {
+function FunnelTab({ QUESTION_FUNNEL }: { QUESTION_FUNNEL: any[] }) {
   return (
     <div className="space-y-5">
       <div>
         <h3 className="text-base font-semibold text-gray-800 mb-1">Question Response Funnel</h3>
         <p className="text-xs text-gray-400">
-          Q1 base = 9,224 usable calls · Q2–Q5 were asked to 12,583 consented callers, but yes% is of those who actually answered each Q
+          Q1 base = usable calls (answered Q1) · Q2–Q5 were asked to consented callers, but yes% is of those who actually answered each Q
         </p>
       </div>
 

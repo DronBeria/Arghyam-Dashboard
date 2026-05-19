@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { downloadFilteredCallsCSV } from '../utils/reports'
+import { usePhaseData } from '../context/PhaseDataContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CallRecord {
@@ -137,6 +138,7 @@ function fmtDate(iso: string | null) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function CallRecordsPage() {
+  const { phaseGteDate, phaseLtDate, dbRecordCount, phaseLabel } = usePhaseData()
   const [records, setRecords]       = useState<CallRecord[]>([])
   const [total, setTotal]           = useState(0)
   const [usableTotal, setUsableTotal] = useState<number | null>(null)
@@ -186,7 +188,7 @@ export function CallRecordsPage() {
 
   // ── Fetch records (race-condition safe via sequence counter) ──────────────────
   const fetchSeqRef = useRef(0)
-  useEffect(() => { fetchRecords() }, [zone, district, sat, q1Filter, q2Filter, q3Filter, q4Filter, hasRecording, callbackOnly, consentedOnly, usableOnly, minDuration, maxDuration, attemptFilter, earlyEndFilter, dateFrom, dateTo, page, debouncedSearch, sortCol, sortDir])
+  useEffect(() => { fetchRecords() }, [zone, district, sat, q1Filter, q2Filter, q3Filter, q4Filter, hasRecording, callbackOnly, consentedOnly, usableOnly, minDuration, maxDuration, attemptFilter, earlyEndFilter, dateFrom, dateTo, page, debouncedSearch, sortCol, sortDir, phaseGteDate, phaseLtDate])
 
   async function fetchRecords() {
     const mySeq = ++fetchSeqRef.current   // claim this request slot
@@ -196,6 +198,10 @@ export function CallRecordsPage() {
       .select('*', { count: 'exact' })
       .order(sortCol, { ascending: sortDir === 'asc', nullsFirst: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+
+    // Phase isolation via date range
+    if (phaseGteDate) q = q.gte('call_start_time', phaseGteDate)
+    if (phaseLtDate)  q = q.lt('call_start_time', phaseLtDate)
 
     if (zone !== 'All Zones') q = q.eq('zone', zone)
 
@@ -251,6 +257,8 @@ export function CallRecordsPage() {
     let uq = supabase.from('call_records')
       .select('*', { count: 'exact', head: true })
       .eq('is_usable', true)
+    if (phaseGteDate) uq = uq.gte('call_start_time', phaseGteDate)
+    if (phaseLtDate)  uq = uq.lt('call_start_time', phaseLtDate)
     if (zone !== 'All Zones') uq = uq.eq('zone', zone)
     if (district !== 'All Districts') uq = uq.ilike('district', district)
     if (debouncedSearch.trim()) {
@@ -361,7 +369,7 @@ export function CallRecordsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
           {[
             { label: 'Matching Records', val: total.toLocaleString(),       color: 'text-blue-700',    bg: 'bg-blue-50 border-blue-200' },
-            { label: 'Total in DB',      val: '45,863',                     color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200' },
+            { label: 'Total in DB',      val: dbRecordCount.toLocaleString(), color: 'text-purple-700',  bg: 'bg-purple-50 border-purple-200' },
             { label: 'Survey Usable',    val: usableTotal !== null ? usableTotal.toLocaleString() : '—', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
             { label: 'Active Filters',   val: activeFilterCount > 0 ? `${activeFilterCount} active` : 'Default', color: activeFilterCount > 0 ? 'text-amber-700' : 'text-gray-500', bg: activeFilterCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200' },
           ].map(c => (

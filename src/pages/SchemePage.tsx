@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SCHEME_COVERAGE } from '../data/csatData'
+import { usePhaseData } from '../context/PhaseDataContext'
 import { supabase } from '../lib/supabase'
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
@@ -16,18 +16,18 @@ interface SchemeResult {
   consented: number
 }
 
-const PIE = [
-  { name: 'Valid',    value: SCHEME_COVERAGE.valid,   fill: '#10b981' },
-  { name: 'Flagged',  value: SCHEME_COVERAGE.flagged,  fill: '#f59e0b' },
-  { name: 'No Data',  value: SCHEME_COVERAGE.noData,   fill: '#d1d5db' },
-]
-
-const FUNC_PIE = [
-  { name: 'Regular Supply',   value: SCHEME_COVERAGE.functional,    fill: '#10b981' },
-  { name: 'Irregular Supply', value: SCHEME_COVERAGE.nonFunctional, fill: '#ef4444' },
-]
-
 export function SchemePage() {
+  const { SCHEME_COVERAGE, hasSchemeSearch } = usePhaseData()
+
+  const PIE = [
+    { name: 'Valid',    value: SCHEME_COVERAGE.valid,   fill: '#10b981' },
+    { name: 'Flagged',  value: SCHEME_COVERAGE.flagged,  fill: '#f59e0b' },
+    { name: 'No Data',  value: SCHEME_COVERAGE.noData,   fill: '#d1d5db' },
+  ]
+  const FUNC_PIE = [
+    { name: 'Regular Supply',   value: SCHEME_COVERAGE.functional,    fill: '#10b981' },
+    { name: 'Irregular Supply', value: SCHEME_COVERAGE.nonFunctional, fill: '#ef4444' },
+  ]
   const [query, setQuery]           = useState('')
   const [results, setResults]       = useState<SchemeResult[]>([])
   const [searching, setSearching]   = useState(false)
@@ -68,7 +68,8 @@ export function SchemePage() {
   return (
     <div className="space-y-5">
 
-      {/* ── IMIS / Scheme Search ─────────────────────────────────────────── */}
+      {/* ── IMIS / Scheme Search (Phase 1 only — requires Supabase) ─────── */}
+      {hasSchemeSearch && (
       <div className="card p-4">
         <p className="panel-title mb-3">Search Schemes</p>
         <form onSubmit={handleSearch} className="flex gap-2">
@@ -124,6 +125,7 @@ export function SchemePage() {
           </div>
         )}
       </div>
+      )}
       {/* Coverage overview cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
@@ -144,7 +146,7 @@ export function SchemePage() {
         {/* Coverage donut */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
           <p className="text-sm font-semibold text-gray-700 mb-1">Scheme Coverage</p>
-          <p className="text-xs text-gray-400 mb-3">All 2,373 IMIS schemes</p>
+          <p className="text-xs text-gray-400 mb-3">All {fmt(SCHEME_COVERAGE.total)} IMIS schemes</p>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -161,7 +163,7 @@ export function SchemePage() {
         {/* Regular supply donut */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
           <p className="text-sm font-semibold text-gray-700 mb-1">Regular vs Irregular Supply</p>
-          <p className="text-xs text-gray-400 mb-3">Of 615 valid schemes only</p>
+          <p className="text-xs text-gray-400 mb-3">Of {SCHEME_COVERAGE.valid} valid schemes only</p>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

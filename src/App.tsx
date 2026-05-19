@@ -3,6 +3,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 import { Header } from './components/Header'
+import { PhaseDataProvider } from './context/PhaseDataContext'
 import { LoginPage } from './pages/LoginPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { CallAnalysisPage } from './pages/CallAnalysisPage'
@@ -10,17 +11,15 @@ import { CallRecordsPage } from './pages/CallRecordsPage'
 import { SurveyResultsPage } from './pages/SurveyResultsPage'
 import { SchemePage } from './pages/SchemePage'
 import { GeographicPage } from './pages/GeographicPage'
-import { DataIngestionPage } from './pages/DataIngestionPage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Phase = 'phase1' | 'phase2'
-type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'ingestion'
+type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic'
 
 interface NavItem {
   id: PageId
   label: string
   description: string
-  phase2Only?: boolean
 }
 
 interface NavGroup {
@@ -67,13 +66,6 @@ const NAV: NavGroup[] = [
       { id: 'geographic', label: 'Zone & Districts', description: 'BSI by zone + 31 districts' },
     ],
   },
-  {
-    label: 'Data Pipeline',
-    icon: '⬆',
-    items: [
-      { id: 'ingestion', label: 'Data Ingestion', description: 'Upload Phase 2 CSV data', phase2Only: true },
-    ],
-  },
 ]
 
 const PAGE_META: Record<PageId, { title: string; sub: string }> = {
@@ -83,50 +75,6 @@ const PAGE_META: Record<PageId, { title: string; sub: string }> = {
   survey:     { title: 'Survey Results',         sub: 'Q1–Q5 satisfaction indicators' },
   schemes:    { title: 'Scheme Coverage',        sub: 'IMIS schemes analysed' },
   geographic: { title: 'Zone & District Scores', sub: 'BSI by geography' },
-  ingestion:  { title: 'Data Ingestion',         sub: 'Upload Phase 2 CSAT survey data' },
-}
-
-// ─── Phase 2 empty state ──────────────────────────────────────────────────────
-function Phase2EmptyState({ pageName, onGoToIngestion }: { pageName: string; onGoToIngestion: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[55vh] text-center space-y-6 py-12">
-      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-        <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-        </svg>
-      </div>
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Phase 2 · {pageName}</p>
-        <h2 className="text-xl font-black text-slate-700">No Phase 2 Data Yet</h2>
-        <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
-          Phase 2 survey data hasn't been uploaded yet. Use Data Ingestion to upload a CSV file — the dashboard populates automatically.
-        </p>
-      </div>
-      <button onClick={onGoToIngestion}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-[12px] font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/30">
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-        </svg>
-        Go to Data Ingestion
-      </button>
-      <div className="max-w-xs w-full rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2.5">What appears after upload</p>
-        <div className="space-y-2">
-          {[
-            'All Phase 2 call statistics and KPIs',
-            'Q1–Q5 survey results with BSI scores',
-            'Zone and district-level breakdowns',
-            'Scheme coverage analysis',
-          ].map(item => (
-            <div key={item} className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full bg-blue-50 text-blue-500 text-[9px] font-black flex items-center justify-center flex-shrink-0">→</span>
-              <p className="text-[11px] text-slate-500">{item}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -138,7 +86,6 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen]   = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
   const [paletteOpen, setPaletteOpen]   = useState(false)
-  const [phase2HasData, setPhase2HasData] = useState(false)
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -184,14 +131,7 @@ export default function App() {
 
   function switchPhase(p: Phase) {
     setPhase(p)
-    if (p === 'phase1' && page === 'ingestion') setPage('overview')
-    if (p === 'phase2') {
-      setPage('overview')
-      // Check if Phase 2 data has been uploaded
-      supabase.from('phase2_kpi_summary').select('id', { count: 'exact', head: true })
-        .eq('is_active', true)
-        .then(({ count }) => setPhase2HasData((count ?? 0) > 0))
-    }
+    setPage('overview')
   }
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -212,16 +152,7 @@ export default function App() {
 
   const userEmail = session.user?.email
 
-  // Which nav items to show based on phase
-  const visibleNav = NAV.map(group => ({
-    ...group,
-    items: group.items.filter(item => {
-      if (item.phase2Only && phase === 'phase1') return false
-      return true
-    }),
-  })).filter(group => group.items.length > 0)
-
-  const isPhase2NonIngestion = phase === 'phase2' && page !== 'ingestion'
+  const visibleNav = NAV
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#0f172a' }}>
@@ -295,7 +226,7 @@ export default function App() {
                   ? 'text-emerald-500 bg-emerald-500/10'
                   : 'text-blue-400 bg-blue-500/10'
               }`}>
-                {phase === 'phase1' ? '● Active · Apr 2026' : '○ Awaiting data'}
+                {phase === 'phase1' ? '● Active · Apr 2026' : '● Active · May 2026'}
               </span>
             </div>
           )}
@@ -340,9 +271,6 @@ export default function App() {
                       )}
                       {active && sidebarOpen && (
                         <div className="ml-auto w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
-                      )}
-                      {item.phase2Only && sidebarOpen && !active && (
-                        <span className="ml-auto text-[8px] font-bold text-blue-500/60 uppercase tracking-wide flex-shrink-0">P2</span>
                       )}
                     </button>
                   )
@@ -413,31 +341,32 @@ export default function App() {
 
           <div className="px-6 py-6 max-w-7xl mx-auto w-full">
             {/* Phase 1 pages */}
-            {phase === 'phase1' && page === 'overview'   && <OverviewPage />}
-            {phase === 'phase1' && page === 'calls'      && <CallAnalysisPage />}
-            {phase === 'phase1' && page === 'records'    && <CallRecordsPage />}
-            {phase === 'phase1' && page === 'survey'     && <SurveyResultsPage />}
-            {phase === 'phase1' && page === 'schemes'    && <SchemePage />}
-            {phase === 'phase1' && page === 'geographic' && <GeographicPage />}
-
-            {/* Phase 2 pages */}
-            {phase === 'phase2' && page === 'ingestion' && <DataIngestionPage onUploaded={() => setPhase2HasData(true)} />}
-            {isPhase2NonIngestion && !phase2HasData && (
-              <Phase2EmptyState
-                pageName={PAGE_META[page].title}
-                onGoToIngestion={() => navigate('ingestion')}
-              />
+            {phase === 'phase1' && (
+              <PhaseDataProvider phase="phase1">
+                {page === 'overview'   && <OverviewPage />}
+                {page === 'calls'      && <CallAnalysisPage />}
+                {page === 'records'    && <CallRecordsPage />}
+                {page === 'survey'     && <SurveyResultsPage />}
+                {page === 'schemes'    && <SchemePage />}
+                {page === 'geographic' && <GeographicPage />}
+              </PhaseDataProvider>
             )}
-            {/* Phase 2 data is live — reuse Phase 1 pages but they read from Supabase */}
-            {phase === 'phase2' && phase2HasData && page === 'overview'   && <OverviewPage />}
-            {phase === 'phase2' && phase2HasData && page === 'calls'      && <CallAnalysisPage />}
-            {phase === 'phase2' && phase2HasData && page === 'survey'     && <SurveyResultsPage />}
-            {phase === 'phase2' && phase2HasData && page === 'schemes'    && <SchemePage />}
-            {phase === 'phase2' && phase2HasData && page === 'geographic' && <GeographicPage />}
+
+            {/* Phase 2 pages — static data + Supabase call records (May 2026) */}
+            {phase === 'phase2' && (
+              <PhaseDataProvider phase="phase2">
+                {page === 'overview'   && <OverviewPage />}
+                {page === 'calls'      && <CallAnalysisPage />}
+                {page === 'records'    && <CallRecordsPage />}
+                {page === 'survey'     && <SurveyResultsPage />}
+                {page === 'schemes'    && <SchemePage />}
+                {page === 'geographic' && <GeographicPage />}
+              </PhaseDataProvider>
+            )}
 
             <footer className="mt-12 pt-6 border-t border-slate-200/60 text-center">
               <p className="panel-label">
-                Araghyam · CSAT AI · Assam JJM · {phase === 'phase1' ? 'Phase 1 · 45,863 calls · April 2026' : 'Phase 2'}
+                Araghyam · CSAT AI · Assam JJM · {phase === 'phase1' ? 'Phase 1 · 45,863 calls · April 2026' : 'Phase 2 · 125,588 calls · May 2026'}
               </p>
             </footer>
           </div>
