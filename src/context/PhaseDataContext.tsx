@@ -236,7 +236,7 @@ const PHASE2_DATA: PhaseData = {
 
   phaseGteDate:  '2026-05-01',
   phaseLtDate:   null,
-  dbRecordCount: 67000,
+  dbRecordCount: 79725,
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
