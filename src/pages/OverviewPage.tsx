@@ -40,10 +40,13 @@ function insight(
   scope: { bsi5: string; status: string; usableCalls: number | null; validSchemes: number | null; quality: number | null; quantity: number | null },
   stateInsightCalls: string,
   stateInsightQuality: string,
+  districtFocus?: string | null,
 ) {
   const gap = (3.50 - parseFloat(scope.bsi5)).toFixed(2)
   if (scopeType === 'state') return {
-    bsi:     `${gap} below target · no zone meets the ≥3.50 benchmark`,
+    bsi:     districtFocus
+      ? `${parseFloat(scope.bsi5) >= 3.5 ? 'Meets target ≥3.50' : gap + ' below target'} · ${districtFocus} District`
+      : `${gap} below target · no zone meets the ≥3.50 benchmark`,
     calls:   stateInsightCalls,
     quality: stateInsightQuality,
   }
@@ -325,6 +328,18 @@ export function OverviewPage() {
       })
   }, [schemeFilter])
 
+  // In district-focus mode (Tinsukia), DISTRICT_SCORES are schemes — sync schemeFilter directly
+  useEffect(() => {
+    if (!data.districtFocus) return
+    if (scopeType === 'district' && scopeValue) {
+      setSchemeFilter(scopeValue)
+    } else {
+      setSchemeFilter('')
+      setSchemeStats(null)
+      setSchemeSummary(null)
+    }
+  }, [data.districtFocus, scopeType, scopeValue])
+
   // Derive all data from current scope
   const scope = useMemo<ScopeData>(() => {
     if (scopeType === 'zone' && scopeValue) {
@@ -367,7 +382,7 @@ export function OverviewPage() {
   }, [scopeType, scopeValue, ZONE_SCORES, DISTRICT_SCORES])
 
   const isScoped = scopeType !== 'state'
-  const ins = insight(scopeType, scope, data.stateInsightCalls, data.stateInsightQuality)
+  const ins = insight(scopeType, scope, data.stateInsightCalls, data.stateInsightQuality, data.districtFocus)
 
   const { KPI_QUESTIONS } = data
   // Q bars for state scope — derived from KPI_QUESTIONS
@@ -411,16 +426,21 @@ export function OverviewPage() {
         <span className="panel-label flex-shrink-0">Scope</span>
 
         <div className="tab-bar">
-          {(['state', 'zone', 'district'] as const).map(t => (
-            <button key={t} onClick={() => handleScopeTypeChange(t)}
+          {/* In district-focus mode hide the zone tab — schemes are the bottom level */}
+          {(['state', ...(data.districtFocus ? [] : ['zone']), 'district'] as const).map(t => (
+            <button key={t} onClick={() => handleScopeTypeChange(t as 'state' | 'zone' | 'district')}
               className={scopeType === t ? 'tab-item-active' : 'tab-item'}>
-              {t === 'state' ? 'All Assam' : t}
+              {t === 'state'
+                ? (data.districtFocus ?? 'All Assam')
+                : t === 'district'
+                  ? (data.districtFocus ? 'Scheme' : 'District')
+                  : 'Zone'}
             </button>
           ))}
         </div>
 
         {/* Value dropdowns */}
-        {scopeType === 'zone' && (
+        {scopeType === 'zone' && !data.districtFocus && (
           <select value={scopeValue} onChange={e => setScopeValue(e.target.value)}
             className="px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
             <option value="">All zones</option>
@@ -428,15 +448,15 @@ export function OverviewPage() {
           </select>
         )}
         {scopeType === 'district' && (
-          <select value={scopeValue} onChange={e => { setScopeValue(e.target.value); setSchemeFilter(''); setSchemeStats(null) }}
+          <select value={scopeValue} onChange={e => { setScopeValue(e.target.value); if (!data.districtFocus) { setSchemeFilter(''); setSchemeStats(null) } }}
             className="px-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
-            <option value="">All districts</option>
+            <option value="">{data.districtFocus ? 'All schemes' : 'All districts'}</option>
             {DISTRICT_LIST.map(d => <option key={d}>{d}</option>)}
           </select>
         )}
 
-        {/* Scheme dropdown — shown when district selected and schemes available */}
-        {scopeType === 'district' && (
+        {/* Nested scheme dropdown — only in main dashboard (in Tinsukia the district IS the scheme) */}
+        {scopeType === 'district' && !data.districtFocus && (
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Scheme</span>
             {loadingSchemes ? (
@@ -468,8 +488,10 @@ export function OverviewPage() {
               ))}
             </div>
           </div>
-        ) : scopeType === 'district' && schemeList.length > 0 ? (
-          <p className="text-[10px] text-gray-400 ml-auto italic">Select a scheme above to compare Score bases</p>
+        ) : scopeType === 'district' && (schemeList.length > 0 || data.districtFocus) ? (
+          <p className="text-[10px] text-gray-400 ml-auto italic">
+            {data.districtFocus ? 'Select a scheme to view Score bases' : 'Select a scheme above to compare Score bases'}
+          </p>
         ) : null}
 
         {/* Breadcrumb label + copy link */}
@@ -565,6 +587,61 @@ export function OverviewPage() {
           </div>
         ))}
       </div>
+
+      {/* ── Citizen Voice Summary — just below KPIs, only when a scheme is active ── */}
+      {activeScheme && (
+        <div className="card overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-start justify-between gap-3">
+            <div>
+              <p className="panel-title flex items-center gap-2">
+                Citizen Voice Summary
+                <span className="text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">AI · {schemeStats ? schemeStats.totalCalls + ' calls' : '…'}</span>
+              </p>
+              <p className="panel-sub mt-0.5">
+                {schemeSummary?.imisId
+                  ? <><span className="font-semibold text-slate-500">IMIS ID:</span> {schemeSummary.imisId}</>
+                  : summaryLoading ? <span className="text-slate-300 italic">loading…</span> : null}
+                {schemeSummary?.centreId && <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Centre ID:</span> {schemeSummary.centreId}</>}
+                {schemeSummary?.blocks   && <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Block(s):</span> {schemeSummary.blocks}</>}
+              </p>
+            </div>
+          </div>
+          <div className="px-5 py-4">
+            {summaryLoading ? (
+              <div className="space-y-2 animate-pulse">
+                <div className="h-3 bg-slate-100 rounded w-full" />
+                <div className="h-3 bg-slate-100 rounded w-11/12" />
+                <div className="h-3 bg-slate-100 rounded w-4/5" />
+                <div className="h-3 bg-slate-100 rounded w-10/12" />
+              </div>
+            ) : schemeSummary?.summary ? (
+              <>
+                <p className="text-sm text-slate-700 leading-relaxed">{schemeSummary.summary}</p>
+                {schemeSummary.keyIssues && (
+                  <div className="mt-4">
+                    <button onClick={() => setKeyIssuesOpen(v => !v)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 px-3 py-1.5 rounded-lg transition-all">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d={keyIssuesOpen ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                      </svg>
+                      Key Issues {keyIssuesOpen ? '↑' : '↓'}
+                    </button>
+                    {keyIssuesOpen && (
+                      <div className="mt-2.5 flex flex-wrap gap-1.5 pt-2.5 border-t border-slate-100">
+                        {schemeSummary.keyIssues.split(';').map(t => t.trim()).filter(Boolean).map(tag => (
+                          <span key={tag} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-slate-400 italic">No summary available for this scheme</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── BSI gauge + Service areas ───────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -714,90 +791,35 @@ export function OverviewPage() {
         </div>
       </div>
 
-      {/* ── Citizen Voice Summary (visible when a scheme is selected) ────── */}
-      {activeScheme && (
-        <div className="card overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-100 flex items-start justify-between gap-3">
-            <div>
-              <p className="panel-title flex items-center gap-2">
-                Citizen Voice Summary
-                <span className="text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">AI · {schemeStats ? schemeStats.totalCalls + ' calls' : '…'}</span>
-              </p>
-              <p className="panel-sub mt-0.5">
-                {schemeSummary?.imisId
-                  ? <><span className="font-semibold text-slate-500">IMIS ID:</span> {schemeSummary.imisId}</>
-                  : <span className="text-slate-300 italic">IMIS ID loading…</span>}
-                {schemeSummary?.centreId && (
-                  <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Centre ID:</span> {schemeSummary.centreId}</>
-                )}
-                {schemeSummary?.blocks && (
-                  <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Block(s):</span> {schemeSummary.blocks}</>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="px-5 py-4">
-            {summaryLoading ? (
-              <div className="space-y-2 animate-pulse">
-                <div className="h-3 bg-slate-100 rounded w-full" />
-                <div className="h-3 bg-slate-100 rounded w-11/12" />
-                <div className="h-3 bg-slate-100 rounded w-4/5" />
-                <div className="h-3 bg-slate-100 rounded w-10/12" />
-              </div>
-            ) : schemeSummary?.summary ? (
-              <>
-                <p className="text-sm text-slate-700 leading-relaxed">{schemeSummary.summary}</p>
-                {schemeSummary.keyIssues && (
-                  <div className="mt-4">
-                    <button
-                      onClick={() => setKeyIssuesOpen(v => !v)}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 px-3 py-1.5 rounded-lg transition-all"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d={keyIssuesOpen ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
-                      </svg>
-                      Key Issues {keyIssuesOpen ? '↑' : '↓'}
-                    </button>
-                    {keyIssuesOpen && (
-                      <div className="mt-2.5 flex flex-wrap gap-1.5 pt-2.5 border-t border-slate-100">
-                        {schemeSummary.keyIssues.split(';').map(t => t.trim()).filter(Boolean).map(tag => (
-                          <span key={tag} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-xs text-slate-400 italic">No summary available for this scheme</p>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* ── Zone / District breakdown ────────────────────────────────────── */}
       <div className="card overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-gray-800">
               {scopeType === 'state'
-                ? 'Zone Rankings'
+                ? (data.districtFocus ? `${data.districtFocus} — Scheme Rankings` : 'Zone Rankings')
                 : scopeType === 'zone' && scopeValue
                   ? `Districts in ${scopeValue}`
                   : scopeType === 'zone'
                     ? 'All Zones'
                     : scopeType === 'district' && scopeValue
-                      ? `Other districts in ${DISTRICT_SCORES.find(d => d.district === scopeValue)?.zone ?? ''}`
-                      : 'All Districts'}
+                      ? data.districtFocus
+                        ? `All schemes in ${data.districtFocus} District`
+                        : `Other districts in ${DISTRICT_SCORES.find(d => d.district === scopeValue)?.zone ?? ''}`
+                      : data.districtFocus ? 'All Schemes' : 'All Districts'}
             </p>
             <p className="text-xs text-gray-400">
               {scopeType === 'state'
-                ? 'No zone meets the 3.50 target · sorted best to worst'
+                ? (data.districtFocus
+                    ? `${data.districtCountLabel} valid schemes · sorted best to worst · click to select`
+                    : 'No zone meets the 3.50 target · sorted best to worst')
                 : scopeType === 'district' && !scopeValue
-                  ? `${data.districtCountLabel} districts · sorted by Score · click to drill down`
-                  : 'Sorted by Score · click a district to drill down'}
+                  ? (data.districtFocus
+                      ? `${data.districtCountLabel} schemes · sorted by Score · click to select`
+                      : `${data.districtCountLabel} districts · sorted by Score · click to drill down`)
+                  : (data.districtFocus
+                      ? 'Sorted by Score · click a scheme to view summary'
+                      : 'Sorted by Score · click a district to drill down')}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -819,9 +841,9 @@ export function OverviewPage() {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="th text-left">
-                  {scopeType === 'state' ? 'Zone' : 'District'}
+                  {data.districtFocus ? 'Scheme' : scopeType === 'state' ? 'Zone' : 'District'}
                 </th>
-                {scopeType === 'district' && !scopeValue && (
+                {scopeType === 'district' && !scopeValue && !data.districtFocus && (
                   <th className="th text-left hidden sm:table-cell">Zone</th>
                 )}
                 <th className="th text-right">Score /5</th>
@@ -829,7 +851,7 @@ export function OverviewPage() {
                 <th className="th text-right hidden sm:table-cell">Quality</th>
                 <th className="th text-right hidden sm:table-cell">Quantity</th>
                 {scopeType !== 'district' && <th className="th text-right hidden md:table-cell">Usable Calls</th>}
-                {scopeType !== 'state' && <th className="th text-right hidden md:table-cell">Valid Schemes</th>}
+                {scopeType !== 'state' && !data.districtFocus && <th className="th text-right hidden md:table-cell">Valid Schemes</th>}
                 <th className="th text-center">Status</th>
               </tr>
             </thead>
@@ -842,19 +864,24 @@ export function OverviewPage() {
                 return (
                   <tr key={`${row.zone ?? ''}-${row.district ?? ''}`}
                     onClick={() => {
-                      if (row.district) {
+                      if (data.districtFocus) {
+                        // In Tinsukia mode rows ARE schemes — select directly
+                        const name = row.district ?? row.zone
+                        setScopeType('district')
+                        setScopeValue(name)
+                      } else if (row.district) {
                         setScopeType('district')
                         setScopeValue(row.district)
                       }
                     }}
                     className={`border-b border-gray-50 last:border-0 transition-colors ${
-                      row.district ? 'cursor-pointer hover:bg-blue-50/40' : ''
+                      (row.district || data.districtFocus) ? 'cursor-pointer hover:bg-blue-50/40' : ''
                     } ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : ''}`}>
                     <td className="td">
                       <span className="font-semibold text-gray-800 text-xs">{rowLabel}</span>
                       {isSelected && <span className="ml-2 text-[10px] text-blue-500 font-bold">← selected</span>}
                     </td>
-                    {scopeType === 'district' && !scopeValue && (
+                    {scopeType === 'district' && !scopeValue && !data.districtFocus && (
                       <td className="td text-xs text-gray-400 hidden sm:table-cell">{row.zone ?? '—'}</td>
                     )}
                     <td className="td-mono text-right">
@@ -881,7 +908,7 @@ export function OverviewPage() {
                         {row.usableCalls ? fmt(row.usableCalls) : '—'}
                       </td>
                     )}
-                    {scopeType !== 'state' && (
+                    {scopeType !== 'state' && !data.districtFocus && (
                       <td className="td-mono text-right text-xs text-gray-400 hidden md:table-cell">
                         {row.validSchemes ?? '—'}
                       </td>
@@ -991,14 +1018,14 @@ export function OverviewPage() {
       )}
 
       {/* ── Phase Comparison (Full Campaign only) ───────────────────────── */}
-      {data.comparison && <PhaseComparisonSection comparison={data.comparison} />}
+      {data.comparison && <PhaseComparisonSection comparison={data.comparison} districtFocus={data.districtFocus} />}
 
     </div>
   )
 }
 
 // ─── Phase Comparison Section ─────────────────────────────────────────────────
-function PhaseComparisonSection({ comparison }: { comparison: NonNullable<ReturnType<typeof usePhaseData>['comparison']> }) {
+function PhaseComparisonSection({ comparison, districtFocus }: { comparison: NonNullable<ReturnType<typeof usePhaseData>['comparison']>; districtFocus?: string | null }) {
   const trendIcon  = (trend: string, isGoodUp: boolean) => {
     if (trend === 'neutral') return { icon: '→', cls: 'text-gray-500' }
     const isPositive = (trend === 'up' && isGoodUp) || (trend === 'down' && !isGoodUp)
@@ -1019,8 +1046,8 @@ function PhaseComparisonSection({ comparison }: { comparison: NonNullable<Return
           <div>
             <p className="text-sm font-bold text-gray-800">Phase 1 vs Phase 2 Comparison</p>
             <p className="text-xs text-gray-400">
-              Phase 1: 45,863 calls · Apr 2026 · Score {comparison.p1Bsi5}/5 &nbsp;|&nbsp;
-              Phase 2: 79,725 calls · May 2026 · Score {comparison.p2Bsi5}/5
+              Phase 1: {comparison.p1Calls.toLocaleString()} calls · Apr 2026 · Score {comparison.p1Bsi5}/5 &nbsp;|&nbsp;
+              Phase 2: {comparison.p2Calls.toLocaleString()} calls · May 2026 · Score {comparison.p2Bsi5}/5
             </p>
           </div>
         </div>
@@ -1053,14 +1080,18 @@ function PhaseComparisonSection({ comparison }: { comparison: NonNullable<Return
       {/* Zone BSI changes */}
       <div className="card overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100">
-          <p className="panel-title">Zone Score Changes  Phase 1 → Phase 2</p>
-          <p className="panel-sub mt-0.5">Score out of 5.0 · Phase 2 zone data based on limited May 2026 sample</p>
+          <p className="panel-title">{districtFocus ? `${districtFocus} Score Changes` : 'Zone Score Changes'}  Phase 1 → Phase 2</p>
+          <p className="panel-sub mt-0.5">
+            {districtFocus
+              ? `Score out of 5.0 · ${districtFocus} District · Apr–May 2026`
+              : 'Score out of 5.0 · Phase 2 zone data based on limited May 2026 sample'}
+          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="th text-left">Zone</th>
+                <th className="th text-left">{districtFocus ? 'District' : 'Zone'}</th>
                 <th className="th text-right">Phase 1 Score</th>
                 <th className="th text-right">Phase 2 Score</th>
                 <th className="th text-center">Change</th>
@@ -1091,7 +1122,11 @@ function PhaseComparisonSection({ comparison }: { comparison: NonNullable<Return
           </table>
         </div>
         <div className="px-5 py-2.5 bg-amber-50 border-t border-amber-100">
-          <p className="text-[10px] text-amber-700">Phase 2 zone scores are based on 800 usable calls across 5 zones (vs 9,224 in Phase 1). Results are directional indicators — sample sizes are limited for some zones.</p>
+          <p className="text-[10px] text-amber-700">
+            {districtFocus
+              ? `${districtFocus} District: Phase 1 (${comparison.p1Calls} calls) vs Phase 2 (${comparison.p2Calls} calls). Score improvement of +0.23/5 is the strongest of any district in Assam.`
+              : 'Phase 2 zone scores are based on 800 usable calls across 5 zones (vs 9,224 in Phase 1). Results are directional indicators — sample sizes are limited for some zones.'}
+          </p>
         </div>
       </div>
     </div>

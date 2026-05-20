@@ -56,6 +56,7 @@ export interface PhaseData {
   phaseLabel: string
   dateLabel: string
   hasSchemeSearch: boolean
+  districtFocus: string | null   // set to district name (e.g. 'Tinsukia') for focused dashboards
 
   // Derived for OverviewPage
   stateInsightCalls: string
@@ -116,6 +117,7 @@ const PHASE1_DATA: PhaseData = {
   phaseLabel: 'Phase 1',
   dateLabel: 'Apr 2026',
   hasSchemeSearch: true,
+  districtFocus: null,
 
   stateInsightCalls:   '27.4% consented · 72.6% refused or no response',
   stateInsightQuality: '51.7% satisfied · 25.6% dissatisfied · 22.7% neutral',
@@ -195,6 +197,7 @@ const PHASE2_DATA: PhaseData = {
   phaseLabel: 'Phase 2',
   dateLabel: 'May 2026',
   hasSchemeSearch: true,
+  districtFocus: null,
 
   stateInsightCalls:   '16.1% consented · 83.9% refused or no response',
   stateInsightQuality: '55.0% satisfied · 24.0% dissatisfied · 21.0% neutral',
@@ -298,6 +301,7 @@ const FULL_CAMPAIGN_DATA: PhaseData = {
   phaseLabel: 'Full Campaign',
   dateLabel: 'Apr–May 2026',
   hasSchemeSearch: true,
+  districtFocus: null,
 
   stateInsightCalls:   '20.4% consented · 79.6% refused or no response',
   stateInsightQuality: '53.1% satisfied · 24.7% dissatisfied · 22.1% neutral',
@@ -415,6 +419,7 @@ function tinsukiaBase(
     phase: 'phase2',
     phaseLabel, dateLabel,
     hasSchemeSearch: true,
+    districtFocus: 'Tinsukia',
     stateInsightCalls:   `${kpi.consentRate}% consented · ${(100 - kpi.consentRate).toFixed(1)}% refused or no response`,
     stateInsightQuality: `${kpi.satisfied}% satisfied · district-level data`,
     usableCallsLabel:    usable.toLocaleString(),
