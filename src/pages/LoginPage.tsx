@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const STATS = [
-  { val: '45,863', label: 'Calls Analysed', icon: '📞' },
-  { val: '9,224',  label: 'Surveys Usable', icon: '✅' },
-  { val: '31',     label: 'Districts Covered', icon: '🗺️' },
-  { val: '2.20/5', label: 'State Citizen Satisfaction Survey Score', icon: '📊' },
+  { val: '125,588', label: 'Calls Analysed',   icon: '📞' },
+  { val: '15,660',  label: 'Surveys Usable',   icon: '✅' },
+  { val: '33',      label: 'Districts Covered', icon: '🗺️' },
+  { val: '2.76/5',  label: 'State Citizen Satisfaction Survey Score', icon: '📊' },
 ]
 
 type Mode = 'signin' | 'signup'
+type Workspace = 'main' | 'tinsukia'
 
 export function LoginPage() {
   const [mode, setMode]           = useState<Mode>('signin')
@@ -17,20 +18,25 @@ export function LoginPage() {
   const [confirm, setConfirm]     = useState('')
   const [fullName, setFullName]   = useState('')
   const [loading, setLoading]     = useState(false)
+  const [loadingWs, setLoadingWs] = useState<Workspace | null>(null)
   const [error, setError]         = useState('')
   const [success, setSuccess]     = useState('')
 
   function switchMode(m: Mode) {
-    setMode(m); setError('')           // keep success banner when switching tabs
+    setMode(m); setError('')
     setEmail(''); setPassword(''); setConfirm(''); setFullName('')
   }
 
-  async function handleSignIn(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true); setError('')
+  async function handleSignIn(ws: Workspace) {
+    if (!email || !password) { setError('Please enter your email and password.'); return }
+    setLoading(true); setLoadingWs(ws); setError('')
+    localStorage.setItem('jjm_workspace', ws)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
-    setLoading(false)
+    if (error) {
+      localStorage.removeItem('jjm_workspace')
+      setError(error.message)
+    }
+    setLoading(false); setLoadingWs(null)
   }
 
   async function handleSignUp(e: React.FormEvent) {
@@ -153,7 +159,7 @@ export function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+          <form onSubmit={isSignUp ? handleSignUp : (e) => e.preventDefault()} className="space-y-4">
 
             {isSignUp && (
               <div>
@@ -217,16 +223,42 @@ export function LoginPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 text-white font-semibold
-                text-sm py-3 rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 mt-1"
-            >
-              {loading
-                ? <><span className="animate-spin text-base">⟳</span> {isSignUp ? 'Creating…' : 'Signing in…'}</>
-                : isSignUp ? 'Create Account' : 'Sign In'}
-            </button>
+            {isSignUp ? (
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-400 text-white font-semibold
+                  text-sm py-3 rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 mt-1"
+              >
+                {loading ? <><span className="animate-spin text-base">⟳</span> Creating…</> : 'Create Account'}
+              </button>
+            ) : (
+              <div className="space-y-2.5 mt-1">
+                <p className="text-[10px] text-gray-400 text-center uppercase tracking-widest font-semibold">Sign in to</p>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleSignIn('main')}
+                  className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold
+                    text-sm py-3 rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2"
+                >
+                  {loadingWs === 'main'
+                    ? <><span className="animate-spin text-base">⟳</span> Signing in…</>
+                    : <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" /><circle cx="12" cy="12" r="9"/></svg> Main Dashboard — All Assam</>}
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleSignIn('tinsukia')}
+                  className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white font-semibold
+                    text-sm py-3 rounded-xl transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2"
+                >
+                  {loadingWs === 'tinsukia'
+                    ? <><span className="animate-spin text-base">⟳</span> Signing in…</>
+                    : <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg> Tinsukia District</>}
+                </button>
+              </div>
+            )}
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-100">
