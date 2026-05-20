@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js'
 import { Header } from './components/Header'
 import { PhaseDataProvider } from './context/PhaseDataContext'
 import { LoginPage } from './pages/LoginPage'
+import { WorkspacePicker } from './pages/WorkspacePicker'
 import { OverviewPage } from './pages/OverviewPage'
 import { CallAnalysisPage } from './pages/CallAnalysisPage'
 import { CallRecordsPage } from './pages/CallRecordsPage'
@@ -14,7 +15,8 @@ import { GeographicPage } from './pages/GeographicPage'
 import { ComparisonPage } from './pages/ComparisonPage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Phase = 'phase1' | 'phase2' | 'fullcampaign'
+type Phase     = 'phase1' | 'phase2' | 'fullcampaign'
+type Workspace = 'main' | 'tinsukia'
 type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'comparison'
 
 interface NavItem {
@@ -91,11 +93,26 @@ const PAGE_META: Record<PageId, { title: string; sub: string }> = {
 export default function App() {
   const [session, setSession]           = useState<Session | null>(null)
   const [authLoading, setAuthLoading]   = useState(true)
+  const [workspace, setWorkspace]       = useState<Workspace | null>(
+    () => (localStorage.getItem('jjm_workspace') as Workspace | null)
+  )
   const [phase, setPhase]               = useState<Phase>('phase1')
   const [page, setPage]                 = useState<PageId>('overview')
   const [sidebarOpen, setSidebarOpen]   = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
   const [paletteOpen, setPaletteOpen]   = useState(false)
+
+  function selectWorkspace(ws: Workspace) {
+    setWorkspace(ws)
+    localStorage.setItem('jjm_workspace', ws)
+    setPhase('phase1')
+    setPage('overview')
+  }
+
+  function switchWorkspace() {
+    const next: Workspace = workspace === 'tinsukia' ? 'main' : 'tinsukia'
+    selectWorkspace(next)
+  }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -160,7 +177,10 @@ export default function App() {
 
   if (!session) return <LoginPage />
 
-  const userEmail = session.user?.email
+  const userEmail = session.user?.email ?? ''
+
+  // Show workspace picker if no workspace chosen yet this session
+  if (!workspace) return <WorkspacePicker userEmail={userEmail} onSelect={selectWorkspace} />
 
   const visibleNav = NAV.map(group => ({
     ...group,
@@ -185,20 +205,24 @@ export default function App() {
         <div className={`flex items-center h-14 border-b border-white/[0.06] flex-shrink-0 ${sidebarOpen ? 'px-4 gap-3' : 'justify-center'}`}>
           {sidebarOpen ? (
             <>
-              <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs font-black">A</span>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${workspace === 'tinsukia' ? 'bg-amber-500' : 'bg-blue-500'}`}>
+                <span className="text-white text-xs font-black">{workspace === 'tinsukia' ? 'T' : 'A'}</span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-bold text-white leading-none">Arghyam</p>
-                <p className="text-[9px] text-slate-500 mt-0.5 font-medium tracking-widest uppercase">JJM · CSAT AI</p>
+                <p className="text-[11px] font-bold text-white leading-none">
+                  {workspace === 'tinsukia' ? 'Tinsukia' : 'Arghyam'}
+                </p>
+                <p className="text-[9px] text-slate-500 mt-0.5 font-medium tracking-widest uppercase">
+                  {workspace === 'tinsukia' ? 'District · CSAT AI' : 'JJM · CSAT AI'}
+                </p>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="text-slate-600 hover:text-slate-300 transition-colors p-1 flex-shrink-0">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7"/></svg>
               </button>
             </>
           ) : (
-            <button onClick={() => setSidebarOpen(true)} className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center">
-              <span className="text-white text-xs font-black">A</span>
+            <button onClick={() => setSidebarOpen(true)} className={`w-7 h-7 rounded-lg flex items-center justify-center ${workspace === 'tinsukia' ? 'bg-amber-500' : 'bg-blue-500'}`}>
+              <span className="text-white text-xs font-black">{workspace === 'tinsukia' ? 'T' : 'A'}</span>
             </button>
           )}
         </div>
@@ -297,15 +321,37 @@ export default function App() {
           })}
         </nav>
 
-        {/* User + Sign out */}
-        <div className="flex-shrink-0 border-t border-white/[0.06] p-2">
+        {/* User + Switch workspace + Sign out */}
+        <div className="flex-shrink-0 border-t border-white/[0.06] p-2 space-y-1">
+          {/* Switch workspace button */}
+          {sidebarOpen ? (
+            <button onClick={switchWorkspace}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-white/[0.06] transition-colors group">
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${workspace === 'tinsukia' ? 'bg-blue-600/20' : 'bg-amber-600/20'}`}>
+                <svg className={`w-3 h-3 ${workspace === 'tinsukia' ? 'text-blue-400' : 'text-amber-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-400 group-hover:text-slate-200 truncate transition-colors">
+                {workspace === 'tinsukia' ? 'Switch to Main' : 'Switch to Tinsukia'}
+              </span>
+            </button>
+          ) : (
+            <button onClick={switchWorkspace} title={workspace === 'tinsukia' ? 'Switch to Main Dashboard' : 'Switch to Tinsukia Dashboard'}
+              className={`w-full flex items-center justify-center py-1.5 rounded-lg transition-colors ${workspace === 'tinsukia' ? 'text-blue-500 hover:text-blue-300' : 'text-amber-500 hover:text-amber-300'}`}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+              </svg>
+            </button>
+          )}
+
           {sidebarOpen ? (
             <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/[0.04] transition-colors group">
               <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                {userEmail?.charAt(0).toUpperCase()}
+                {userEmail.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold text-slate-300 truncate leading-none">{userEmail?.split('@')[0]}</p>
+                <p className="text-[11px] font-semibold text-slate-300 truncate leading-none">{userEmail.split('@')[0]}</p>
               </div>
               <button onClick={() => supabase.auth.signOut()} title="Sign out"
                 className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all p-1">
@@ -335,6 +381,12 @@ export default function App() {
             <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
               <span>Arghyam</span>
               <span className="text-slate-300">/</span>
+              {workspace === 'tinsukia' && (
+                <>
+                  <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded text-amber-700 bg-amber-100">Tinsukia</span>
+                  <span className="text-slate-300">/</span>
+                </>
+              )}
               <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
                 phase === 'phase1' ? 'text-emerald-700 bg-emerald-100'
                 : phase === 'phase2' ? 'text-blue-700 bg-blue-100'
@@ -359,7 +411,7 @@ export default function App() {
           <div className="px-6 py-6 max-w-7xl mx-auto w-full">
             {/* Phase 1 pages */}
             {phase === 'phase1' && (
-              <PhaseDataProvider phase="phase1">
+              <PhaseDataProvider phase="phase1" tinsukia={workspace === 'tinsukia'}>
                 {page === 'overview'   && <OverviewPage />}
                 {page === 'calls'      && <CallAnalysisPage />}
                 {page === 'records'    && <CallRecordsPage />}
@@ -369,9 +421,9 @@ export default function App() {
               </PhaseDataProvider>
             )}
 
-            {/* Phase 2 pages — new May 2026 calls only */}
+            {/* Phase 2 pages */}
             {phase === 'phase2' && (
-              <PhaseDataProvider phase="phase2">
+              <PhaseDataProvider phase="phase2" tinsukia={workspace === 'tinsukia'}>
                 {page === 'overview'   && <OverviewPage />}
                 {page === 'calls'      && <CallAnalysisPage />}
                 {page === 'records'    && <CallRecordsPage />}
@@ -381,9 +433,9 @@ export default function App() {
               </PhaseDataProvider>
             )}
 
-            {/* Full Campaign — Phase 1 + Phase 2 combined with comparison section */}
+            {/* Full Campaign — Phase 1 + Phase 2 combined */}
             {phase === 'fullcampaign' && (
-              <PhaseDataProvider phase="fullcampaign">
+              <PhaseDataProvider phase="fullcampaign" tinsukia={workspace === 'tinsukia'}>
                 {page === 'overview'    && <OverviewPage />}
                 {page === 'calls'       && <CallAnalysisPage />}
                 {page === 'records'     && <CallRecordsPage />}
@@ -396,7 +448,8 @@ export default function App() {
 
             <footer className="mt-12 pt-6 border-t border-slate-200/60 text-center">
               <p className="panel-label">
-                Arghyam · CSAT AI · Assam JJM · {phase === 'phase1' ? 'Phase 1 · 45,863 calls · April 2026' : phase === 'phase2' ? 'Phase 2 · 79,725 calls · May 2026' : 'Full Campaign · 125,588 calls · Apr–May 2026'}
+                {workspace === 'tinsukia' ? 'Arghyam · CSAT AI · Tinsukia District · ' : 'Arghyam · CSAT AI · Assam JJM · '}
+                {phase === 'phase1' ? (workspace === 'tinsukia' ? 'Phase 1 · 326 calls · April 2026' : 'Phase 1 · 45,863 calls · April 2026') : phase === 'phase2' ? (workspace === 'tinsukia' ? 'Phase 2 · 480 calls · May 2026' : 'Phase 2 · 79,725 calls · May 2026') : (workspace === 'tinsukia' ? 'Full Campaign · 806 calls · Apr–May 2026' : 'Full Campaign · 125,588 calls · Apr–May 2026')}
               </p>
             </footer>
           </div>
