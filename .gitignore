@@ -30,7 +30,7 @@ pnpm-debug.log*
 
 # Temp files
 *.crdownload
-.claude
+.local-config
 
 # Large data files (optional - user might want these, but usually good to ignore)
 # final.xlsx
