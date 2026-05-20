@@ -598,9 +598,9 @@ export function OverviewPage() {
             <div>
               <p className="panel-title flex items-center gap-2">
                 Citizen Voice Summary
-                {activeScheme && (
-                  <span className="text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
-                    AI · {schemeStats!.totalCalls} calls
+                {activeScheme && schemeStats && (
+                  <span className="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                    {schemeStats.totalCalls} calls
                   </span>
                 )}
               </p>
@@ -615,9 +615,7 @@ export function OverviewPage() {
                   <span className="text-slate-300">Loading scheme details…</span>
                 ) : (
                   <span className="text-slate-400">
-                    {data.districtFocus
-                      ? 'Select a scheme from the table below to view citizen feedback'
-                      : 'Select a scheme from the dropdown above to view citizen feedback'}
+                    {data.districtFocus ? 'Select a scheme to view its feedback summary' : 'Select a scheme to view its feedback summary'}
                   </span>
                 )}
               </p>
@@ -627,15 +625,8 @@ export function OverviewPage() {
           <div className="px-5 py-4 min-h-[80px] flex flex-col justify-center">
             {!activeScheme ? (
               /* ── Placeholder — no scheme selected yet ── */
-              <div className="flex items-center gap-3 text-slate-300">
-                <svg className="w-8 h-8 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                </svg>
-                <p className="text-sm text-slate-400">
-                  {data.districtFocus
-                    ? 'Click any scheme in the table below to load its AI-generated citizen voice summary.'
-                    : 'Choose a scheme from the dropdown above to load its AI-generated citizen voice summary.'}
-                </p>
+              <div className="flex items-center justify-center py-2">
+                <p className="text-xs text-slate-300 tracking-wide">— No scheme selected —</p>
               </div>
             ) : summaryLoading ? (
               /* ── Skeleton — scheme selected, data loading ── */
