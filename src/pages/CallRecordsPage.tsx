@@ -138,7 +138,7 @@ function fmtDate(iso: string | null) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function CallRecordsPage() {
-  const { phaseGteDate, phaseLtDate, dbRecordCount, phaseLabel } = usePhaseData()
+  const { phaseGteDate, phaseLtDate, dbRecordCount, phaseLabel, districtFocus } = usePhaseData()
   const [records, setRecords]       = useState<CallRecord[]>([])
   const [total, setTotal]           = useState(0)
   const [usableTotal, setUsableTotal] = useState<number | null>(null)
@@ -203,9 +203,12 @@ export function CallRecordsPage() {
     if (phaseGteDate) q = q.gte('call_start_time', phaseGteDate)
     if (phaseLtDate)  q = q.lt('call_start_time', phaseLtDate)
 
-    if (zone !== 'All Zones') q = q.eq('zone', zone)
+    // District-focus mode (e.g. Tinsukia) — always locked to that district
+    if (districtFocus) q = q.eq('district', districtFocus)
 
-    if (district !== 'All Districts') q = q.ilike('district', district)
+    if (!districtFocus && zone !== 'All Zones') q = q.eq('zone', zone)
+
+    if (!districtFocus && district !== 'All Districts') q = q.ilike('district', district)
 
     if (sat === 'No Q5') q = q.is('q5_answer', null)
     else if (sat !== 'All') q = q.eq('satisfaction', sat)
@@ -259,8 +262,9 @@ export function CallRecordsPage() {
       .eq('is_usable', true)
     if (phaseGteDate) uq = uq.gte('call_start_time', phaseGteDate)
     if (phaseLtDate)  uq = uq.lt('call_start_time', phaseLtDate)
-    if (zone !== 'All Zones') uq = uq.eq('zone', zone)
-    if (district !== 'All Districts') uq = uq.ilike('district', district)
+    if (districtFocus) uq = uq.eq('district', districtFocus)
+    if (!districtFocus && zone !== 'All Zones') uq = uq.eq('zone', zone)
+    if (!districtFocus && district !== 'All Districts') uq = uq.ilike('district', district)
     if (debouncedSearch.trim()) {
       const s = debouncedSearch.trim()
       uq = uq.or(`scheme_name.ilike.%${s}%,district.ilike.%${s}%,call_summary.ilike.%${s}%,call_id.eq.${Number.isInteger(+s) ? s : -1}`)
@@ -303,7 +307,7 @@ export function CallRecordsPage() {
     try {
       await downloadFilteredCallsCSV(
         {
-          zone: zone === 'All Zones' ? undefined : zone,
+          zone: districtFocus ? undefined : (zone === 'All Zones' ? undefined : zone),
           sat: sat === 'All' ? undefined : sat,
           q1: q1Filter === 'All' ? undefined : q1Filter,
           hasRecording,
@@ -312,7 +316,7 @@ export function CallRecordsPage() {
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
         },
-        [zone !== 'All Zones' && zone, sat !== 'All' && sat].filter(Boolean).join('_') || 'Filtered'
+        [districtFocus ?? (zone !== 'All Zones' && zone), sat !== 'All' && sat].filter(Boolean).join('_') || 'Filtered'
       )
     } finally {
       setExporting(false)
@@ -403,20 +407,29 @@ export function CallRecordsPage() {
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
             />
           </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1 font-medium">Zone</label>
-            <select value={zone} onChange={e => { setZone(e.target.value); setDistrict('All Districts'); setPage(0); setActivePreset(null) }}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
-              {ZONES.map(z => <option key={z}>{z}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1 font-medium">District</label>
-            <select value={district} onChange={e => { setDistrict(e.target.value); setPage(0); setActivePreset(null) }}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
-              {DISTRICTS.map(d => <option key={d}>{d}</option>)}
-            </select>
-          </div>
+          {districtFocus ? (
+            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+              <svg className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span className="text-xs font-semibold text-amber-700">{districtFocus} District only</span>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-medium">Zone</label>
+                <select value={zone} onChange={e => { setZone(e.target.value); setDistrict('All Districts'); setPage(0); setActivePreset(null) }}
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
+                  {ZONES.map(z => <option key={z}>{z}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 font-medium">District</label>
+                <select value={district} onChange={e => { setDistrict(e.target.value); setPage(0); setActivePreset(null) }}
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white">
+                  {DISTRICTS.map(d => <option key={d}>{d}</option>)}
+                </select>
+              </div>
+            </>
+          )}
           <div>
             <label className="block text-xs text-gray-500 mb-1 font-medium">Q5 Satisfaction</label>
             <select value={sat} onChange={e => { setSat(e.target.value); setPage(0); setActivePreset(null) }}

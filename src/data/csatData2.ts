@@ -59,7 +59,8 @@ export const SCHEME_COVERAGE = {
 }
 
 // ─── ZONE SCORES — Phase 2 new calls only (800 scheme-weighted usable calls) ─
-// Note: Barak Valley and DHAC had no valid schemes (≥6 usable calls) in May 2026
+// Note: Barak Valley and DHAC had no valid schemes (≥6 usable calls per scheme) in May 2026
+// DHAC had 814 calls made, 46 consented, 19 usable — but spread across 51 schemes, none reached threshold
 export const ZONE_SCORES = [
   { zone: 'North Assam',  usableCalls: 202, bsi: 0.5106, quality: 0.9851, quantity: 0.8639, daily: 0.2190, satisfaction: 0.2042, status: 'Moderate' },
   { zone: 'Upper Assam',  usableCalls: 308, bsi: 0.5942, quality: 1.0397, quantity: 0.9399, daily: 0.2971, satisfaction: 0.2812, status: 'Moderate' },
@@ -67,7 +68,7 @@ export const ZONE_SCORES = [
   { zone: 'Lower Assam',  usableCalls: 219, bsi: 0.5114, quality: 0.9595, quantity: 0.7842, daily: 0.2363, satisfaction: 0.2027, status: 'Moderate' },
   { zone: 'BTAD',         usableCalls: 65,  bsi: 0.5009, quality: 1.0565, quantity: 0.7600, daily: 0.1385, satisfaction: 0.2564, status: 'Moderate' },
   { zone: 'Barak Valley', usableCalls: 0,   bsi: null,   quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data' },
-  { zone: 'DHAC',         usableCalls: 0,   bsi: null,   quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data' },
+  { zone: 'DHAC',         usableCalls: 19,  bsi: null,   quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data' },
   { zone: 'Assam (State)',usableCalls: 800, bsi: 0.5431, quality: 1.0088, quantity: 0.8620, daily: 0.2466, satisfaction: 0.2361, status: 'Moderate' },
 ]
 

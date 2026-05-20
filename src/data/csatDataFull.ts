@@ -49,7 +49,7 @@ export const ZONE_SCORES = [
   { zone: 'Lower Assam',  usableCalls: 2354, bsi: 0.5532, quality: 1.0746, quantity: 0.8885, daily: 0.2116, satisfaction: 0.2528, status: 'Moderate' },
   { zone: 'BTAD',         usableCalls: 178,  bsi: 0.4090, quality: 0.9743, quantity: 0.5837, daily: 0.1095, satisfaction: 0.1831, status: 'Moderate' },
   { zone: 'Barak Valley', usableCalls: 424,  bsi: 0.4875, quality: 0.8897, quantity: 0.7865, daily: 0.2388, satisfaction: 0.2396, status: 'Moderate' },
-  { zone: 'DHAC',         usableCalls: 0,    bsi: null,   quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data' },
+  { zone: 'DHAC',         usableCalls: 20,   bsi: null,   quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data' },
   { zone: 'Assam (State)',usableCalls: 7843, bsi: 0.5516, quality: 1.0373, quantity: 0.8834, daily: 0.2400, satisfaction: 0.2471, status: 'Moderate' },
 ]
 

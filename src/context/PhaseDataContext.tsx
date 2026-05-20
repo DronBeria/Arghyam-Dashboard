@@ -217,7 +217,7 @@ const PHASE2_DATA: PhaseData = {
   bestDistrict:      { name: 'Dhubri',     bsi5: '3.674' },
   worstDistrict:     { name: 'Bongaigaon', bsi5: '1.591' },
   districtCountLabel:'23',
-  dhacNote:          'Barak Valley and DHAC excluded: no valid schemes (≥6 usable calls) in Phase 2 May data · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
+  dhacNote:          'Barak Valley: 0 valid schemes in May 2026 · DHAC (Dima Hasao): 814 calls made, 46 consented (5.7%), 19 usable calls across 51 schemes — none reached the ≥6 threshold · Score not computed · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
 
   ATTEMPT_CHART: [
     { attempt: '1st', consent: 13, satisfied: 53.9, calls: 54729 },
@@ -321,7 +321,7 @@ const FULL_CAMPAIGN_DATA: PhaseData = {
   bestDistrict:      { name: 'Dhubri',     bsi5: '3.305' },
   worstDistrict:     { name: 'Hailakandi', bsi5: '1.539' },
   districtCountLabel:'33',
-  dhacNote:          'DHAC excluded: no valid schemes across the full campaign · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
+  dhacNote:          'DHAC (Dima Hasao): 909 calls across Phase 1+2 (95 P1 + 814 P2), 47 consented (5.2%), 20 usable · No valid schemes across either phase · Score cannot be computed · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
 
   ATTEMPT_CHART: [
     { attempt: '1st', consent: 20, satisfied: 52.8, calls: 94362 },
