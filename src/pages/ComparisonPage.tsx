@@ -43,19 +43,19 @@ const ZONE_CHART = [
 
 // ─── What improved / what didn't ─────────────────────────────────────────────
 const IMPROVED = [
-  { label: 'State BSI score',         p1: '2.20/5', p2: '2.72/5', change: '+24%', note: 'Significant across-the-board improvement' },
+  { label: 'State Citizen Satisfaction Survey Score', p1: '2.20/5', p2: '2.72/5', change: '+24%', note: 'Significant across-the-board improvement' },
   { label: 'Q5 Overall Satisfaction', p1: '51.7%',  p2: '55.0%',  change: '+3.3pp', note: 'More households satisfied with supply' },
   { label: 'Q3 Water Quantity',       p1: '62.23%', p2: '64.93%', change: '+2.7pp', note: 'Availability improved slightly' },
   { label: 'Q2 Water Quality',        p1: '72.33%', p2: '73.09%', change: '+0.8pp', note: 'Already good — stayed good' },
-  { label: 'Upper Assam BSI',         p1: '2.39/5', p2: '2.97/5', change: '+24%', note: 'Biggest zone improvement' },
-  { label: 'BTAD Zone BSI',           p1: '1.92/5', p2: '2.51/5', change: '+31%', note: 'Previously critical — now Moderate' },
+  { label: 'Upper Assam Score',        p1: '2.39/5', p2: '2.97/5', change: '+24%', note: 'Biggest zone improvement' },
+  { label: 'BTAD Zone Score',          p1: '1.92/5', p2: '2.51/5', change: '+31%', note: 'Previously critical — now Moderate' },
 ]
 
 const NEEDS_WORK = [
   { label: 'Q1 Daily Water Supply',   p1: '30.95%', p2: '30.34%', note: 'No progress — only 1 in 3 households get water daily' },
   { label: 'Consent Rate',            p1: '27.4%',  p2: '16.1%',  note: 'Phase 2 reached harder-to-contact new households' },
   { label: 'Usable Call Yield',       p1: '20.1%',  p2: '8.0%',   note: 'Larger campaign area means fewer responses per call' },
-  { label: 'Barak Valley',            p1: '1.90/5', p2: 'No data',note: 'Insufficient Phase 2 calls in the zone for BSI' },
+  { label: 'Barak Valley',            p1: '1.90/5', p2: 'No data',note: 'Insufficient Phase 2 calls in the zone for Score' },
   { label: 'Valid Scheme Coverage',   p1: '615',     p2: '106',    note: 'Phase 2 spread thinner — fewer schemes with ≥6 usable calls' },
 ]
 
@@ -63,14 +63,14 @@ const NEEDS_WORK = [
 const INSIGHTS = [
   {
     emoji: '📈',
-    title: 'BSI improved by 24%',
-    body: 'The state Basic Service Index rose from 2.20 to 2.72 out of 5. Every zone tracked in Phase 2 showed improvement.',
+    title: 'Score improved by 24%',
+    body: 'The state Citizen Satisfaction Survey Score rose from 2.20 to 2.72 out of 5. Every zone tracked in Phase 2 showed improvement.',
     color: 'bg-emerald-50 border-emerald-200 text-emerald-800',
   },
   {
     emoji: '🚱',
     title: 'Daily water still the critical gap',
-    body: 'Only 30% of households get water daily — unchanged from Phase 1. This single indicator is the biggest drag on overall BSI.',
+    body: 'Only 30% of households get water daily — unchanged from Phase 1. This single indicator is the biggest drag on the overall Citizen Satisfaction Survey Score.',
     color: 'bg-red-50 border-red-200 text-red-800',
   },
   {
@@ -190,8 +190,8 @@ export function ComparisonPage() {
       {/* ── 4. Zone BSI Comparison ──────────────────────────────────────── */}
       <div className="card overflow-hidden">
         <div className="px-5 py-3.5 border-b border-gray-100">
-          <p className="panel-title">Zone BSI Comparison — Phase 1 vs Phase 2</p>
-          <p className="panel-sub mt-0.5">BSI out of 5.0 · Every tracked zone improved · Barak Valley had no Phase 2 data</p>
+          <p className="panel-title">Zone Score Comparison — Phase 1 vs Phase 2</p>
+          <p className="panel-sub mt-0.5">Score out of 5.0 · Every tracked zone improved · Barak Valley had no Phase 2 data</p>
         </div>
         <div className="p-5">
           <div className="h-52">
@@ -215,8 +215,8 @@ export function ComparisonPage() {
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="th text-left">Zone</th>
-                  <th className="th text-right">Phase 1 BSI</th>
-                  <th className="th text-right">Phase 2 BSI</th>
+                  <th className="th text-right">Phase 1 Score</th>
+                  <th className="th text-right">Phase 2 Score</th>
                   <th className="th text-center">Change</th>
                   <th className="th text-left hidden md:table-cell">What changed</th>
                 </tr>

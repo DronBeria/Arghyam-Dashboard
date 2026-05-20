@@ -11,7 +11,7 @@ const cards = [
     bg: 'bg-blue-50',
   },
   {
-    label: 'State BSI Score',
+    label: 'State Citizen Satisfaction Survey Score',
     value: '0.4406',
     sub: 'Moderate · Target ≥ 0.70',
     accent: 'border-t-amber-500',

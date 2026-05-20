@@ -20,7 +20,7 @@ export function ZoneScores() {
   return (
     <div>
       <h2 className="section-title">4. Zone Scores</h2>
-      <p className="section-sub">BSI = average of valid scheme scores · out of 1.0 · No zone meets ≥ 0.70 benchmark yet</p>
+      <p className="section-sub">Score = average of valid scheme scores · out of 1.0 · No zone meets ≥ 0.70 benchmark yet</p>
 
       <div className="h-44 mb-4">
         <ResponsiveContainer width="100%" height="100%">
@@ -29,7 +29,7 @@ export function ZoneScores() {
             <XAxis type="number" domain={[0, 0.7]} tick={{ fill: '#9ca3af', fontSize: 10 }} />
             <YAxis type="category" dataKey="zone" tick={{ fill: '#374151', fontSize: 11 }} width={70} />
             <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8 }}
-              formatter={(val: number) => [val.toFixed(4), 'BSI']} />
+              formatter={(val: number) => [val.toFixed(4), 'Score']} />
             <ReferenceLine x={0.70} stroke="#10b981" strokeDasharray="4 2" />
             <Bar dataKey="bsi" radius={[0, 4, 4, 0]}>
               {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
@@ -43,7 +43,7 @@ export function ZoneScores() {
           <thead>
             <tr>
               <th className="th">Zone</th>
-              <th className="th text-right">BSI</th>
+              <th className="th text-right">Score</th>
               <th className="th text-right hidden sm:table-cell">Quality</th>
               <th className="th text-right hidden sm:table-cell">Quantity</th>
               <th className="th text-right hidden md:table-cell">Daily</th>

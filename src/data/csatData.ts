@@ -18,7 +18,7 @@ export const CALL_SUMMARY = [
   { group: '    └─  Explicitly refused',   count: 31710, pct: 69.1,  note: 'Said no or hung up immediately' },
   { group: '    └─  No response (blank)',  count: 1208,  pct: 2.6,   note: 'Call connected but consent not recorded' },
   { group: '    └─  Unknown / invalid',    count: 362,   pct: 0.8,   note: 'Bot could not determine a clear yes or no' },
-  { group: 'Usable calls (answered Q1)',   count: 9224,  pct: 20.1,  note: '8,327 consented + 897 non-consented who answered Q1 · ALL BSI scoring uses this group' },
+  { group: 'Usable calls (answered Q1)',   count: 9224,  pct: 20.1,  note: '8,327 consented + 897 non-consented who answered Q1 · ALL Score computation uses this group' },
   { group: '└  Completed all 5 questions', count: 1578,  pct: 3.4,   note: 'Answered Q1 through Q5 · 17.1% of 9,224 usable calls · richest data' },
   { group: 'Calls under 30 seconds',       count: 19909, pct: 43.4,  note: 'Nearly all overlap with refused group above' },
 ]
@@ -184,7 +184,7 @@ export const REPEAT_CALLERS = [
   { metric: 'Usable (answered Q1)',           firstTime: '20.0%',   repeat: '37.1%',  change: '+86%',  note: 'Nearly double the data yield from same number of calls' },
   { metric: 'Avg call duration',              firstTime: '60 sec',  repeat: '82 sec', change: '+37%',  note: 'Longer calls = more questions answered = richer data' },
   { metric: 'Completed all 5 questions',      firstTime: '3.4%',    repeat: '5.9%',   change: '≈ 2×',  note: 'Almost twice as likely to finish the full survey' },
-  { metric: 'BSI score (0–1.0)',              firstTime: '0.410',   repeat: '0.449',  change: '+9%',   note: 'Slightly higher satisfaction score on second contact' },
+  { metric: 'Citizen Satisfaction Survey Score (0–1.0)', firstTime: '0.410',   repeat: '0.449',  change: '+9%',   note: 'Slightly higher satisfaction score on second contact' },
   { metric: 'Quality satisfaction (Q2 yes%)', firstTime: '72.2%',   repeat: '89.3%',  change: '+17pp', note: 'Strong improvement in positive reporting' },
 ]
 

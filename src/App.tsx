@@ -36,7 +36,7 @@ const NAV: NavGroup[] = [
     label: 'Dashboard',
     icon: '◈',
     items: [
-      { id: 'overview', label: 'Overview', description: 'KPIs, BSI score, priorities' },
+      { id: 'overview', label: 'Overview', description: 'KPIs, Citizen Satisfaction Survey Score, priorities' },
     ],
   },
   {
@@ -65,7 +65,7 @@ const NAV: NavGroup[] = [
     label: 'Geography',
     icon: '🗺️',
     items: [
-      { id: 'geographic', label: 'Zone & Districts', description: 'BSI by zone + districts' },
+      { id: 'geographic', label: 'Zone & Districts', description: 'Score by zone + districts' },
     ],
   },
   {
@@ -83,7 +83,7 @@ const PAGE_META: Record<PageId, { title: string; sub: string }> = {
   records:    { title: 'Call Records',           sub: 'Browse, filter and play individual calls' },
   survey:     { title: 'Survey Results',         sub: 'Q1–Q5 satisfaction indicators' },
   schemes:    { title: 'Scheme Coverage',        sub: 'IMIS schemes analysed' },
-  geographic:  { title: 'Zone & District Scores', sub: 'BSI by geography' },
+  geographic:  { title: 'Zone & District Scores', sub: 'Score by geography' },
   comparison:  { title: 'Phase Comparison',       sub: 'Phase 1 vs Phase 2 side-by-side analysis' },
 }
 
@@ -189,7 +189,7 @@ export default function App() {
                 <span className="text-white text-xs font-black">A</span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-bold text-white leading-none">Araghyam</p>
+                <p className="text-[11px] font-bold text-white leading-none">Arghyam</p>
                 <p className="text-[9px] text-slate-500 mt-0.5 font-medium tracking-widest uppercase">JJM · CSAT AI</p>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="text-slate-600 hover:text-slate-300 transition-colors p-1 flex-shrink-0">
@@ -333,7 +333,7 @@ export default function App() {
           {/* Breadcrumb bar */}
           <div className="bg-white/80 backdrop-blur border-b border-slate-200/80 px-6 py-2.5 flex items-center justify-between sticky top-0 z-30">
             <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
-              <span>Araghyam</span>
+              <span>Arghyam</span>
               <span className="text-slate-300">/</span>
               <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
                 phase === 'phase1' ? 'text-emerald-700 bg-emerald-100'
@@ -396,7 +396,7 @@ export default function App() {
 
             <footer className="mt-12 pt-6 border-t border-slate-200/60 text-center">
               <p className="panel-label">
-                Araghyam · CSAT AI · Assam JJM · {phase === 'phase1' ? 'Phase 1 · 45,863 calls · April 2026' : phase === 'phase2' ? 'Phase 2 · 79,725 calls · May 2026' : 'Full Campaign · 125,588 calls · Apr–May 2026'}
+                Arghyam · CSAT AI · Assam JJM · {phase === 'phase1' ? 'Phase 1 · 45,863 calls · April 2026' : phase === 'phase2' ? 'Phase 2 · 79,725 calls · May 2026' : 'Full Campaign · 125,588 calls · Apr–May 2026'}
               </p>
             </footer>
           </div>

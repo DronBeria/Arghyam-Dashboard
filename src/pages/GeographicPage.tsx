@@ -82,8 +82,8 @@ function ZonesView({ chartData, ZONE_SCORES, dhacNote }: { chartData: any[]; ZON
     <div className="space-y-5">
       {/* Bar chart */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <p className="text-sm font-semibold text-gray-700 mb-1">Zone BSI Comparison</p>
-        <p className="text-xs text-gray-400 mb-4">BSI out of 5.0 · Green dashed = 3.50 target</p>
+        <p className="text-sm font-semibold text-gray-700 mb-1">Zone Score Comparison</p>
+        <p className="text-xs text-gray-400 mb-4">Score out of 5.0 · Green dashed = 3.50 target</p>
         <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 48, bottom: 0, left: 72 }}>
@@ -92,7 +92,7 @@ function ZonesView({ chartData, ZONE_SCORES, dhacNote }: { chartData: any[]; ZON
               <YAxis type="category" dataKey="zone" tick={{ fill: '#374151', fontSize: 11 }} width={70} />
               <Tooltip
                 contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8 }}
-                formatter={(val: number) => [`${val.toFixed(3)} / 5.0`, 'BSI']}
+                formatter={(val: number) => [`${val.toFixed(3)} / 5.0`, 'Score']}
               />
               <ReferenceLine x={3.50} stroke="#10b981" strokeDasharray="4 2" />
               <Bar dataKey="bsi" radius={[0, 4, 4, 0]}>
@@ -113,7 +113,7 @@ function ZonesView({ chartData, ZONE_SCORES, dhacNote }: { chartData: any[]; ZON
             <thead>
               <tr>
                 <th className="th">Zone</th>
-                <th className="th text-right">BSI (/5.0)</th>
+                <th className="th text-right">Score (/5.0)</th>
                 <th className="th text-right hidden sm:table-cell">Quality</th>
                 <th className="th text-right hidden sm:table-cell">Quantity</th>
                 <th className="th text-right hidden md:table-cell">Daily</th>
@@ -197,7 +197,7 @@ function DistrictsView({
             onClick={() => setSortBy(sortBy === 'bsi' ? 'name' : 'bsi')}
             className="ml-auto px-2.5 py-1 rounded-lg text-xs font-medium border bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
           >
-            {sortBy === 'bsi' ? 'Sort: BSI ↓' : 'Sort: A–Z'}
+            {sortBy === 'bsi' ? 'Sort: Score ↓' : 'Sort: A–Z'}
           </button>
         </div>
       </div>
@@ -217,7 +217,7 @@ function DistrictsView({
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
             {[
-              { label: 'BSI (/5.0)',      val: (activeDistrict.bsi * 5).toFixed(3) },
+              { label: 'Score (/5.0)',     val: (activeDistrict.bsi * 5).toFixed(3) },
               { label: 'Quality',        val: activeDistrict.quality.toFixed(3) },
               { label: 'Quantity',       val: activeDistrict.quantity.toFixed(3) },
               { label: 'Usable Calls',   val: activeDistrict.usableCalls.toLocaleString() },
@@ -253,7 +253,7 @@ function DistrictsView({
                 <th className="th w-8">#</th>
                 <th className="th">District</th>
                 <th className="th hidden sm:table-cell">Zone</th>
-                <th className="th text-right">BSI (/5.0)</th>
+                <th className="th text-right">Score (/5.0)</th>
                 <th className="th text-right hidden md:table-cell">Quality</th>
                 <th className="th text-right hidden md:table-cell">Quantity</th>
                 <th className="th text-right hidden lg:table-cell">Schemes</th>
@@ -287,8 +287,8 @@ function DistrictsView({
           </table>
         </div>
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500">
-          <span><span className="text-emerald-600 font-semibold">Best:</span> {bestDistrict.name} — BSI {bestDistrict.bsi5}/5.0</span>
-          <span><span className="text-red-600 font-semibold">Worst:</span> {worstDistrict.name} — BSI {worstDistrict.bsi5}/5.0</span>
+          <span><span className="text-emerald-600 font-semibold">Best:</span> {bestDistrict.name} — Score {bestDistrict.bsi5}/5.0</span>
+          <span><span className="text-red-600 font-semibold">Worst:</span> {worstDistrict.name} — Score {worstDistrict.bsi5}/5.0</span>
           <span className="text-gray-400">Showing {filteredDistricts.length} of {districtCountLabel} districts</span>
         </div>
       </div>

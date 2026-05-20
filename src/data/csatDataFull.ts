@@ -18,12 +18,12 @@ export const CALL_SUMMARY = [
   { group: '    └─  Explicitly refused',   count: 97611,  pct: 77.7,  note: 'Said no or hung up immediately' },
   { group: '    └─  No response (blank)',  count: 1257,   pct: 1.0,   note: 'Call connected but consent not recorded' },
   { group: '    └─  Unknown / invalid',   count: 1103,   pct: 0.9,   note: 'Bot could not determine a clear yes or no' },
-  { group: 'Usable calls (answered Q1)',   count: 15660,  pct: 12.5,  note: 'Across both phases · ALL BSI scoring uses this group' },
+  { group: 'Usable calls (answered Q1)',   count: 15660,  pct: 12.5,  note: 'Across both phases · ALL Score computation uses this group' },
   { group: '└  Completed all 5 questions', count: 5222,   pct: 4.2,   note: 'Answered Q1 through Q5' },
   { group: 'Calls under 30 seconds',       count: 58389,  pct: 46.5,  note: 'Nearly all overlap with refused group above' },
 ]
 
-export const CALL_SUMMARY_NOTE = 'Full Campaign = Phase 1 (45,863 calls, April 2026) + Phase 2 (79,725 calls, May 2026). BSI computed from 7,843 scheme-weighted usable calls across both phases.'
+export const CALL_SUMMARY_NOTE = 'Full Campaign = Phase 1 (45,863 calls, April 2026) + Phase 2 (79,725 calls, May 2026). Citizen Satisfaction Survey Score computed from 7,843 scheme-weighted usable calls across both phases.'
 
 export const KPI_QUESTIONS = [
   { id: 'Q1',  label: 'Water Daily',         question: 'Did water come every day in last 7 days?', yesCount: 4794, noCount: 10866, base: 15660, yesPct: 30.61, weight: '0.75 / 5', status: 'Critical', benchmark: 70, color: '#ef4444' },
@@ -95,7 +95,7 @@ export const REPEAT_CALLERS = [
   { metric: 'Usable (answered Q1)',           firstTime: '12.4%',   repeat: '14.5%',  change: '+17%',   note: 'Better data yield from Phase 1 re-contacts' },
   { metric: 'Avg call duration',              firstTime: '51 sec',  repeat: '57 sec', change: '+12%',   note: 'Longer calls — more questions answered' },
   { metric: 'Completed all 5 questions',      firstTime: '4.3%',    repeat: '5.0%',   change: '+16%',   note: 'Higher completion among Phase 1 re-contacts' },
-  { metric: 'BSI score (0–1.0)',              firstTime: '0.591',   repeat: '0.579',  change: '-2%',    note: 'Marginally lower BSI — persistent service issues' },
+  { metric: 'Citizen Satisfaction Survey Score (0–1.0)', firstTime: '0.591',   repeat: '0.579',  change: '-2%',    note: 'Marginally lower CSS Score — persistent service issues' },
   { metric: 'Quality satisfaction (Q2 yes%)', firstTime: '72.6%',   repeat: '73.0%',  change: '+0.4pp', note: 'Negligible quality difference' },
 ]
 

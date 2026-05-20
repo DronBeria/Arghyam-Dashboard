@@ -5,7 +5,7 @@ const STATS = [
   { val: '45,863', label: 'Calls Analysed', icon: '📞' },
   { val: '9,224',  label: 'Surveys Usable', icon: '✅' },
   { val: '31',     label: 'Districts Covered', icon: '🗺️' },
-  { val: '2.20/5', label: 'State BSI Score', icon: '📊' },
+  { val: '2.20/5', label: 'State Citizen Satisfaction Survey Score', icon: '📊' },
 ]
 
 type Mode = 'signin' | 'signup'
@@ -75,7 +75,7 @@ export function LoginPage() {
             <span className="text-white text-sm font-black">A</span>
           </div>
           <div>
-            <p className="text-white font-bold text-base leading-none">Araghyam</p>
+            <p className="text-white font-bold text-base leading-none">Arghyam</p>
             <p className="text-slate-500 text-xs mt-0.5">CSAT AI Platform</p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export function LoginPage() {
         </div>
 
         <p className="text-slate-700 text-xs relative z-10">
-          Araghyam · Confidential · Government of Assam · Jal Jeevan Mission
+          Arghyam · Confidential · Government of Assam · Jal Jeevan Mission
         </p>
       </div>
 
@@ -117,7 +117,7 @@ export function LoginPage() {
             <span className="text-white text-xs font-black">A</span>
           </div>
           <div>
-            <p className="font-bold text-gray-800 text-sm">Araghyam</p>
+            <p className="font-bold text-gray-800 text-sm">Arghyam</p>
             <p className="text-gray-400 text-xs">CSAT AI · Assam JJM</p>
           </div>
         </div>
@@ -231,7 +231,7 @@ export function LoginPage() {
 
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-center text-xs text-gray-300">
-              Restricted to authorised Araghyam personnel
+              Restricted to authorised Arghyam personnel
             </p>
           </div>
         </div>

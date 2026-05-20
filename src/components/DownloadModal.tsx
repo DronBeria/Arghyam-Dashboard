@@ -22,7 +22,7 @@ const SAT_OPTIONS  = ['All', 'Satisfied', 'Neutral', 'Dissatisfied']
 const Q1_OPTIONS   = ['All', 'Yes', 'No']
 
 const PDF_SECTIONS = [
-  { id: 'overview',  label: 'Executive Overview & BSI' },
+  { id: 'overview',  label: 'Executive Overview & Score' },
   { id: 'service',   label: 'Service Area Breakdown (Q1–Q5)' },
   { id: 'zones',     label: 'Zone Rankings Table' },
   { id: 'districts', label: 'All 31 Districts Table' },
@@ -105,7 +105,7 @@ export function DownloadModal({ onClose, userEmail }: Props) {
         <div className="bg-slate-900 px-5 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <p className="text-white font-bold text-sm">Download Reports & Data</p>
-            <p className="text-slate-400 text-xs mt-0.5">PDFs, CSVs and filtered exports · Araghyam CSAT AI Phase 1</p>
+            <p className="text-slate-400 text-xs mt-0.5">PDFs, CSVs and filtered exports · Arghyam CSAT AI Phase 1</p>
           </div>
           <button onClick={onClose}
             className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
@@ -134,7 +134,7 @@ export function DownloadModal({ onClose, userEmail }: Props) {
                   <p className="text-sm font-semibold text-gray-800">Full State Summary</p>
                   <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">PDF</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">5-page A4: BSI overview, service areas, zones, all 31 districts, scheme coverage & recommendations</p>
+                <p className="text-xs text-gray-400 mt-0.5">5-page A4: Score overview, service areas, zones, all 31 districts, scheme coverage & recommendations</p>
                 <div className="mt-2 pt-2 border-t border-gray-100">
                   <div className="flex items-center justify-between mb-1.5">
                     <p className="text-xs text-gray-500 font-medium">Sections to include:</p>
@@ -166,7 +166,7 @@ export function DownloadModal({ onClose, userEmail }: Props) {
                   <p className="text-sm font-semibold text-gray-800">Zone Report</p>
                   <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">PDF</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">Single-zone summary with all district BSI breakdowns</p>
+                <p className="text-xs text-gray-400 mt-0.5">Single-zone summary with all district Score breakdowns</p>
                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
                   <span className="text-xs text-gray-500 font-medium">Zone:</span>
                   <select value={selectedZone} onChange={e => setSelectedZone(e.target.value)}
@@ -184,8 +184,8 @@ export function DownloadModal({ onClose, userEmail }: Props) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {([
-              ['districts_csv', '📍', 'District Data',   'All 31 districts — BSI, quality, quantity, schemes, usable calls'],
-              ['zones_csv',     '🌐', 'Zone Data',        '6 zones + state average with BSI components and status'],
+              ['districts_csv', '📍', 'District Data',   'All 31 districts — Score, quality, quantity, schemes, usable calls'],
+              ['zones_csv',     '🌐', 'Zone Data',        '6 zones + state average with Score components and status'],
               ['survey_csv',    '📋', 'Survey KPIs',      'Q1–Q5 yes/no counts, percentages, weights and status'],
               ['attempts_csv',  '📞', 'Call Attempts',    'Per-attempt: consent rates, Q5 respondents, satisfaction'],
             ] as [TaskId, string, string, string][]).map(([id, icon, label, desc]) => (

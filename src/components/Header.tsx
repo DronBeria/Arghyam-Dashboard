@@ -13,12 +13,12 @@ const QUICK_LINKS = [
   {
     group: 'Pages',
     items: [
-      { id: 'overview', label: 'Dashboard Overview', icon: '◈', desc: 'KPIs, BSI score, priorities' },
+      { id: 'overview', label: 'Dashboard Overview', icon: '◈', desc: 'KPIs, Citizen Satisfaction Survey Score, priorities' },
       { id: 'calls', label: 'Call Analysis', icon: '📞', desc: 'Funnel, attempts, repeat callers' },
       { id: 'records', label: 'Call Records', icon: '🎙️', desc: 'Browse calls + play recordings' },
       { id: 'survey', label: 'Survey Results', icon: '📋', desc: 'Q1–Q5 satisfaction breakdown' },
       { id: 'schemes', label: 'Scheme Coverage', icon: '🏗️', desc: 'Valid, flagged and no-data schemes' },
-      { id: 'geographic', label: 'Zone & Districts', icon: '🗺️', desc: 'BSI rankings by geography' },
+      { id: 'geographic', label: 'Zone & Districts', icon: '🗺️', desc: 'Score rankings by geography' },
     ],
   },
   {
@@ -116,7 +116,7 @@ export function Header({ pageTitle, phase = 'phase1', onNavigate, userEmail }: H
                     ))}
                   </div>
                   <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/60">
-                    <p className="panel-label">Araghyam · JJM Phase 1 · April 2026</p>
+                    <p className="panel-label">Arghyam · JJM Phase 1 · April 2026</p>
                   </div>
                 </div>
               </>

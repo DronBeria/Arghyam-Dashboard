@@ -80,9 +80,9 @@ Missing required : None — all present
   {
     key: 'processing',
     n: 2,
-    label: 'Compute BSI',
-    desc: 'Weighted BSI formula applied at state, zone, and district level',
-    scriptTitle: 'Step 2 — BSI Computation Script',
+    label: 'Compute Score',
+    desc: 'Weighted Citizen Satisfaction Survey Score formula applied at state, zone, and district level',
+    scriptTitle: 'Step 2 — Score Computation Script',
     scriptLang: 'Python 3 · pandas · numpy',
     script: `def compute_bsi(df: pd.DataFrame) -> float:
     """
@@ -119,13 +119,13 @@ state_bsi = compute_bsi(df)
 zone_bsi  = {z: compute_bsi(g) for z, g in df.groupby('zone')}
 dist_bsi  = {d: compute_bsi(g) for d, g in df.groupby('district')}
 
-print(f"State BSI : {state_bsi}")
+print(f"State Score : {state_bsi}")
 print(f"Zones     : {len(zone_bsi)} computed")
 print(f"Districts : {len(dist_bsi)} computed")`,
-    output: `State BSI : 0.XXXX   (computed from uploaded data)
+    output: `State Score : 0.XXXX   (computed from uploaded data)
 Zones     : N computed
 Districts : N computed
-✓ BSI computation complete`,
+✓ Score computation complete`,
   },
   {
     key: 'inserting',
@@ -467,7 +467,7 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
             <h1 className="text-lg font-black text-white">Data Ingestion</h1>
             <p className="text-[12px] text-slate-400 mt-1 max-w-lg leading-relaxed">
               Upload Phase 2 CSAT survey CSV files. The system validates columns, runs Python processing scripts,
-              computes BSI scores by zone &amp; district, and inserts everything into the Phase 2 dashboard automatically.
+              computes Citizen Satisfaction Survey Scores by zone &amp; district, and inserts everything into the Phase 2 dashboard automatically.
             </p>
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
@@ -904,7 +904,7 @@ export function DataIngestionPage({ onUploaded }: { onUploaded?: () => void } = 
             <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
               <p className="text-[10px] text-slate-500 leading-relaxed">
                 Optional columns enhance scheme coverage analysis and call attempt breakdown.
-                The dashboard computes BSI and all KPIs from required columns alone.
+                The dashboard computes the Citizen Satisfaction Survey Score and all KPIs from required columns alone.
               </p>
             </div>
           </div>

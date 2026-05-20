@@ -19,7 +19,7 @@ export const CALL_SUMMARY = [
   { group: '    └─  Explicitly refused',   count: 65949,  pct: 82.7,  note: 'Said no or hung up immediately' },
   { group: '    └─  No response (blank)',  count: 297,    pct: 0.4,   note: 'Call connected but consent not recorded' },
   { group: '    └─  Unknown / invalid',   count: 618,    pct: 0.8,   note: 'Bot could not determine a clear yes or no' },
-  { group: 'Usable calls (answered Q1)',   count: 6408,   pct: 8.0,   note: 'Answered Q1 · ALL BSI scoring uses this group' },
+  { group: 'Usable calls (answered Q1)',   count: 6408,   pct: 8.0,   note: 'Answered Q1 · ALL Score computation uses this group' },
   { group: '└  Completed all 5 questions', count: 1669,   pct: 2.1,   note: 'Answered Q1 through Q5 · richest data' },
   { group: 'Calls under 30 seconds',       count: 35265,  pct: 44.2,  note: 'Nearly all overlap with refused group above' },
 ]
@@ -110,7 +110,7 @@ export const REPEAT_CALLERS = [
   { metric: 'Usable (answered Q1)',           firstTime: '7.8%',    repeat: '13.5%',  change: '+73%',  note: 'Nearly double the data yield from Phase 1 re-contacts' },
   { metric: 'Avg call duration',              firstTime: '48 sec',  repeat: '57 sec', change: '+19%',  note: 'Longer calls — more questions answered per interaction' },
   { metric: 'Completed all 5 questions',      firstTime: '2.1%',    repeat: '4.5%',   change: '+114%', note: 'More than twice as likely to complete the full survey' },
-  { metric: 'BSI score (0–1.0)',              firstTime: '~0.540',  repeat: '~0.560', change: '+4%',   note: 'Slightly higher satisfaction among re-contacted households' },
+  { metric: 'Citizen Satisfaction Survey Score (0–1.0)', firstTime: '~0.540',  repeat: '~0.560', change: '+4%',   note: 'Slightly higher satisfaction among re-contacted households' },
   { metric: 'Quality satisfaction (Q2 yes%)', firstTime: '~73%',    repeat: '~73%',   change: '≈same', note: 'Water quality scores comparable across both groups' },
 ]
 

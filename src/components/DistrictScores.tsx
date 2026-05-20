@@ -15,7 +15,7 @@ export function DistrictScores() {
   return (
     <div>
       <h2 className="section-title">5. District Scores</h2>
-      <p className="section-sub">31 districts grouped by zone · sorted best to worst by BSI</p>
+      <p className="section-sub">31 districts grouped by zone · sorted best to worst by Score</p>
 
       <div className="flex flex-wrap gap-1.5 mb-3">
         {ZONES.map((z) => (
@@ -30,7 +30,7 @@ export function DistrictScores() {
         ))}
         <button onClick={() => setSortBy(sortBy === 'bsi' ? 'district' : 'bsi')}
           className="ml-auto px-2.5 py-1 rounded-lg text-xs font-medium border bg-white text-gray-500 border-gray-200 hover:bg-gray-50">
-          {sortBy === 'bsi' ? 'Sort: BSI ↓' : 'Sort: A–Z'}
+          {sortBy === 'bsi' ? 'Sort: Score ↓' : 'Sort: A–Z'}
         </button>
       </div>
 
@@ -41,7 +41,7 @@ export function DistrictScores() {
               <th className="th w-8">#</th>
               <th className="th">District</th>
               <th className="th hidden sm:table-cell">Zone</th>
-              <th className="th text-right">BSI</th>
+              <th className="th text-right">Score</th>
               <th className="th text-right hidden md:table-cell">Quality</th>
               <th className="th text-right hidden md:table-cell">Quantity</th>
               <th className="th text-right hidden lg:table-cell">Schemes</th>
@@ -70,8 +70,8 @@ export function DistrictScores() {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-500">
-        <span><span className="text-emerald-600 font-semibold">Best:</span> Sivasagar — BSI 0.5320</span>
-        <span><span className="text-red-600 font-semibold">Worst:</span> Hailakandi — BSI 0.2785</span>
+        <span><span className="text-emerald-600 font-semibold">Best:</span> Sivasagar — Score 0.5320</span>
+        <span><span className="text-red-600 font-semibold">Worst:</span> Hailakandi — Score 0.2785</span>
         <span className="text-gray-400">Showing {filtered.length} of 31 districts</span>
       </div>
     </div>

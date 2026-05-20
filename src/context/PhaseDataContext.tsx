@@ -124,7 +124,7 @@ const PHASE1_DATA: PhaseData = {
   bestDistrict:      { name: 'Sivasagar',  bsi5: '2.660' },
   worstDistrict:     { name: 'Hailakandi', bsi5: '1.393' },
   districtCountLabel:'31',
-  dhacNote:          'DHAC excluded: only 95 calls made · 1.1% consent rate · to be re-called in Phase 2 · BSI shown out of 5.0 (Good ≥ 3.50)',
+  dhacNote:          'DHAC excluded: only 95 calls made · 1.1% consent rate · to be re-called in Phase 2 · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
 
   ATTEMPT_CHART: [
     { attempt: '1st', consent: 28, satisfied: 52.3, calls: 39633 },
@@ -183,7 +183,7 @@ const PHASE2_DATA: PhaseData = {
   phase: 'phase2',
   phaseLabel: 'Phase 2',
   dateLabel: 'May 2026',
-  hasSchemeSearch: false,
+  hasSchemeSearch: true,
 
   stateInsightCalls:   '16.1% consented · 83.9% refused or no response',
   stateInsightQuality: '55.0% satisfied · 24.0% dissatisfied · 21.0% neutral',
@@ -203,7 +203,7 @@ const PHASE2_DATA: PhaseData = {
   bestDistrict:      { name: 'Dhubri',     bsi5: '3.674' },
   worstDistrict:     { name: 'Bongaigaon', bsi5: '1.591' },
   districtCountLabel:'23',
-  dhacNote:          'Barak Valley and DHAC excluded: no valid schemes (≥6 usable calls) in Phase 2 May data · BSI shown out of 5.0 (Good ≥ 3.50)',
+  dhacNote:          'Barak Valley and DHAC excluded: no valid schemes (≥6 usable calls) in Phase 2 May data · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
 
   ATTEMPT_CHART: [
     { attempt: '1st', consent: 13, satisfied: 53.9, calls: 54729 },
@@ -261,7 +261,7 @@ const COMPARISON_DATA: PhaseComparison = {
   p1Bsi5:  '2.20',
   p2Bsi5:  '2.72',
   metrics: [
-    { label: 'State BSI',          p1: '2.20 / 5', p2: '2.72 / 5', change: '+24%',    trend: 'up',   isGoodUp: true,  note: 'Significant improvement across both phases' },
+    { label: 'State Citizen Satisfaction Survey Score', p1: '2.20 / 5', p2: '2.72 / 5', change: '+24%',    trend: 'up',   isGoodUp: true,  note: 'Significant improvement across both phases' },
     { label: 'Q5 Overall Satisfied',p1: '51.7%',   p2: '55.0%',    change: '+3.3pp',  trend: 'up',   isGoodUp: true,  note: 'Household satisfaction rose in Phase 2' },
     { label: 'Q3 Water Quantity',   p1: '62.23%',  p2: '64.93%',   change: '+2.7pp',  trend: 'up',   isGoodUp: true,  note: 'Quantity satisfaction improving' },
     { label: 'Q2 Water Quality',    p1: '72.33%',  p2: '73.09%',   change: '+0.8pp',  trend: 'up',   isGoodUp: true,  note: 'Quality already good in Phase 1, marginally better' },
@@ -286,7 +286,7 @@ const FULL_CAMPAIGN_DATA: PhaseData = {
   phase: 'phase2', // treated as phase2 for Supabase filters (both months)
   phaseLabel: 'Full Campaign',
   dateLabel: 'Apr–May 2026',
-  hasSchemeSearch: false,
+  hasSchemeSearch: true,
 
   stateInsightCalls:   '20.4% consented · 79.6% refused or no response',
   stateInsightQuality: '53.1% satisfied · 24.7% dissatisfied · 22.1% neutral',
@@ -306,7 +306,7 @@ const FULL_CAMPAIGN_DATA: PhaseData = {
   bestDistrict:      { name: 'Dhubri',     bsi5: '3.305' },
   worstDistrict:     { name: 'Hailakandi', bsi5: '1.539' },
   districtCountLabel:'33',
-  dhacNote:          'DHAC excluded: no valid schemes across the full campaign · BSI shown out of 5.0 (Good ≥ 3.50)',
+  dhacNote:          'DHAC excluded: no valid schemes across the full campaign · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
 
   ATTEMPT_CHART: [
     { attempt: '1st', consent: 20, satisfied: 52.8, calls: 94362 },

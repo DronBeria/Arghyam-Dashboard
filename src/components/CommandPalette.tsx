@@ -34,12 +34,12 @@ function buildIndex(): Item[] {
 
   // Pages
   const pages: [string, string, string][] = [
-    ['overview',     'Overview',         'KPIs, BSI score, scope filter'],
+    ['overview',     'Overview',         'KPIs, Citizen Satisfaction Survey Score, scope filter'],
     ['calls',        'Call Analysis',    'Call summary, attempts, repeat callers, question funnel'],
     ['records',      'Call Records',     'Browse, filter and play 45,863 individual call recordings'],
     ['survey',       'Survey Results',   'Q1–Q5 KPIs, satisfaction breakdown, question funnel'],
     ['schemes',      'Scheme Coverage',  '2,373 IMIS schemes · valid / flagged / non-functional'],
-    ['geographic',   'Zone & Districts', 'BSI by zone + 31 districts'],
+    ['geographic',   'Zone & Districts', 'Score by zone + 31 districts'],
     ['verification', 'Data Verification','Python script proofs, sanity checks, bot error analysis'],
   ]
   pages.forEach(([id, title, sub]) => items.push({
@@ -55,7 +55,7 @@ function buildIndex(): Item[] {
       items.push({
         id: `zone:${z.zone}`,
         title: z.zone,
-        sub: `BSI ${bsi5}/5 · ${z.usableCalls?.toLocaleString()} usable calls · ${z.status}`,
+        sub: `Score ${bsi5}/5 · ${z.usableCalls?.toLocaleString()} usable calls · ${z.status}`,
         tag: 'Zone',
         tagColor: statusBadge(z.status ?? 'Moderate'),
         hint: bsi5,
@@ -69,7 +69,7 @@ function buildIndex(): Item[] {
     items.push({
       id: `district:${d.district}`,
       title: d.district,
-      sub: `${d.zone} · BSI ${bsi5}/5 · ${d.usableCalls.toLocaleString()} calls · ${d.validSchemes} valid schemes`,
+      sub: `${d.zone} · Score ${bsi5}/5 · ${d.usableCalls.toLocaleString()} calls · ${d.validSchemes} valid schemes`,
       tag: 'District',
       tagColor: statusBadge(d.status),
       hint: bsi5,
@@ -80,7 +80,7 @@ function buildIndex(): Item[] {
   // Key metrics — quick facts
   const bsi5 = (KPI_HEADLINE.stateBSI * 5).toFixed(2)
   const metrics: [string, string, string][] = [
-    ['State BSI',        `${bsi5}/5.0 — Moderate, target ≥3.50`,      'calls'],
+    ['State Score',      `${bsi5}/5.0 — Moderate, target ≥3.50`,      'calls'],
     ['Q1 Daily Water',   '30.95% Yes — Critical, only 1 in 3 households', 'survey'],
     ['Q2 Water Quality', '72.33% Yes — Good, above 70% benchmark',        'survey'],
     ['Q3 Water Quantity','62.23% Yes — Moderate',                         'survey'],
@@ -90,10 +90,10 @@ function buildIndex(): Item[] {
     ['Irregular Supply',   '507 of 615 valid schemes with irregular supply', 'schemes'],
     ['Consent Rate',     '27.4% — 12,583 of 45,863 calls consented',      'calls'],
     ['Repeat Callers',   '170 households · 44.7% consent vs 27.4% first', 'calls'],
-    ['BTAD Zone',        'Critical — BSI 1.92/5 · 142 usable calls',      'geographic'],
-    ['Barak Valley',     'Critical — BSI 1.89/5 · 339 usable calls',      'geographic'],
-    ['Hailakandi',       'Worst district — BSI 1.39/5 · 12 usable calls', 'geographic'],
-    ['Sivasagar',        'Best district — BSI 2.66/5 · 262 usable calls', 'geographic'],
+    ['BTAD Zone',        'Critical — Score 1.92/5 · 142 usable calls',      'geographic'],
+    ['Barak Valley',     'Critical — Score 1.89/5 · 339 usable calls',      'geographic'],
+    ['Hailakandi',       'Worst district — Score 1.39/5 · 12 usable calls', 'geographic'],
+    ['Sivasagar',        'Best district — Score 2.66/5 · 262 usable calls', 'geographic'],
   ]
   metrics.forEach(([title, sub, page]) => items.push({
     id: `metric:${title}`, title, sub, tag: 'Metric',

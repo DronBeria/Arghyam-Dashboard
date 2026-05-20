@@ -492,9 +492,9 @@ Q1A yes%+no%: 57.2%+42.8% = 100.0%`} />
           {/* Process explanation */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800 leading-relaxed space-y-2">
             <p><span className="font-bold">Round 1:</span> <span className="font-mono">CSAT_AI_Ph1_Final_Scores_v22.csv</span> — a summary dashboard file showing aggregated KPIs and zone usable call counts.
-            This file uses <em>all usable calls per zone</em> (totalling 9,224) for its zone-level figures, which differs from the BSI computation methodology.</p>
-            <p><span className="font-bold">Round 2:</span> <span className="font-mono">CSAT_AI_.xlsb</span> — the authoritative calculation workbook containing the full scoring matrix, all 615 valid scheme BSIs, and the district/zone/state rollup table.
-            This file confirms the original dashboard zone values (5,346 valid-scheme calls) and state BSI (0.4406). Round 1 changes to zone data were reverted.</p>
+            This file uses <em>all usable calls per zone</em> (totalling 9,224) for its zone-level figures, which differs from the CSS Score computation methodology.</p>
+            <p><span className="font-bold">Round 2:</span> <span className="font-mono">CSAT_AI_.xlsb</span> — the authoritative calculation workbook containing the full scoring matrix, all 615 valid scheme scores, and the district/zone/state rollup table.
+            This file confirms the original dashboard zone values (5,346 valid-scheme calls) and state Score (0.4406). Round 1 changes to zone data were reverted.</p>
           </div>
 
           {/* Discrepancy table */}
@@ -513,7 +513,7 @@ Q1A yes%+no%: 57.2%+42.8% = 100.0%`} />
               <tbody>
                 {[
                   {
-                    n: 1, metric: 'State BSI', action: 'confirmed',
+                    n: 1, metric: 'State Citizen Satisfaction Survey Score', action: 'confirmed',
                     correct: '0.4406 / 2.20 (xlsb row 659)',
                     change: 'Was 0.4406 ✓ — CSV showed 2.32 (different method)',
                     cause: 'xlsb uses per-call scoring via valid schemes (5,346 calls). The CSV\'s 2.32 was computed from all usable calls (9,224) with a different aggregation. Dashboard correctly shows 0.4406.',
@@ -522,7 +522,7 @@ Q1A yes%+no%: 57.2%+42.8% = 100.0%`} />
                     n: 2, metric: 'Zone usable calls (all zones)', action: 'confirmed',
                     correct: '5,346 total · BTAD 142 · BV 339 · N.Assam 2,330 etc.',
                     change: 'Was correct ✓ — CSV showed 9,224 (different metric)',
-                    cause: 'BSI counts only valid-scheme calls (615 schemes, ≥6 usable each). The CSV\'s 9,224 zone total includes all usable calls regardless of scheme validity — a different metric, not a correction.',
+                    cause: 'The Score counts only valid-scheme calls (615 schemes, ≥6 usable each). The CSV\'s 9,224 zone total includes all usable calls regardless of scheme validity — a different metric, not a correction.',
                   },
                   {
                     n: 3, metric: 'BTAD & Barak Valley status', action: 'confirmed',
@@ -549,10 +549,10 @@ Q1A yes%+no%: 57.2%+42.8% = 100.0%`} />
                     cause: 'Dashboard correctly uses Q5-respondent base (51.7%) — the survey satisfaction rate. The xlsb explicitly notes both figures. The 26% penalises for call drop-off which is a reach metric, not a quality metric.',
                   },
                   {
-                    n: 7, metric: 'All 28 district BSI scores', action: 'confirmed',
+                    n: 7, metric: 'All 28 district scores', action: 'confirmed',
                     correct: 'All match xlsb Valid sheet rows 619–649 exactly',
                     change: 'All correct ✓ — never changed',
-                    cause: 'District BSIs in csatData.ts match the xlsb to 4 decimal places for every district. Original data was accurate.',
+                    cause: 'District scores in csatData.ts match the xlsb to 4 decimal places for every district. Original data was accurate.',
                   },
                 ].map(r => (
                   <tr key={r.n} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/40">
@@ -579,9 +579,9 @@ Q1A yes%+no%: 57.2%+42.8% = 100.0%`} />
           {/* Final state summary */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
-              { label: 'State BSI (xlsb confirmed)', val: '2.20 / 5.0', sub: '0.4406 · valid-scheme weighted avg', color: 'border-amber-300 bg-amber-50' },
+              { label: 'State Citizen Satisfaction Survey Score (xlsb confirmed)', val: '2.20 / 5.0', sub: '0.4406 · valid-scheme weighted avg', color: 'border-amber-300 bg-amber-50' },
               { label: 'Q5 Satisfied (corrected)', val: '51.7%', sub: '2,281 of 4,410 who reached Q5', color: 'border-blue-300 bg-blue-50' },
-              { label: 'Zone calls (BSI basis)', val: '5,346', sub: 'valid-scheme calls · xlsb confirmed', color: 'border-emerald-300 bg-emerald-50' },
+              { label: 'Zone calls (Score basis)', val: '5,346', sub: 'valid-scheme calls · xlsb confirmed', color: 'border-emerald-300 bg-emerald-50' },
             ].map(s => (
               <div key={s.label} className={`rounded-lg border p-3 ${s.color}`}>
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{s.label}</p>
@@ -597,9 +597,9 @@ Q1A yes%+no%: 57.2%+42.8% = 100.0%`} />
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[11px] text-slate-500">
               {[
                 'Total calls: 45,863', 'Consented: 12,583 (27.4%)', 'Q1: 2,855 yes / 9,224 base',
-                'Q2: 3,293 yes / 4,553 base', 'Q3: 2,953 yes / 4,745 base', 'All 28 district BSI scores',
+                'Q2: 3,293 yes / 4,553 base', 'Q3: 2,953 yes / 4,745 base', 'All 28 district scores',
                 'Formula weights (sum = 5.0)', 'Scheme coverage (615/1,426/332)', 'Repeat caller metrics',
-                'BTAD Critical · BV Critical', 'State BSI = 0.4406', 'Completed all 5 strict: 1,578',
+                'BTAD Critical · BV Critical', 'State Score = 0.4406', 'Completed all 5 strict: 1,578',
               ].map(i => (
                 <div key={i} className="flex items-center gap-1">
                   <span className="text-emerald-500 font-bold flex-shrink-0">✓</span>
@@ -627,7 +627,7 @@ Q1A yes%+no%: 57.2%+42.8% = 100.0%`} />
             {[
               { label: 'Source file',   val: 'CSAT_AI_Ph1_Anonymised.xlsx' },
               { label: 'Library',       val: 'Python 3 · openpyxl (read_only)' },
-              { label: 'Verification',  val: 'May 2026 · Araghyam' },
+              { label: 'Verification',  val: 'May 2026 · Arghyam' },
             ].map(i => (
               <div key={i.label}>
                 <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">{i.label}</p>

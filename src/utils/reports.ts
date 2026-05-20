@@ -60,7 +60,7 @@ export async function downloadStatePDF(userEmail?: string) {
   // Title
   doc.setFontSize(26); doc.setFont('helvetica', 'bold')
   doc.setTextColor(...C.white)
-  doc.text('Araghyam', M + 18, 41)
+  doc.text('Arghyam', M + 18, 41)
 
   doc.setFontSize(10); doc.setFont('helvetica', 'normal')
   doc.setTextColor(...C.gray)
@@ -86,7 +86,7 @@ export async function downloadStatePDF(userEmail?: string) {
   doc.roundedRect(M, 110, W - M*2, 52, 3, 3, 'F')
   doc.setFontSize(9); doc.setFont('helvetica', 'bold')
   doc.setTextColor(148, 163, 184)
-  doc.text('STATE BENEFICIARY SATISFACTION INDEX', M + 6, 121)
+  doc.text('STATE CITIZEN SATISFACTION SURVEY SCORE', M + 6, 121)
   doc.setFontSize(32); doc.setFont('helvetica', 'bold')
   doc.setTextColor(251, 191, 36)
   doc.text(`${(KPI_HEADLINE.stateBSI * 5).toFixed(2)} / 5.0`, M + 6, 140)
@@ -117,7 +117,7 @@ export async function downloadStatePDF(userEmail?: string) {
   // Footer
   doc.setFontSize(8); doc.setTextColor(...C.gray)
   doc.text(`Generated: ${GENERATED}${userEmail ? `  ·  ${userEmail}` : ''}`, M, 280)
-  doc.text('Confidential — Araghyam · Not for public distribution', W - M, 280, { align: 'right' })
+  doc.text('Confidential — Arghyam · Not for public distribution', W - M, 280, { align: 'right' })
 
   // ── Page 2: Service Area Breakdown ─────────────────────────────────────────
   doc.addPage()
@@ -178,7 +178,7 @@ export async function downloadStatePDF(userEmail?: string) {
 
   // ── Page 3: Zone Rankings ────────────────────────────────────────────────────
   doc.addPage()
-  y = _pageHeader(doc, 'Zone BSI Rankings', 'Scale 0–5.0 · Target ≥ 3.50 · 0 of 6 zones qualify', W, M)
+  y = _pageHeader(doc, 'Zone Score Rankings', 'Scale 0–5.0 · Target ≥ 3.50 · 0 of 6 zones qualify', W, M)
   y += 4
 
   const zoneRows = ZONE_SCORES.map(z => [
@@ -194,7 +194,7 @@ export async function downloadStatePDF(userEmail?: string) {
   autoTable(doc, {
     startY: y,
     margin: { left: M, right: M },
-    head: [['Zone', 'BSI (/5.0)', 'Quality', 'Quantity', 'Daily', 'Usable Calls', 'Status']],
+    head: [['Zone', 'Score (/5.0)', 'Quality', 'Quantity', 'Daily', 'Usable Calls', 'Status']],
     body: zoneRows,
     styles: { fontSize: 9, cellPadding: 3 },
     headStyles: { fillColor: C.blue, textColor: C.white, fontStyle: 'bold', fontSize: 8 },
@@ -230,7 +230,7 @@ export async function downloadStatePDF(userEmail?: string) {
 
   // ── Page 4: District Table ──────────────────────────────────────────────────
   doc.addPage()
-  y = _pageHeader(doc, 'District BSI Rankings', '31 districts · Sorted by BSI descending', W, M)
+  y = _pageHeader(doc, 'District Score Rankings', '31 districts · Sorted by Score descending', W, M)
   y += 4
 
   const distRows = [...DISTRICT_SCORES]
@@ -250,7 +250,7 @@ export async function downloadStatePDF(userEmail?: string) {
   autoTable(doc, {
     startY: y,
     margin: { left: M, right: M },
-    head: [['#', 'District', 'Zone', 'BSI (/5.0)', 'Quality', 'Quantity', 'Schemes', 'Calls', 'Status']],
+    head: [['#', 'District', 'Zone', 'Score (/5.0)', 'Quality', 'Quantity', 'Schemes', 'Calls', 'Status']],
     body: distRows,
     styles: { fontSize: 8, cellPadding: 2.5 },
     headStyles: { fillColor: C.blue, textColor: C.white, fontStyle: 'bold', fontSize: 8 },
@@ -308,7 +308,7 @@ export async function downloadStatePDF(userEmail?: string) {
   const recs = [
     {
       n: '01', title: 'Address Daily Supply Gap',
-      body: 'Q1 (Gets Water Daily) at 30.95% is the single largest contributor to low BSI. Target re-calling households in lowest-BSI districts. Prioritise BTAD and Barak Valley zones for operational intervention.',
+      body: 'Q1 (Gets Water Daily) at 30.95% is the single largest contributor to low Citizen Satisfaction Survey Score. Target re-calling households in lowest-Score districts. Prioritise BTAD and Barak Valley zones for operational intervention.',
     },
     {
       n: '02', title: 'Address Irregular Supply Schemes',
@@ -316,7 +316,7 @@ export async function downloadStatePDF(userEmail?: string) {
     },
     {
       n: '03', title: 'Zone-Targeted Phase 2 Campaigns',
-      body: 'BTAD (1.92/5.0) and Barak Valley (1.89/5.0) are Critical. Dedicated re-call campaigns with higher attempt frequency recommended. DHAC excluded from Phase 1 — must be included in Phase 2.',
+      body: 'BTAD (Score 1.92/5.0) and Barak Valley (Score 1.89/5.0) are Critical. Dedicated re-call campaigns with higher attempt frequency recommended. DHAC excluded from Phase 1 — must be included in Phase 2.',
     },
   ]
 
@@ -340,11 +340,11 @@ export async function downloadStatePDF(userEmail?: string) {
     doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.gray)
     doc.text(`Page ${i} of ${totalPages}`, W - M, 290, { align: 'right' })
     if (i > 1) {
-      doc.text('Araghyam · CSAT AI Phase 1 · Assam JJM · Confidential', M, 290)
+      doc.text('Arghyam · CSAT AI Phase 1 · Assam JJM · Confidential', M, 290)
     }
   }
 
-  doc.save(`Araghyam_CSAT_Phase1_State_Report_${new Date().toISOString().split('T')[0]}.pdf`)
+  doc.save(`Arghyam_CSAT_Phase1_State_Report_${new Date().toISOString().split('T')[0]}.pdf`)
 }
 
 // ─── Zone-level PDF ────────────────────────────────────────────────────────────
@@ -361,10 +361,10 @@ export async function downloadZonePDF(zoneName: string) {
   doc.setFillColor(...C.dark)
   doc.rect(0, 0, W, 38, 'F')
   doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.white)
-  doc.text('Araghyam · CSAT AI Phase 1', M, 14)
+  doc.text('Arghyam · CSAT AI Phase 1', M, 14)
   doc.setFontSize(16); doc.text(`${zoneName} — Zone Report`, M, 25)
   doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(148, 163, 184)
-  doc.text(`Generated ${GENERATED}  ·  BSI Target ≥ 3.50`, M, 32)
+  doc.text(`Generated ${GENERATED}  ·  Score Target ≥ 3.50`, M, 32)
 
   y = 46
 
@@ -372,7 +372,7 @@ export async function downloadZonePDF(zoneName: string) {
   doc.setFillColor(...C.grayBg)
   doc.roundedRect(M, y, W - M*2, 28, 2, 2, 'F')
   doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray)
-  doc.text('ZONE BSI SCORE', M + 6, y + 8)
+  doc.text('ZONE CITIZEN SATISFACTION SURVEY SCORE', M + 6, y + 8)
   doc.setFontSize(22); doc.setFont('helvetica', 'bold')
   const bsiVal = bsi5(zoneData.bsi)
   doc.setTextColor(...statusColor(zoneData.status))
@@ -389,7 +389,7 @@ export async function downloadZonePDF(zoneName: string) {
   autoTable(doc, {
     startY: y,
     margin: { left: M, right: M },
-    head: [['#', 'District', 'BSI (/5.0)', 'Quality', 'Quantity', 'Schemes', 'Usable Calls', 'Status']],
+    head: [['#', 'District', 'Score (/5.0)', 'Quality', 'Quantity', 'Schemes', 'Usable Calls', 'Status']],
     body: districtData.sort((a, b) => b.bsi - a.bsi).map((d, i) => [
       String(i + 1), d.district, bsi5(d.bsi),
       d.quality.toFixed(3), d.quantity.toFixed(3),
@@ -400,7 +400,7 @@ export async function downloadZonePDF(zoneName: string) {
     alternateRowStyles: { fillColor: C.grayBg },
   })
 
-  doc.save(`Araghyam_${zoneName.replace(/ /g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`)
+  doc.save(`Arghyam_${zoneName.replace(/ /g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`)
 }
 
 // ─── CSV utilities ────────────────────────────────────────────────────────────
@@ -420,21 +420,21 @@ function downloadCSVFile(csv: string, filename: string) {
 }
 
 export function downloadDistrictCSV() {
-  const headers = ['District', 'Zone', 'BSI_out_of_5', 'Quality_1.5', 'Quantity_1.5', 'Daily_0.75', 'Valid_Schemes', 'Usable_Calls', 'Status']
+  const headers = ['District', 'Zone', 'Score_out_of_5', 'Quality_1.5', 'Quantity_1.5', 'Daily_0.75', 'Valid_Schemes', 'Usable_Calls', 'Status']
   const rows = [...DISTRICT_SCORES]
     .sort((a, b) => b.bsi - a.bsi)
     .map(d => [d.district, d.zone, (d.bsi * 5).toFixed(3), d.quality.toFixed(3), d.quantity.toFixed(3), '—', d.validSchemes, d.usableCalls, d.status])
-  downloadCSVFile(toCSV(headers, rows), `Araghyam_Districts_${new Date().toISOString().split('T')[0]}.csv`)
+  downloadCSVFile(toCSV(headers, rows), `Arghyam_Districts_${new Date().toISOString().split('T')[0]}.csv`)
 }
 
 export function downloadZoneCSV() {
-  const headers = ['Zone', 'BSI_out_of_5', 'Quality_1.5', 'Quantity_1.5', 'Daily_0.75', 'Usable_Calls', 'Status']
+  const headers = ['Zone', 'Score_out_of_5', 'Quality_1.5', 'Quantity_1.5', 'Daily_0.75', 'Usable_Calls', 'Status']
   const rows = ZONE_SCORES.map(z => [
     z.zone, z.bsi !== null ? (z.bsi * 5).toFixed(3) : '—',
     z.quality?.toFixed(3) ?? '—', z.quantity?.toFixed(3) ?? '—',
     z.daily?.toFixed(3) ?? '—', z.usableCalls ?? '—', z.status,
   ])
-  downloadCSVFile(toCSV(headers, rows), `Araghyam_Zones_${new Date().toISOString().split('T')[0]}.csv`)
+  downloadCSVFile(toCSV(headers, rows), `Arghyam_Zones_${new Date().toISOString().split('T')[0]}.csv`)
 }
 
 export function downloadSurveyCSV() {
@@ -442,7 +442,7 @@ export function downloadSurveyCSV() {
   const rows = KPI_QUESTIONS.map(q => [
     q.id, q.label, q.yesCount, q.noCount, q.base, q.yesPct.toFixed(2), q.weight, q.status,
   ])
-  downloadCSVFile(toCSV(headers, rows), `Araghyam_Survey_KPIs_${new Date().toISOString().split('T')[0]}.csv`)
+  downloadCSVFile(toCSV(headers, rows), `Arghyam_Survey_KPIs_${new Date().toISOString().split('T')[0]}.csv`)
 }
 
 export function downloadCallAttemptsCSV() {
@@ -450,7 +450,7 @@ export function downloadCallAttemptsCSV() {
   const rows = CALL_ATTEMPTS.map(a => [
     a.attempt, a.totalCalls, a.pctOfAll, a.consentedN, a.consentPct, a.q5Respondents, a.satisfiedN, a.satisfiedPct,
   ])
-  downloadCSVFile(toCSV(headers, rows), `Araghyam_Call_Attempts_${new Date().toISOString().split('T')[0]}.csv`)
+  downloadCSVFile(toCSV(headers, rows), `Arghyam_Call_Attempts_${new Date().toISOString().split('T')[0]}.csv`)
 }
 
 // ─── Helper: page header ──────────────────────────────────────────────────────
@@ -462,7 +462,7 @@ function _pageHeader(doc: jsPDF, title: string, sub: string, W: number, M: numbe
   doc.setFontSize(8); doc.setFont('helvetica', 'normal')
   doc.text(sub, M, 18)
   doc.setFontSize(8); doc.setTextColor(200, 210, 230)
-  doc.text('Araghyam · CSAT AI Phase 1 · April 2026', W - M, 18, { align: 'right' })
+  doc.text('Arghyam · CSAT AI Phase 1 · April 2026', W - M, 18, { align: 'right' })
   return 26
 }
 
@@ -527,7 +527,7 @@ export async function downloadFilteredCallsCSV(filters: CallExportFilters, label
   })
 
   const slug = label ? label.replace(/\s+/g, '_') : 'Filtered'
-  downloadCSVFile(toCSV(headers, rows), `Araghyam_Calls_${slug}_${new Date().toISOString().split('T')[0]}.csv`)
+  downloadCSVFile(toCSV(headers, rows), `Arghyam_Calls_${slug}_${new Date().toISOString().split('T')[0]}.csv`)
   return data.length
 }
 

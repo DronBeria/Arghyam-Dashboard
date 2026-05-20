@@ -50,7 +50,7 @@ function insight(
   const bsiNum = parseFloat(scope.bsi5)
   return {
     bsi:     bsiNum >= 3.5 ? `Meets target ≥3.50` : `${gap} below target · ${scope.status}`,
-    calls:   `${(scope.validSchemes ?? 0)} valid schemes · ${(scope.usableCalls ?? 0).toLocaleString()} calls counted in BSI`,
+    calls:   `${(scope.validSchemes ?? 0)} valid schemes · ${(scope.usableCalls ?? 0).toLocaleString()} calls counted in Score`,
     quality: scope.quality
       ? `Quality ${(scope.quality / 1.5 * 100).toFixed(1)}% · Quantity ${scope.quantity ? (scope.quantity / 1.5 * 100).toFixed(1) : '?'}%`
       : 'Scope data from valid scheme average',
@@ -103,13 +103,13 @@ function generateActionPlan(scope: ScopeData, qBars: any[], phaseLabel: string, 
     .footer{margin-top:40px;border-top:1px solid #f1f5f9;padding-top:12px;font-size:11px;color:#94a3b8;text-align:center}
     @media print{body{margin:20px}}
   </style></head><body>
-  <p style="font-size:11px;color:#94a3b8;margin-bottom:4px">ARAGHYAM · JJM CSAT AI · DISTRICT ACTION PLAN</p>
+  <p style="font-size:11px;color:#94a3b8;margin-bottom:4px">ARGHYAM · JJM CSAT AI · DISTRICT ACTION PLAN</p>
   <h1>${scope.label}</h1>
   <p class="sub">${data.phaseLabel} · ${data.dateLabel} · Zone: ${scope.zone ?? 'All Assam'} · Generated ${new Date().toLocaleDateString('en-IN')}</p>
 
   <div class="grid">
     <div class="kpi">
-      <div class="lbl">BSI Score</div>
+      <div class="lbl">Citizen Satisfaction Survey Score</div>
       <div class="val" style="color:${+bsi5>=3.5?'#10b981':+bsi5>=2?'#f59e0b':'#ef4444'}">${bsi5}/5</div>
       <div class="bar-wrap"><div class="bar ${+bsi5>=3.5?'green':+bsi5>=2?'amber':'red'}" style="width:${(+bsi5/5)*100}%"></div></div>
       <div style="font-size:11px;color:#94a3b8">Target: 3.50 · Gap: ${gap}</div>
@@ -139,10 +139,10 @@ function generateActionPlan(scope: ScopeData, qBars: any[], phaseLabel: string, 
     ${q2 && q2.pct < 70 ? `<li>Water quality (Q2) at ${q2.pct}% — inspect treatment and source quality</li>` : ''}
     ${q3 && q3.pct < 70 ? `<li>Water quantity (Q3) at ${q3.pct}% — check distribution coverage and pressure</li>` : ''}
     <li>Target re-call in Phase 2 to verify improvement</li>
-    <li>BSI gap of ${gap} points to target 3.50 — focus on bottom two indicators</li>
+    <li>Score gap of ${gap} points to target 3.50 — focus on bottom two indicators</li>
   </ul></div>
 
-  <div class="footer">Araghyam · Assam Jal Jeevan Mission · Confidential · Government of Assam</div>
+  <div class="footer">Arghyam · Assam Jal Jeevan Mission · Confidential · Government of Assam</div>
   <script>window.onload=()=>window.print()</script>
   </body></html>`)
   w.document.close()
@@ -165,6 +165,14 @@ export function OverviewPage() {
   const [loadingSchemes, setLoadingSchemes] = useState(false)
   const [bsiMode, setBsiMode]               = useState<BsiMode>('standard')
   const [linkCopied, setLinkCopied]         = useState(false)
+
+  // Scheme summary state (from scheme_detail table)
+  const [schemeSummary, setSchemeSummary] = useState<{
+    summary: string; keyIssues: string | null
+    imisId: number | null; blocks: string | null; centreId: number | null
+  } | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [keyIssuesOpen, setKeyIssuesOpen]   = useState(false)
 
   // Restore scope from URL params on first load
   useEffect(() => {
@@ -204,28 +212,34 @@ export function OverviewPage() {
     return () => window.removeEventListener('setScope', onSetScope)
   }, [])
 
-  // Fetch scheme names when a district is selected (Phase 1 only — Phase 2 has no call_records in DB)
+  // Fetch scheme names when a district is selected
   useEffect(() => {
     if (!data.hasSchemeSearch || scopeType !== 'district' || !scopeValue) {
       setSchemeList([]); setSchemeFilter(''); setSchemeStats(null); return
     }
     setLoadingSchemes(true)
-    supabase.from('call_records').select('scheme_name').eq('district', scopeValue)
+    let q = supabase.from('call_records').select('scheme_name').eq('district', scopeValue)
       .not('scheme_name', 'is', null)
-      .then(({ data: rows }) => {
-        const names = [...new Set((rows ?? []).map((r: any) => r.scheme_name as string).filter(Boolean))].sort()
-        setSchemeList(names)
-        setLoadingSchemes(false)
-      })
-  }, [scopeType, scopeValue, data.hasSchemeSearch])
+    if (data.phaseGteDate) q = (q as any).gte('call_start_time', data.phaseGteDate)
+    if (data.phaseLtDate)  q = (q as any).lt('call_start_time', data.phaseLtDate)
+    q.then(({ data: rows }) => {
+      const names = [...new Set((rows ?? []).map((r: any) => r.scheme_name as string).filter(Boolean))].sort()
+      setSchemeList(names)
+      setLoadingSchemes(false)
+    })
+  }, [scopeType, scopeValue, data.hasSchemeSearch, data.phaseGteDate, data.phaseLtDate])
 
-  // Compute scheme-level stats when a scheme is picked (Phase 1 only)
+  // Compute scheme-level stats when a scheme is picked
   useEffect(() => {
     if (!schemeFilter || !data.hasSchemeSearch) { setSchemeStats(null); setBsiMode('standard'); return }
-    supabase.from('call_records')
+    const phaseGte = data.phaseGteDate
+    const phaseLt  = data.phaseLtDate
+    let q: any = supabase.from('call_records')
       .select('q1_answer,q2_answer,q3_answer,q4_answer,q5_answer,consented')
       .eq('scheme_name', schemeFilter)
-      .then(({ data }) => {
+    if (phaseGte) q = q.gte('call_start_time', phaseGte)
+    if (phaseLt)  q = q.lt('call_start_time', phaseLt)
+    q.then(({ data }: { data: any[] | null }) => {
         if (!data || data.length === 0) return
         const lc = (v: unknown) => String(v ?? '').toLowerCase()
 
@@ -283,6 +297,31 @@ export function OverviewPage() {
           q2Pct: +(q2Pct*100).toFixed(1), q3Pct: +(q3Pct*100).toFixed(1),
           q5Pct: +(q5Pct*100).toFixed(1),
         })
+      })
+  }, [schemeFilter])
+
+  // Fetch scheme summary + IMIS mapping from scheme_detail table
+  useEffect(() => {
+    if (!schemeFilter) { setSchemeSummary(null); setKeyIssuesOpen(false); return }
+    setSummaryLoading(true)
+    supabase.from('scheme_detail')
+      .select('scheme_summary,key_issues,imis_id,blocks,centre_scheme_id')
+      .ilike('scheme_name', schemeFilter)
+      .limit(1)
+      .then(({ data: sd }) => {
+        if (sd && sd.length > 0) {
+          const r = sd[0] as any
+          setSchemeSummary({
+            summary:  r.scheme_summary ?? '',
+            keyIssues:r.key_issues ?? null,
+            imisId:   r.imis_id   ?? null,
+            blocks:   r.blocks    ?? null,
+            centreId: r.centre_scheme_id ?? null,
+          })
+        } else {
+          setSchemeSummary(null)
+        }
+        setSummaryLoading(false)
       })
   }, [schemeFilter])
 
@@ -417,7 +456,7 @@ export function OverviewPage() {
         {/* BSI basis radio — only active when a scheme is selected */}
         {activeScheme ? (
           <div className="flex items-center gap-1.5 ml-auto">
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex-shrink-0">BSI basis</span>
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide flex-shrink-0">Score basis</span>
             <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[10px] font-semibold">
               {(['standard', 'usable', 'consented'] as BsiMode[]).map(m => (
                 <button key={m} onClick={() => setBsiMode(m)}
@@ -430,7 +469,7 @@ export function OverviewPage() {
             </div>
           </div>
         ) : scopeType === 'district' && schemeList.length > 0 ? (
-          <p className="text-[10px] text-gray-400 ml-auto italic">Select a scheme above to compare BSI bases</p>
+          <p className="text-[10px] text-gray-400 ml-auto italic">Select a scheme above to compare Score bases</p>
         ) : null}
 
         {/* Breadcrumb label + copy link */}
@@ -461,7 +500,7 @@ export function OverviewPage() {
         {[
           {
             value: activeBsi5 + '/5',
-            label: activeScheme ? `BSI · ${bsiMode}` : 'BSI Score',
+            label: activeScheme ? `Score · ${bsiMode}` : 'Citizen Satisfaction Survey Score',
             insight: activeScheme
               ? `${bsiMode} basis · ${activeGap5 > 0 ? activeGap5 + ' below target' : 'meets target'}`
               : ins.bsi,
@@ -534,7 +573,7 @@ export function OverviewPage() {
         <div className="lg:col-span-2 card p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="panel-title">BSI Score</p>
+              <p className="panel-title">Citizen Satisfaction Survey Score</p>
               <p className="panel-sub mt-0.5">{activeLabel} · Target ≥ 3.50 / 5.0</p>
             </div>
             <span className={`badge ${activeStatus === 'Good' ? 'badge-good' : activeStatus === 'Critical' ? 'badge-critical' : activeStatus === 'No Data' ? 'badge-neutral' : 'badge-moderate'}`}>
@@ -548,7 +587,7 @@ export function OverviewPage() {
               <span className={`text-4xl font-black ${activeSc.text}`}>{activeBsi5}</span>
               <span className="text-base text-gray-400 mb-0.5">/ 5.0</span>
               {activeScheme && (
-                <span className="text-[10px] font-semibold text-blue-500 mb-1 ml-1 capitalize">{bsiMode} basis</span>
+                <span className="text-[10px] font-semibold text-blue-500 mb-1 ml-1 capitalize">{bsiMode} Score basis</span>
               )}
             </div>
             <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -593,7 +632,7 @@ export function OverviewPage() {
           {/* Component contributions (zone/district static data) */}
           {!activeScheme && (scope.quality || scope.quantity) && (
             <div className="space-y-2 pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-400 font-medium">BSI components</p>
+              <p className="text-xs text-gray-400 font-medium">Score components</p>
               {[
                 { label: 'Quality', val: scope.quality, max: 1.5, color: 'bg-emerald-400' },
                 { label: 'Quantity', val: scope.quantity, max: 1.5, color: 'bg-blue-400' },
@@ -628,7 +667,7 @@ export function OverviewPage() {
               <p className="panel-sub mt-0.5">
                 {scopeType === 'state'
                   ? 'Q1–Q5 · from call responses · Good ≥70%'
-                  : 'Q1–Q3 derived from BSI components · Good ≥70%'}
+                  : 'Q1–Q3 derived from Score components · Good ≥70%'}
               </p>
             </div>
             {scopeType === 'state' && (
@@ -675,6 +714,69 @@ export function OverviewPage() {
         </div>
       </div>
 
+      {/* ── Citizen Voice Summary (visible when a scheme is selected) ────── */}
+      {activeScheme && (
+        <div className="card overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-start justify-between gap-3">
+            <div>
+              <p className="panel-title flex items-center gap-2">
+                Citizen Voice Summary
+                <span className="text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">AI · {schemeStats ? schemeStats.totalCalls + ' calls' : '…'}</span>
+              </p>
+              <p className="panel-sub mt-0.5">
+                {schemeSummary?.imisId
+                  ? <><span className="font-semibold text-slate-500">IMIS ID:</span> {schemeSummary.imisId}</>
+                  : <span className="text-slate-300 italic">IMIS ID loading…</span>}
+                {schemeSummary?.centreId && (
+                  <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Centre ID:</span> {schemeSummary.centreId}</>
+                )}
+                {schemeSummary?.blocks && (
+                  <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Block(s):</span> {schemeSummary.blocks}</>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="px-5 py-4">
+            {summaryLoading ? (
+              <div className="space-y-2 animate-pulse">
+                <div className="h-3 bg-slate-100 rounded w-full" />
+                <div className="h-3 bg-slate-100 rounded w-11/12" />
+                <div className="h-3 bg-slate-100 rounded w-4/5" />
+                <div className="h-3 bg-slate-100 rounded w-10/12" />
+              </div>
+            ) : schemeSummary?.summary ? (
+              <>
+                <p className="text-sm text-slate-700 leading-relaxed">{schemeSummary.summary}</p>
+                {schemeSummary.keyIssues && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => setKeyIssuesOpen(v => !v)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d={keyIssuesOpen ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                      </svg>
+                      Key Issues {keyIssuesOpen ? '↑' : '↓'}
+                    </button>
+                    {keyIssuesOpen && (
+                      <div className="mt-2.5 flex flex-wrap gap-1.5 pt-2.5 border-t border-slate-100">
+                        {schemeSummary.keyIssues.split(';').map(t => t.trim()).filter(Boolean).map(tag => (
+                          <span key={tag} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-slate-400 italic">No summary available for this scheme</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Zone / District breakdown ────────────────────────────────────── */}
       <div className="card overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
@@ -694,8 +796,8 @@ export function OverviewPage() {
               {scopeType === 'state'
                 ? 'No zone meets the 3.50 target · sorted best to worst'
                 : scopeType === 'district' && !scopeValue
-                  ? `${data.districtCountLabel} districts · sorted by BSI · click to drill down`
-                  : 'Sorted by BSI · click a district to drill down'}
+                  ? `${data.districtCountLabel} districts · sorted by Score · click to drill down`
+                  : 'Sorted by Score · click a district to drill down'}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -722,7 +824,7 @@ export function OverviewPage() {
                 {scopeType === 'district' && !scopeValue && (
                   <th className="th text-left hidden sm:table-cell">Zone</th>
                 )}
-                <th className="th text-right">BSI /5</th>
+                <th className="th text-right">Score /5</th>
                 <th className="th hidden lg:table-cell">Trend</th>
                 <th className="th text-right hidden sm:table-cell">Quality</th>
                 <th className="th text-right hidden sm:table-cell">Quantity</th>
@@ -837,6 +939,26 @@ export function OverviewPage() {
               <span className="text-emerald-700 font-bold">{SCHEME_COVERAGE.functionalRate}% regular supply</span>
               <span className="text-red-600 font-bold">{(100 - SCHEME_COVERAGE.functionalRate).toFixed(1)}% irregular supply</span>
             </div>
+            {/* Per-district scheme breakdown for Phase 2 / Full Campaign */}
+            {data.phaseLabel !== 'Phase 1' && (
+              <div className="mt-3 pt-2 border-t border-gray-100">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Valid schemes by district</p>
+                <div className="max-h-32 overflow-y-auto space-y-0.5">
+                  {[...DISTRICT_SCORES]
+                    .filter((d: any) => (d.validSchemes ?? 0) > 0)
+                    .sort((a: any, b: any) => (b.validSchemes ?? 0) - (a.validSchemes ?? 0))
+                    .map((d: any) => (
+                      <div key={d.district} className="flex items-center justify-between text-[10px] px-1 py-0.5 rounded hover:bg-gray-50 cursor-pointer"
+                        onClick={() => { setScopeType('district'); setScopeValue(d.district) }}>
+                        <span className="text-gray-600 font-medium truncate flex-1">{d.district}</span>
+                        <span className="text-gray-400 text-[9px] mx-1.5">{d.zone}</span>
+                        <span className="font-bold text-emerald-700 flex-shrink-0">{d.validSchemes}</span>
+                      </div>
+                    ))}
+                </div>
+                <p className="text-[9px] text-gray-400 mt-1">Click a district to drill down · {SCHEME_COVERAGE.valid} valid schemes total</p>
+              </div>
+            )}
           </div>
 
           {/* Call consent breakdown */}
@@ -897,8 +1019,8 @@ function PhaseComparisonSection({ comparison }: { comparison: NonNullable<Return
           <div>
             <p className="text-sm font-bold text-gray-800">Phase 1 vs Phase 2 Comparison</p>
             <p className="text-xs text-gray-400">
-              Phase 1: 45,863 calls · Apr 2026 · BSI {comparison.p1Bsi5}/5 &nbsp;|&nbsp;
-              Phase 2: 79,725 calls · May 2026 · BSI {comparison.p2Bsi5}/5
+              Phase 1: 45,863 calls · Apr 2026 · Score {comparison.p1Bsi5}/5 &nbsp;|&nbsp;
+              Phase 2: 79,725 calls · May 2026 · Score {comparison.p2Bsi5}/5
             </p>
           </div>
         </div>
@@ -931,16 +1053,16 @@ function PhaseComparisonSection({ comparison }: { comparison: NonNullable<Return
       {/* Zone BSI changes */}
       <div className="card overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100">
-          <p className="panel-title">Zone BSI Changes  Phase 1 → Phase 2</p>
-          <p className="panel-sub mt-0.5">BSI out of 5.0 · Phase 2 zone data based on limited May 2026 sample</p>
+          <p className="panel-title">Zone Score Changes  Phase 1 → Phase 2</p>
+          <p className="panel-sub mt-0.5">Score out of 5.0 · Phase 2 zone data based on limited May 2026 sample</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="th text-left">Zone</th>
-                <th className="th text-right">Phase 1 BSI</th>
-                <th className="th text-right">Phase 2 BSI</th>
+                <th className="th text-right">Phase 1 Score</th>
+                <th className="th text-right">Phase 2 Score</th>
                 <th className="th text-center">Change</th>
               </tr>
             </thead>
