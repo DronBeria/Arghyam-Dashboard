@@ -588,33 +588,66 @@ export function OverviewPage() {
         ))}
       </div>
 
-      {/* ── Citizen Voice Summary — just below KPIs, only when a scheme is active ── */}
-      {activeScheme && (
+      {/* ── Citizen Voice Summary ───────────────────────────────────────────
+           Always rendered when scheme selection is possible so there is NO
+           layout shift. Three stable states: placeholder / skeleton / content.
+      ────────────────────────────────────────────────────────────────────── */}
+      {data.hasSchemeSearch && scopeType === 'district' && (!!scopeValue || !!data.districtFocus) && (
         <div className="card overflow-hidden">
           <div className="px-5 py-3.5 border-b border-slate-100 flex items-start justify-between gap-3">
             <div>
               <p className="panel-title flex items-center gap-2">
                 Citizen Voice Summary
-                <span className="text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">AI · {schemeStats ? schemeStats.totalCalls + ' calls' : '…'}</span>
+                {activeScheme && (
+                  <span className="text-[9px] font-bold text-violet-600 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                    AI · {schemeStats!.totalCalls} calls
+                  </span>
+                )}
               </p>
               <p className="panel-sub mt-0.5">
-                {schemeSummary?.imisId
-                  ? <><span className="font-semibold text-slate-500">IMIS ID:</span> {schemeSummary.imisId}</>
-                  : summaryLoading ? <span className="text-slate-300 italic">loading…</span> : null}
-                {schemeSummary?.centreId && <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Centre ID:</span> {schemeSummary.centreId}</>}
-                {schemeSummary?.blocks   && <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Block(s):</span> {schemeSummary.blocks}</>}
+                {activeScheme && schemeSummary?.imisId ? (
+                  <>
+                    <span className="font-semibold text-slate-500">IMIS ID:</span> {schemeSummary.imisId}
+                    {schemeSummary.centreId && <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Centre ID:</span> {schemeSummary.centreId}</>}
+                    {schemeSummary.blocks   && <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Block(s):</span> {schemeSummary.blocks}</>}
+                  </>
+                ) : activeScheme ? (
+                  <span className="text-slate-300">Loading scheme details…</span>
+                ) : (
+                  <span className="text-slate-400">
+                    {data.districtFocus
+                      ? 'Select a scheme from the table below to view citizen feedback'
+                      : 'Select a scheme from the dropdown above to view citizen feedback'}
+                  </span>
+                )}
               </p>
             </div>
           </div>
-          <div className="px-5 py-4">
-            {summaryLoading ? (
-              <div className="space-y-2 animate-pulse">
-                <div className="h-3 bg-slate-100 rounded w-full" />
-                <div className="h-3 bg-slate-100 rounded w-11/12" />
-                <div className="h-3 bg-slate-100 rounded w-4/5" />
-                <div className="h-3 bg-slate-100 rounded w-10/12" />
+
+          <div className="px-5 py-4 min-h-[80px] flex flex-col justify-center">
+            {!activeScheme ? (
+              /* ── Placeholder — no scheme selected yet ── */
+              <div className="flex items-center gap-3 text-slate-300">
+                <svg className="w-8 h-8 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <p className="text-sm text-slate-400">
+                  {data.districtFocus
+                    ? 'Click any scheme in the table below to load its AI-generated citizen voice summary.'
+                    : 'Choose a scheme from the dropdown above to load its AI-generated citizen voice summary.'}
+                </p>
+              </div>
+            ) : summaryLoading ? (
+              /* ── Skeleton — scheme selected, data loading ── */
+              <div className="space-y-2.5 animate-pulse">
+                <div className="h-3 bg-slate-100 rounded-full w-full" />
+                <div className="h-3 bg-slate-100 rounded-full w-[94%]" />
+                <div className="h-3 bg-slate-100 rounded-full w-[88%]" />
+                <div className="h-3 bg-slate-100 rounded-full w-[92%]" />
+                <div className="h-3 bg-slate-100 rounded-full w-[75%]" />
               </div>
             ) : schemeSummary?.summary ? (
+              /* ── Full content ── */
               <>
                 <p className="text-sm text-slate-700 leading-relaxed">{schemeSummary.summary}</p>
                 {schemeSummary.keyIssues && (
@@ -637,7 +670,8 @@ export function OverviewPage() {
                 )}
               </>
             ) : (
-              <p className="text-xs text-slate-400 italic">No summary available for this scheme</p>
+              /* ── No summary in database for this scheme ── */
+              <p className="text-xs text-slate-400 italic">No citizen voice summary available for this scheme.</p>
             )}
           </div>
         </div>

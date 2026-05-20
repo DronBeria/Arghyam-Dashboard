@@ -121,6 +121,11 @@ export default function App() {
       setAuthLoading(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Clear workspace when user signs out so next login always chooses fresh
+      if (!session) {
+        setWorkspace(null)
+        localStorage.removeItem('jjm_workspace')
+      }
       setSession(session)
     })
     return () => subscription.unsubscribe()
