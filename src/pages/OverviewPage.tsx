@@ -172,7 +172,7 @@ export function OverviewPage() {
   // Scheme summary state (from scheme_detail table)
   const [schemeSummary, setSchemeSummary] = useState<{
     summary: string; keyIssues: string | null
-    imisId: number | null; blocks: string | null; centreId: number | null
+    blocks: string | null; centreId: number | null
   } | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [keyIssuesOpen, setKeyIssuesOpen]   = useState(false)
@@ -307,17 +307,18 @@ export function OverviewPage() {
   useEffect(() => {
     if (!schemeFilter) { setSchemeSummary(null); setKeyIssuesOpen(false); return }
     setSummaryLoading(true)
-    supabase.from('scheme_detail')
-      .select('scheme_summary,key_issues,imis_id,blocks,centre_scheme_id')
+    // Filter by district to avoid matching a same-name scheme from a different district
+    const districtFilter = data.districtFocus ?? (scopeType === 'district' && scopeValue ? scopeValue : null)
+    let sdQ: any = supabase.from('scheme_detail')
+      .select('scheme_summary,key_issues,blocks,centre_scheme_id')
       .ilike('scheme_name', schemeFilter)
-      .limit(1)
-      .then(({ data: sd }) => {
+    if (districtFilter) sdQ = sdQ.eq('district', districtFilter)
+    sdQ.limit(1).then(({ data: sd }: { data: any[] | null }) => {
         if (sd && sd.length > 0) {
           const r = sd[0] as any
           setSchemeSummary({
             summary:  r.scheme_summary ?? '',
             keyIssues:r.key_issues ?? null,
-            imisId:   r.imis_id   ?? null,
             blocks:   r.blocks    ?? null,
             centreId: r.centre_scheme_id ?? null,
           })
@@ -622,10 +623,9 @@ export function OverviewPage() {
                 )}
               </p>
               <p className="panel-sub mt-0.5">
-                {activeScheme && schemeSummary?.imisId ? (
+                {activeScheme && (schemeSummary?.centreId || schemeSummary?.blocks) ? (
                   <>
-                    <span className="font-semibold text-slate-500">IMIS ID:</span> {schemeSummary.imisId}
-                    {schemeSummary.centreId && <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Centre ID:</span> {schemeSummary.centreId}</>}
+                    {schemeSummary.centreId && <><span className="font-semibold text-slate-500">Centre ID:</span> {schemeSummary.centreId}</>}
                     {schemeSummary.blocks   && <> &nbsp;·&nbsp; <span className="font-semibold text-slate-500">Block(s):</span> {schemeSummary.blocks}</>}
                   </>
                 ) : activeScheme ? (
@@ -680,6 +680,13 @@ export function OverviewPage() {
             ) : (
               /* ── No summary in database for this scheme ── */
               <p className="text-xs text-slate-400 italic">No citizen voice summary available for this scheme.</p>
+            )}
+            {/* Note: summary is based on all calls (qualitative + quantitative) — Q% above uses usable calls only */}
+            {schemeSummary?.summary && schemeStats && schemeStats.totalCalls > schemeStats.usableCalls && (
+              <p className="text-[10px] text-slate-300 mt-3 pt-2.5 border-t border-slate-50">
+                This summary reflects citizen feedback from all {schemeStats.totalCalls} calls to this scheme.
+                The Q percentages shown above are computed from {schemeStats.usableCalls} usable calls (those where Q1 was formally answered).
+              </p>
             )}
           </div>
         </div>
