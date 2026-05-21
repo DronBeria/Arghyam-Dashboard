@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { CommandPalette } from './components/CommandPalette'
 import { supabase } from './lib/supabase'
 import type { Session } from '@supabase/supabase-js'
@@ -15,13 +15,11 @@ import { GeographicPage } from './pages/GeographicPage'
 import { ComparisonPage } from './pages/ComparisonPage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Phase     = 'phase1' | 'phase2' | 'fullcampaign'
 type Workspace = 'main' | 'tinsukia'
 type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'comparison'
 
 interface NavItem {
   id: PageId
-  fullCampaignOnly?: boolean
   label: string
   description: string
 }
@@ -74,7 +72,7 @@ const NAV: NavGroup[] = [
     label: 'Analysis',
     icon: '⚖️',
     items: [
-      { id: 'comparison', label: 'Phase Comparison', description: 'Phase 1 vs Phase 2 side-by-side', fullCampaignOnly: true },
+      { id: 'comparison', label: 'Phase Comparison', description: 'Phase 1 vs Phase 2 side-by-side' },
     ],
   },
 ]
@@ -96,7 +94,6 @@ export default function App() {
   const [workspace, setWorkspace]       = useState<Workspace | null>(
     () => (localStorage.getItem('jjm_workspace') as Workspace | null)
   )
-  const [phase, setPhase]               = useState<Phase>('phase1')
   const [page, setPage]                 = useState<PageId>('overview')
   const [sidebarOpen, setSidebarOpen]   = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Call Data']))
@@ -105,7 +102,6 @@ export default function App() {
   function selectWorkspace(ws: Workspace) {
     setWorkspace(ws)
     localStorage.setItem('jjm_workspace', ws)
-    setPhase('phase1')
     setPage('overview')
   }
 
@@ -161,11 +157,6 @@ export default function App() {
     })
   }
 
-  function switchPhase(p: Phase) {
-    setPhase(p)
-    setPage('overview')
-  }
-
   // ── Loading ───────────────────────────────────────────────────────────────
   if (authLoading) {
     return (
@@ -187,10 +178,7 @@ export default function App() {
   // Show workspace picker if no workspace chosen yet this session
   if (!workspace) return <WorkspacePicker userEmail={userEmail} onSelect={selectWorkspace} />
 
-  const visibleNav = NAV.map(group => ({
-    ...group,
-    items: group.items.filter(item => !item.fullCampaignOnly || phase === 'fullcampaign'),
-  })).filter(group => group.items.length > 0)
+  const visibleNav = NAV.filter(group => group.items.length > 0)
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#0f172a' }}>
@@ -232,51 +220,14 @@ export default function App() {
           )}
         </div>
 
-        {/* ── Phase Switcher ─────────────────────────────────────────────── */}
-        <div className={`flex-shrink-0 border-b border-white/[0.06] ${sidebarOpen ? 'p-3' : 'p-2'}`}>
-          {sidebarOpen ? (
-            <div className="flex rounded-lg overflow-hidden border border-white/[0.08] p-0.5 gap-0.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
-              {([
-                { id: 'phase1',      label: 'Phase 1', color: 'bg-emerald-500' },
-                { id: 'phase2',      label: 'Phase 2', color: 'bg-blue-500'    },
-                { id: 'fullcampaign',label: 'Full',    color: 'bg-violet-500'  },
-              ] as const).map(p => (
-                <button key={p.id} onClick={() => switchPhase(p.id)}
-                  className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${
-                    phase === p.id ? `${p.color} text-white shadow-sm` : 'text-slate-500 hover:text-slate-300'
-                  }`}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {([
-                { id: 'phase1',      label: '1', title: 'Phase 1',      color: 'bg-emerald-500' },
-                { id: 'phase2',      label: '2', title: 'Phase 2',      color: 'bg-blue-500'    },
-                { id: 'fullcampaign',label: '∑', title: 'Full Campaign', color: 'bg-violet-500'  },
-              ] as const).map(p => (
-                <button key={p.id} onClick={() => switchPhase(p.id)} title={p.title}
-                  className={`w-full py-1 rounded-md text-[10px] font-black transition-all ${
-                    phase === p.id ? `${p.color} text-white` : 'text-slate-600 hover:text-slate-400'
-                  }`} style={phase !== p.id ? { background: 'rgba(255,255,255,0.04)' } : {}}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          )}
-          {sidebarOpen && (
-            <div className="mt-1.5 flex items-center justify-center">
-              <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${
-                phase === 'phase1' ? 'text-emerald-500 bg-emerald-500/10'
-                : phase === 'phase2' ? 'text-blue-400 bg-blue-500/10'
-                : 'text-violet-400 bg-violet-500/10'
-              }`}>
-                {phase === 'phase1' ? '● Active · Apr 2026' : phase === 'phase2' ? '● Active · May 2026' : '● Combined · Apr–May 2026'}
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Campaign indicator */}
+        {sidebarOpen && (
+          <div className="flex-shrink-0 border-b border-white/[0.06] px-4 py-2 flex items-center justify-center">
+            <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded text-violet-400 bg-violet-500/10">
+              ● Full Campaign · Apr–May 2026
+            </span>
+          </div>
+        )}
 
         {/* Nav */}
         <nav className="flex-1 py-3 overflow-y-auto min-h-0 px-2 space-y-0.5">
@@ -376,7 +327,7 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden" style={{ background: '#f1f5f9' }}>
         <Header
           pageTitle={PAGE_META[page].title}
-          phase={phase}
+          phase="fullcampaign"
           onNavigate={(id) => navigate(id as PageId)}
           userEmail={userEmail}
         />
@@ -392,12 +343,6 @@ export default function App() {
                   <span className="text-slate-300">/</span>
                 </>
               )}
-              <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                phase === 'phase1' ? 'text-emerald-700 bg-emerald-100'
-                : phase === 'phase2' ? 'text-blue-700 bg-blue-100'
-                : 'text-violet-700 bg-violet-100'
-              }`}>{phase === 'phase1' ? 'Phase 1' : phase === 'phase2' ? 'Phase 2' : 'Full Campaign'}</span>
-              <span className="text-slate-300">/</span>
               <span className="text-slate-600 font-semibold">{PAGE_META[page].title}</span>
             </div>
             <div className="flex items-center gap-3">
@@ -414,47 +359,21 @@ export default function App() {
           </div>
 
           <div className="px-6 py-6 max-w-7xl mx-auto w-full">
-            {/* Phase 1 pages */}
-            {phase === 'phase1' && (
-              <PhaseDataProvider phase="phase1" tinsukia={workspace === 'tinsukia'}>
-                {page === 'overview'   && <OverviewPage />}
-                {page === 'calls'      && <CallAnalysisPage />}
-                {page === 'records'    && <CallRecordsPage />}
-                {page === 'survey'     && <SurveyResultsPage />}
-                {page === 'schemes'    && <SchemePage />}
-                {page === 'geographic' && <GeographicPage />}
-              </PhaseDataProvider>
-            )}
-
-            {/* Phase 2 pages */}
-            {phase === 'phase2' && (
-              <PhaseDataProvider phase="phase2" tinsukia={workspace === 'tinsukia'}>
-                {page === 'overview'   && <OverviewPage />}
-                {page === 'calls'      && <CallAnalysisPage />}
-                {page === 'records'    && <CallRecordsPage />}
-                {page === 'survey'     && <SurveyResultsPage />}
-                {page === 'schemes'    && <SchemePage />}
-                {page === 'geographic' && <GeographicPage />}
-              </PhaseDataProvider>
-            )}
-
-            {/* Full Campaign — Phase 1 + Phase 2 combined */}
-            {phase === 'fullcampaign' && (
-              <PhaseDataProvider phase="fullcampaign" tinsukia={workspace === 'tinsukia'}>
-                {page === 'overview'    && <OverviewPage />}
-                {page === 'calls'       && <CallAnalysisPage />}
-                {page === 'records'     && <CallRecordsPage />}
-                {page === 'survey'      && <SurveyResultsPage />}
-                {page === 'schemes'     && <SchemePage />}
-                {page === 'geographic'  && <GeographicPage />}
-                {page === 'comparison'  && <ComparisonPage />}
-              </PhaseDataProvider>
-            )}
+            <PhaseDataProvider phase="fullcampaign" tinsukia={workspace === 'tinsukia'}>
+              {page === 'overview'   && <OverviewPage />}
+              {page === 'calls'      && <CallAnalysisPage />}
+              {page === 'records'    && <CallRecordsPage />}
+              {page === 'survey'     && <SurveyResultsPage />}
+              {page === 'schemes'    && <SchemePage />}
+              {page === 'geographic' && <GeographicPage />}
+              {page === 'comparison' && <ComparisonPage />}
+            </PhaseDataProvider>
 
             <footer className="mt-12 pt-6 border-t border-slate-200/60 text-center">
               <p className="panel-label">
-                {workspace === 'tinsukia' ? 'Arghyam · CSAT AI · Tinsukia District · ' : 'Arghyam · CSAT AI · Assam JJM · '}
-                {phase === 'phase1' ? (workspace === 'tinsukia' ? 'Phase 1 · 326 calls · April 2026' : 'Phase 1 · 45,863 calls · April 2026') : phase === 'phase2' ? (workspace === 'tinsukia' ? 'Phase 2 · 480 calls · May 2026' : 'Phase 2 · 79,725 calls · May 2026') : (workspace === 'tinsukia' ? 'Full Campaign · 806 calls · Apr–May 2026' : 'Full Campaign · 125,588 calls · Apr–May 2026')}
+                {workspace === 'tinsukia'
+                  ? 'Arghyam · CSAT AI · Tinsukia District · Full Campaign · 806 calls · Apr–May 2026'
+                  : 'Arghyam · CSAT AI · Assam JJM · Full Campaign · 125,588 calls · Apr–May 2026'}
               </p>
             </footer>
           </div>

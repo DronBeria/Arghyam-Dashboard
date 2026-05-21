@@ -49,13 +49,14 @@ export const ZONE_SCORES_P1 = [
   { zone: 'Assam (State)',     usableCalls: 71,  bsi: 0.5870, quality: 1.0714, quantity: 0.9829, daily: 0.2324, satisfaction: 0.2200, status: 'Moderate' },
 ]
 
-// Schemes with ≥6 usable calls — Phase 1 (used as "district" rows for table)
+// Schemes with ≥6 usable calls — Phase 1 only (Apr 2026)
+// Verified against Supabase call_records filtered to call_start_time < 2026-05-01
 export const DISTRICT_SCORES_P1 = [
-  { district: 'GARGAON PWSS',          zone: 'Tinsukia District', validSchemes: 1, usableCalls: 11, bsi: 0.7240, quality: 1.5000, quantity: 0.9000, daily: 0.1365, satisfaction: 0.3335, status: 'Good'     },
-  { district: 'BISANI MUKH N.C. PWSS', zone: 'Tinsukia District', validSchemes: 1, usableCalls: 11, bsi: 0.7120, quality: 1.5000, quantity: 0.7500, daily: 0.4088, satisfaction: 0.4000, status: 'Good'     },
-  { district: 'KUNDIL SHANTI NAGAR PWSS', zone: 'Tinsukia District', validSchemes: 1, usableCalls: 9, bsi: 0.5060, quality: 0.9000, quantity: 1.2000, daily: 0.3330, satisfaction: 0.1000, status: 'Moderate' },
-  { district: 'AJOKHA GAON PWSS',      zone: 'Tinsukia District', validSchemes: 1, usableCalls: 13, bsi: 0.4860, quality: 1.0710, quantity: 0.7500, daily: 0.2310, satisfaction: 0.0000, status: 'Moderate' },
-  { district: 'DOOM PATHAR PWSS',      zone: 'Tinsukia District', validSchemes: 1, usableCalls: 9,  bsi: 0.3500, quality: 0.7500, quantity: 0.7500, daily: 0.0000, satisfaction: 0.2500, status: 'Critical'  },
+  { district: 'BISANI MUKH N.C. PWSS',    zone: 'Tinsukia District', validSchemes: 1, usableCalls: 11, bsi: 0.7120, quality: 1.5000, quantity: 0.7500, daily: 0.4091, satisfaction: 0.4000, status: 'Good'     },
+  { district: 'GARGAON PWSS',             zone: 'Tinsukia District', validSchemes: 1, usableCalls: 9,  bsi: 0.6660, quality: 1.5000, quantity: 1.0000, daily: 0.0833, satisfaction: 0.0000, status: 'Moderate' },
+  { district: 'KUNDIL SHANTI NAGAR PWSS', zone: 'Tinsukia District', validSchemes: 1, usableCalls: 7,  bsi: 0.5400, quality: 0.7500, quantity: 1.5000, daily: 0.3214, satisfaction: 0.1250, status: 'Moderate' },
+  { district: 'AJOKHA GAON PWSS',         zone: 'Tinsukia District', validSchemes: 1, usableCalls: 11, bsi: 0.4940, quality: 1.0714, quantity: 0.7500, daily: 0.2727, satisfaction: 0.0000, status: 'Moderate' },
+  { district: 'DOOM PATHAR PWSS',         zone: 'Tinsukia District', validSchemes: 1, usableCalls: 8,  bsi: 0.3500, quality: 0.7500, quantity: 0.7500, daily: 0.0000, satisfaction: 0.2500, status: 'Critical'  },
 ]
 
 export const REPEAT_CALLERS_P1 = [
@@ -87,7 +88,7 @@ export const KPI_HEADLINE_P2 = {
   totalCalls: 480,
   stateBSI: 0.6320,
   satisfied: 56.52,
-  functionalSchemes: 25.0,
+  functionalSchemes: 0.0,   // DIRAKMUKH only valid scheme; Q1=16.7% → not functional
   consentRate: 19.2,
   completedSurvey: 23,
 }
@@ -115,8 +116,8 @@ export const Q5_SPLIT_P2 = {
 }
 
 export const SCHEME_COVERAGE_P2 = {
-  total: 1053, valid: 3, validPct: 0.3, flagged: 18, flaggedPct: 1.7,
-  noData: 1032, noDataPct: 97.9, functional: 1, nonFunctional: 2, functionalRate: 33.3, minThreshold: 6,
+  total: 1053, valid: 1, validPct: 0.1, flagged: 19, flaggedPct: 1.8,
+  noData: 1033, noDataPct: 98.1, functional: 0, nonFunctional: 1, functionalRate: 0.0, minThreshold: 6,
 }
 
 export const ZONE_SCORES_P2 = [
@@ -124,9 +125,10 @@ export const ZONE_SCORES_P2 = [
   { zone: 'Assam (State)',     usableCalls: 60,  bsi: 0.6320, quality: 1.2273, quantity: 0.8750, daily: 0.1750, satisfaction: 0.2826, status: 'Moderate' },
 ]
 
+// Phase 2 only: DARA GAON (3 usable) and POWAI (2 usable) do NOT reach ≥6 in Phase 2 alone
+// Their 6 usable calls are split across both phases → only valid in Full Campaign
+// DIRAKMUKH is the sole valid Phase 2 scheme (all 6 usable calls are May 2026)
 export const DISTRICT_SCORES_P2 = [
-  { district: 'DARA GAON PWSS',   zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6,  bsi: 0.8340, quality: 1.5000, quantity: 1.1250, daily: 0.7500, satisfaction: 0.5000, status: 'Good'     },
-  { district: 'POWAI T.E. PWSS',  zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6,  bsi: 0.7240, quality: 0.7500, quantity: 1.5000, daily: 0.3750, satisfaction: 0.5000, status: 'Good'     },
   { district: 'DIRAKMUKH N.C. PWSS', zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6, bsi: 0.6000, quality: 1.5000, quantity: 0.3750, daily: 0.1250, satisfaction: 0.2500, status: 'Moderate' },
 ]
 
