@@ -20,7 +20,7 @@ export const CALL_SUMMARY_P1 = [
   { group: '└  Consented (said YES)',      count: 99,   pct: 30.4,  note: 'Person picked up and agreed to participate' },
   { group: '└  Did NOT consent',           count: 227,  pct: 69.6,  note: 'Person refused, hung up, or no response recorded' },
   { group: 'Usable calls (answered Q1)',   count: 71,   pct: 21.8,  note: 'Answered Q1 · ALL Score computation uses this group' },
-  { group: '└  Completed all 5 questions', count: 24,   pct: 7.4,   note: 'Answered Q1 through Q5 · richest data' },
+  { group: '└  Completed all 5 questions', count: 20,   pct: 6.1,   note: 'Answered Q1, Q2, Q3 and Q5' },
 ]
 
 export const CALL_SUMMARY_NOTE_P1 = 'Phase 1 Tinsukia: 326 calls made in April 2026. Consent rate (30.4%) was above state average (27.4%). 71 usable calls formed the Score base.'
@@ -98,7 +98,7 @@ export const CALL_SUMMARY_P2 = [
   { group: '└  Consented (said YES)',      count: 92,   pct: 19.2,  note: 'Person picked up and agreed to participate' },
   { group: '└  Did NOT consent',           count: 388,  pct: 80.8,  note: 'Person refused, hung up, or no response recorded' },
   { group: 'Usable calls (answered Q1)',   count: 60,   pct: 12.5,  note: 'Answered Q1 · ALL Score computation uses this group' },
-  { group: '└  Completed all 5 questions', count: 20,   pct: 4.2,   note: 'Answered Q1 through Q5' },
+  { group: '└  Completed all 5 questions', count: 16,   pct: 3.3,   note: 'Answered Q1, Q2, Q3 and Q5' },
 ]
 
 export const CALL_SUMMARY_NOTE_P2 = 'Phase 2 Tinsukia: 480 calls made in May 2026. Score improved to 3.16/5 from 2.93/5 in Phase 1 — the strongest district improvement in the state.'
@@ -171,7 +171,7 @@ export const CALL_SUMMARY = [
   { group: '└  Consented (said YES)',      count: 191,  pct: 23.7,  note: 'Person picked up and agreed to participate' },
   { group: '└  Did NOT consent',           count: 615,  pct: 76.3,  note: 'Person refused, hung up, or no response recorded' },
   { group: 'Usable calls (answered Q1)',   count: 131,  pct: 16.3,  note: 'Answered Q1 · ALL Score computation uses this group' },
-  { group: '└  Completed all 5 questions', count: 44,   pct: 5.5,   note: 'Answered Q1 through Q5 · richest data' },
+  { group: '└  Completed all 5 questions', count: 36,   pct: 4.5,   note: 'Answered Q1, Q2, Q3 and Q5' },
 ]
 
 export const CALL_SUMMARY_NOTE = 'Full Campaign Tinsukia: Phase 1 (326) + Phase 2 (480) = 806 total calls. Score rose from 2.93/5 (Phase 1) to 3.16/5 (Phase 2), the highest improvement of any Assam district.'
@@ -189,8 +189,8 @@ export const Q5_SPLIT = {
 }
 
 export const SCHEME_COVERAGE = {
-  total: 1053, valid: 8, validPct: 0.8, flagged: 52, flaggedPct: 4.9,
-  noData: 993, noDataPct: 94.3, functional: 3, nonFunctional: 5, functionalRate: 37.5, minThreshold: 6,
+  total: 1053, valid: 8, validPct: 0.8, flagged: 27, flaggedPct: 2.6,
+  noData: 1018, noDataPct: 96.7, functional: 3, nonFunctional: 5, functionalRate: 37.5, minThreshold: 6,
 }
 
 export const ZONE_SCORES = [
@@ -198,16 +198,54 @@ export const ZONE_SCORES = [
   { zone: 'Assam (State)',     usableCalls: 131, bsi: 0.6024, quality: 1.1667, quantity: 0.9339, daily: 0.2061, satisfaction: 0.2500, status: 'Moderate' },
 ]
 
-// All 8 valid schemes (≥6 usable calls, full campaign)
+// All 41 schemes contacted in Tinsukia (Full Campaign)
+// Valid (>=6 usable) → reliable score | Flagged (1-5 usable) → indicative only | No Data → 0 usable
+// Verified from Supabase call_records, sorted: Valid by BSI desc, Flagged by usable desc, No Data last
 export const DISTRICT_SCORES = [
-  { district: 'DARA GAON PWSS',            zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6,  bsi: 0.8340, quality: 1.5000, quantity: 1.1250, daily: 0.7500, satisfaction: 0.5000, status: 'Good'     },
-  { district: 'POWAI T.E. PWSS',           zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6,  bsi: 0.7240, quality: 0.7500, quantity: 1.5000, daily: 0.3750, satisfaction: 0.5000, status: 'Good'     },
-  { district: 'GARGAON PWSS',              zone: 'Tinsukia District', validSchemes: 1, usableCalls: 11, bsi: 0.7240, quality: 1.5000, quantity: 0.9000, daily: 0.1365, satisfaction: 0.3335, status: 'Good'     },
-  { district: 'BISANI MUKH N.C. PWSS',     zone: 'Tinsukia District', validSchemes: 1, usableCalls: 11, bsi: 0.7120, quality: 1.5000, quantity: 0.7500, daily: 0.4088, satisfaction: 0.4000, status: 'Good'     },
-  { district: 'DIRAKMUKH N.C. PWSS',       zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6,  bsi: 0.6000, quality: 1.5000, quantity: 0.3750, daily: 0.1250, satisfaction: 0.2500, status: 'Moderate' },
-  { district: 'KUNDIL SHANTI NAGAR PWSS',  zone: 'Tinsukia District', validSchemes: 1, usableCalls: 9,  bsi: 0.5060, quality: 0.9000, quantity: 1.2000, daily: 0.3330, satisfaction: 0.1000, status: 'Moderate' },
-  { district: 'AJOKHA GAON PWSS',          zone: 'Tinsukia District', validSchemes: 1, usableCalls: 13, bsi: 0.4860, quality: 1.0710, quantity: 0.7500, daily: 0.2310, satisfaction: 0.0000, status: 'Moderate' },
-  { district: 'DOOM PATHAR PWSS',          zone: 'Tinsukia District', validSchemes: 1, usableCalls: 9,  bsi: 0.3500, quality: 0.7500, quantity: 0.7500, daily: 0.0000, satisfaction: 0.2500, status: 'Critical'  },
+  // ── Valid schemes (≥6 usable calls — statistically reliable) ──────────────
+  { district: 'DARA GAON PWSS',                       zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6,  bsi: 0.8350, quality: 1.5000, quantity: 1.1250, daily: 0.7500, satisfaction: 0.5000, status: 'Good'     },
+  { district: 'GARGAON PWSS',                         zone: 'Tinsukia District', validSchemes: 1, usableCalls: 11, bsi: 0.7239, quality: 1.5000, quantity: 0.9000, daily: 0.1364, satisfaction: 0.3333, status: 'Good'     },
+  { district: 'POWAI T.E. PWSS',                      zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6,  bsi: 0.7250, quality: 0.7500, quantity: 1.5000, daily: 0.3750, satisfaction: 0.5000, status: 'Good'     },
+  { district: 'BISANI MUKH N.C. PWSS',                zone: 'Tinsukia District', validSchemes: 1, usableCalls: 11, bsi: 0.7118, quality: 1.5000, quantity: 0.7500, daily: 0.4091, satisfaction: 0.4000, status: 'Good'     },
+  { district: 'DIRAKMUKH N.C. PWSS',                  zone: 'Tinsukia District', validSchemes: 1, usableCalls: 6,  bsi: 0.6000, quality: 1.5000, quantity: 0.3750, daily: 0.1250, satisfaction: 0.2500, status: 'Moderate' },
+  { district: 'KUNDIL SHANTI NAGAR PWSS',             zone: 'Tinsukia District', validSchemes: 1, usableCalls: 9,  bsi: 0.5067, quality: 0.9000, quantity: 1.2000, daily: 0.3333, satisfaction: 0.1000, status: 'Moderate' },
+  { district: 'AJOKHA GAON PWSS',                     zone: 'Tinsukia District', validSchemes: 1, usableCalls: 13, bsi: 0.4854, quality: 1.0714, quantity: 0.7500, daily: 0.2308, satisfaction: 0.0000, status: 'Moderate' },
+  { district: 'DOOM PATHAR PWSS',                     zone: 'Tinsukia District', validSchemes: 1, usableCalls: 9,  bsi: 0.3500, quality: 0.7500, quantity: 0.7500, daily: 0.0000, satisfaction: 0.2500, status: 'Critical'  },
+  // ── Flagged schemes (1–5 usable calls — indicative, small sample) ─────────
+  { district: 'MONMOW GAON PWSS',                     zone: 'Tinsukia District', validSchemes: 1, usableCalls: 5,  bsi: 0.6850, quality: 0.7500, quantity: 1.5000, daily: 0.3000, satisfaction: 0.5000, status: 'Flagged'  },
+  { district: 'SINGSI GAON PWSS',                     zone: 'Tinsukia District', validSchemes: 1, usableCalls: 5,  bsi: 0.3300, quality: 1.5000, quantity: 0.0000, daily: 0.1500, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'CHITPANI CHUCK PWSS',                  zone: 'Tinsukia District', validSchemes: 1, usableCalls: 4,  bsi: 0.3000, quality: 1.5000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'X COLONY PWSS',                        zone: 'Tinsukia District', validSchemes: 1, usableCalls: 4,  bsi: 0.0375, quality: 0.0000, quantity: 0.0000, daily: 0.1875, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: '1 NO BOIRAGI MATH PWSS',               zone: 'Tinsukia District', validSchemes: 1, usableCalls: 4,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'TONGANI SONJAN N.C PWSS',              zone: 'Tinsukia District', validSchemes: 1, usableCalls: 3,  bsi: 0.5500, quality: 0.0000, quantity: 1.5000, daily: 0.5000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'NATARANI PWSS',                        zone: 'Tinsukia District', validSchemes: 1, usableCalls: 3,  bsi: 0.4000, quality: 0.0000, quantity: 0.7500, daily: 0.2500, satisfaction: 0.2500, status: 'Flagged'  },
+  { district: 'NAMPHAI FOREST PWSS',                  zone: 'Tinsukia District', validSchemes: 1, usableCalls: 3,  bsi: 0.2500, quality: 0.0000, quantity: 0.7500, daily: 0.0000, satisfaction: 0.5000, status: 'Flagged'  },
+  { district: 'MAYAJAN PWSS',                         zone: 'Tinsukia District', validSchemes: 1, usableCalls: 3,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'HAHSARA T.E. 79-538 GT. PWSS',         zone: 'Tinsukia District', validSchemes: 1, usableCalls: 3,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'PATIDOI NAGAON PWSS',                  zone: 'Tinsukia District', validSchemes: 1, usableCalls: 2,  bsi: 1.0000, quality: 1.5000, quantity: 1.5000, daily: 0.7500, satisfaction: 0.5000, status: 'Flagged'  },
+  { district: 'CHAPAKHOWA ASSAMIYA PWSS',             zone: 'Tinsukia District', validSchemes: 1, usableCalls: 2,  bsi: 0.7250, quality: 1.5000, quantity: 1.5000, daily: 0.3750, satisfaction: 0.2500, status: 'Flagged'  },
+  { district: 'MORGI KONA PWSS',                      zone: 'Tinsukia District', validSchemes: 1, usableCalls: 2,  bsi: 0.3000, quality: 1.5000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'LAKHYAPUR PWSS',                       zone: 'Tinsukia District', validSchemes: 1, usableCalls: 2,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'NAHARBARI NO 2 PWSS',                  zone: 'Tinsukia District', validSchemes: 1, usableCalls: 2,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'PURANA LINE PWSS',                     zone: 'Tinsukia District', validSchemes: 1, usableCalls: 2,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'ANANDA BAG TE PWSS',                   zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.6000, quality: 1.5000, quantity: 1.5000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'BORHOLLONG NAGAON NO 3 PWSS',          zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.6000, quality: 1.5000, quantity: 1.5000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'NA-BORMURA N.C.NO.3 PWSS',             zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.3000, quality: 0.0000, quantity: 1.5000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'BOR DHONIA PWSS',                      zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.1000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.5000, status: 'Flagged'  },
+  { district: 'LONSOWAL T.E. 429-192 NLR PWSS',       zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'DUWARMARA PATHER. PWSS',               zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'BORDUBI T.E. WL-1 -BASTI LINE PWSS',   zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'KOOMSANG T.E.NO 308 L-13 PWSS',        zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'RATANPUR PWSS',                        zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'TARIBARI PWSS ( BURABURI )',            zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  { district: 'SARU MECHAI NO-3 PWSS',                zone: 'Tinsukia District', validSchemes: 1, usableCalls: 1,  bsi: 0.0000, quality: 0.0000, quantity: 0.0000, daily: 0.0000, satisfaction: 0.0000, status: 'Flagged'  },
+  // ── No Data (0 usable calls — called but no Q1 response) ──────────────────
+  { district: 'MAHAKALI TE 328 NLR NO 2 PWSS',        zone: 'Tinsukia District', validSchemes: 1, usableCalls: 0,  bsi: 0.0000, quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data'  },
+  { district: 'ANANDA BAG TE NO. 1 LABOUR LINE PWSS', zone: 'Tinsukia District', validSchemes: 1, usableCalls: 0,  bsi: 0.0000, quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data'  },
+  { district: 'KHRISTIAN GOHAIN PWSS',                zone: 'Tinsukia District', validSchemes: 1, usableCalls: 0,  bsi: 0.0000, quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data'  },
+  { district: 'BAGAN CHUCK. PWSS',                    zone: 'Tinsukia District', validSchemes: 1, usableCalls: 0,  bsi: 0.0000, quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data'  },
+  { district: 'GUTI BARI. PWSS',                      zone: 'Tinsukia District', validSchemes: 1, usableCalls: 0,  bsi: 0.0000, quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data'  },
+  { district: '2 NO KHOBANG TE 105 PWSS',             zone: 'Tinsukia District', validSchemes: 1, usableCalls: 0,  bsi: 0.0000, quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data'  },
 ]
 
 export const REPEAT_CALLERS = [
