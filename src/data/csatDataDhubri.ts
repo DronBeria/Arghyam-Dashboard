@@ -41,9 +41,11 @@ export const SCHEME_COVERAGE = {
   surveyed: 200,  // 48 reliable + 152 limited data (1-5 usable)
 }
 
+// usableCalls=407 = calls from valid (>=6) schemes — basis for BSI computation
+// (791 = total Q1-answered for district, shown separately in KPI strip)
 export const ZONE_SCORES = [
-  { zone: 'Dhubri District', usableCalls: 791, bsi: 0.6609, quality: 1.2882, quantity: 1.0225, daily: 0.2598, satisfaction: 0.3113, status: 'Moderate' },
-  { zone: 'Assam (State)',   usableCalls: 791, bsi: 0.6609, quality: 1.2882, quantity: 1.0225, daily: 0.2598, satisfaction: 0.3113, status: 'Moderate' },
+  { zone: 'Dhubri District', usableCalls: 407, bsi: 0.6500, quality: 1.2666, quantity: 1.0422, daily: 0.2598, satisfaction: 0.3167, status: 'Moderate' },
+  { zone: 'Assam (State)',   usableCalls: 407, bsi: 0.6500, quality: 1.2666, quantity: 1.0422, daily: 0.2598, satisfaction: 0.3167, status: 'Moderate' },
 ]
 
 // All 253 Dhubri schemes contacted · Valid(>=6):48 · Flagged(1-5):152 · No data(0):53

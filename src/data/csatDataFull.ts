@@ -68,7 +68,7 @@ export const DISTRICT_SCORES = [
   { district: 'Barpeta',                 zone: 'Lower Assam',  validSchemes: 61,  usableCalls: 561,  bsi: 0.5463, quality: 1.0570, quantity: 0.8755, satisfaction: 0.2617, status: 'Moderate' },
   { district: 'Bongaigaon',              zone: 'Lower Assam',  validSchemes: 4,   usableCalls: 29,   bsi: 0.3534, quality: 0.7888, quantity: 0.4009, satisfaction: 0.0690, status: 'Critical' },
   { district: 'Darrang',                 zone: 'Lower Assam',  validSchemes: 9,   usableCalls: 115,  bsi: 0.5344, quality: 0.9530, quantity: 0.9980, satisfaction: 0.2402, status: 'Moderate' },
-  { district: 'Dhubri',                  zone: 'Lower Assam',  validSchemes: 47,  usableCalls: 405,  bsi: 0.6609, quality: 1.2882, quantity: 1.0225, satisfaction: 0.3251, status: 'Moderate' },
+  { district: 'Dhubri',                  zone: 'Lower Assam',  validSchemes: 48,  usableCalls: 407,  bsi: 0.6500, quality: 1.2666, quantity: 1.0422, satisfaction: 0.3167, status: 'Moderate' },
   { district: 'Goalpara',                zone: 'Lower Assam',  validSchemes: 68,  usableCalls: 539,  bsi: 0.5376, quality: 1.0345, quantity: 0.8416, satisfaction: 0.2345, status: 'Moderate' },
   { district: 'Kamrup',                  zone: 'Lower Assam',  validSchemes: 45,  usableCalls: 383,  bsi: 0.5332, quality: 1.0858, quantity: 0.8448, satisfaction: 0.2336, status: 'Moderate' },
   { district: 'Nalbari',                 zone: 'Lower Assam',  validSchemes: 12,  usableCalls: 106,  bsi: 0.4655, quality: 0.8118, quantity: 0.9232, satisfaction: 0.1693, status: 'Moderate' },
