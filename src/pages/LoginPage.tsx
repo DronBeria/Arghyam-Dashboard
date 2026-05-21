@@ -9,7 +9,7 @@ const STATS = [
 ]
 
 type Mode = 'signin' | 'signup'
-type Workspace = 'main' | 'tinsukia'
+type Workspace = 'main' | 'dhubri'
 
 export function LoginPage() {
   const [mode, setMode]           = useState<Mode>('signin')
@@ -249,13 +249,13 @@ export function LoginPage() {
                 <button
                   type="button"
                   disabled={loading}
-                  onClick={() => handleSignIn('tinsukia')}
+                  onClick={() => handleSignIn('dhubri')}
                   className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white font-semibold
                     text-sm py-3 rounded-xl transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2"
                 >
-                  {loadingWs === 'tinsukia'
+                  {loadingWs === 'dhubri'
                     ? <><span className="animate-spin text-base">⟳</span> Signing in…</>
-                    : <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg> Tinsukia District</>}
+                    : <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg> Dhubri District</>}
                 </button>
               </div>
             )}

@@ -216,19 +216,20 @@ export function OverviewPage() {
   }, [])
 
   // Fetch scheme names when a district is selected
+  // Uses scheme_detail (full IMIS list) to show ALL schemes, not just those with calls.
+  // This fixes the issue where call_records pagination (1000-row limit) missed many scheme names.
   useEffect(() => {
     if (!data.hasSchemeSearch || scopeType !== 'district' || !scopeValue) {
       setSchemeList([]); setSchemeFilter(''); setSchemeStats(null); return
     }
     setLoadingSchemes(true)
-    let q = supabase.from('call_records').select('scheme_name').eq('district', scopeValue)
-      .not('scheme_name', 'is', null)
-    if (data.phaseGteDate) q = (q as any).gte('call_start_time', data.phaseGteDate)
-    if (data.phaseLtDate)  q = (q as any).lt('call_start_time', data.phaseLtDate)
-    q.then(({ data: rows }) => {
-      const names = [...new Set((rows ?? []).map((r: any) => r.scheme_name as string).filter(Boolean))].sort()
-      setSchemeList(names)
-      setLoadingSchemes(false)
+    // Query scheme_detail for all IMIS schemes in this district (up to 2000 — covers all districts)
+    supabase.from('scheme_detail').select('scheme_name').eq('district', scopeValue)
+      .order('scheme_name').limit(2000)
+      .then(({ data: rows }) => {
+        const names = [...new Set((rows ?? []).map((r: any) => r.scheme_name as string).filter(Boolean))].sort()
+        setSchemeList(names)
+        setLoadingSchemes(false)
     })
   }, [scopeType, scopeValue, data.hasSchemeSearch, data.phaseGteDate, data.phaseLtDate])
 
@@ -243,7 +244,11 @@ export function OverviewPage() {
     if (phaseGte) q = q.gte('call_start_time', phaseGte)
     if (phaseLt)  q = q.lt('call_start_time', phaseLt)
     q.then(({ data }: { data: any[] | null }) => {
-        if (!data || data.length === 0) return
+        if (!data || data.length === 0) {
+          // Scheme exists in IMIS but no call records — set empty stats so UI shows "No data"
+          setSchemeStats(null)
+          return
+        }
         const lc = (v: unknown) => String(v ?? '').toLowerCase()
 
         // ── Subsets ──

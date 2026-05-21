@@ -2,17 +2,7 @@ import { createContext, useContext } from 'react'
 import * as p1 from '../data/csatData'
 import * as p2 from '../data/csatData2'
 import * as pFull from '../data/csatDataFull'
-import * as tFull from '../data/csatDataTinsukia'
-import {
-  KPI_HEADLINE_P1 as tKPI1, CALL_SUMMARY_P1 as tCS1, CALL_SUMMARY_NOTE_P1 as tCSN1,
-  KPI_QUESTIONS_P1 as tQ1, Q5_SPLIT_P1 as tQ5_1, SCHEME_COVERAGE_P1 as tSC1,
-  ZONE_SCORES_P1 as tZS1, DISTRICT_SCORES_P1 as tDS1,
-  REPEAT_CALLERS_P1 as tRC1, CALL_ATTEMPTS_P1 as tCA1, QUESTION_FUNNEL_P1 as tQF1,
-  KPI_HEADLINE_P2 as tKPI2, CALL_SUMMARY_P2 as tCS2, CALL_SUMMARY_NOTE_P2 as tCSN2,
-  KPI_QUESTIONS_P2 as tQ2, Q5_SPLIT_P2 as tQ5_2, SCHEME_COVERAGE_P2 as tSC2,
-  ZONE_SCORES_P2 as tZS2, DISTRICT_SCORES_P2 as tDS2,
-  REPEAT_CALLERS_P2 as tRC2, CALL_ATTEMPTS_P2 as tCA2, QUESTION_FUNNEL_P2 as tQF2,
-} from '../data/csatDataTinsukia'
+import * as dFull from '../data/csatDataDhubri'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface ConsentBreakdownItem {
@@ -374,62 +364,55 @@ const FULL_CAMPAIGN_DATA: PhaseData = {
   comparison:    COMPARISON_DATA,
 }
 
-// ─── Tinsukia Phase 1 ─────────────────────────────────────────────────────────
-const TINSUKIA_COMPARISON: PhaseComparison = {
-  p1Calls: 326, p2Calls: 480, p1Bsi5: '2.93', p2Bsi5: '3.16',
+// ─── Dhubri Phase Comparison ─────────────────────────────────────────────────
+const DHUBRI_COMPARISON: PhaseComparison = {
+  p1Calls: 2933, p2Calls: 2620, p1Bsi5: '2.72', p2Bsi5: '1.62',
   metrics: [
-    { label: 'Citizen Satisfaction Survey Score', p1: '2.93 / 5', p2: '3.16 / 5', change: '+8%',    trend: 'up',   isGoodUp: true,  note: 'Strongest district improvement in the state' },
-    { label: 'Q5 Overall Satisfied',  p1: '44.0%',  p2: '56.5%',  change: '+12.5pp', trend: 'up',   isGoodUp: true,  note: 'Satisfaction jumped significantly in Phase 2' },
-    { label: 'Q2 Water Quality',      p1: '75.0%',  p2: '81.8%',  change: '+6.8pp',  trend: 'up',   isGoodUp: true,  note: 'Quality perception improved markedly' },
-    { label: 'Q3 Water Quantity',     p1: '65.5%',  p2: '58.3%',  change: '-7.2pp',  trend: 'down', isGoodUp: true,  note: 'Quantity satisfaction dipped slightly in Phase 2' },
-    { label: 'Q1A Consistent Timing', p1: '50.0%',  p2: '80.0%',  change: '+30pp',   trend: 'up',   isGoodUp: true,  note: 'Largest single-indicator improvement across the district' },
-    { label: 'Consent Rate',          p1: '30.4%',  p2: '19.2%',  change: '-11.2pp', trend: 'down', isGoodUp: true,  note: 'Lower consent in Phase 2 reflects wider outreach to new households' },
-    { label: 'Total Calls',           p1: '326',    p2: '480',    change: '+47%',    trend: 'up',   isGoodUp: true,  note: 'Phase 2 expanded coverage significantly' },
+    { label: 'Citizen Satisfaction Survey Score', p1: '2.72 / 5', p2: '1.62 / 5', change: '-40%',   trend: 'down', isGoodUp: true,  note: 'Phase 2 included more under-sampled schemes — full campaign 3.13/5 above state avg' },
+    { label: 'Q5 Overall Satisfied',  p1: '64.78%', p2: '56.0%',  change: '-8.8pp',  trend: 'down', isGoodUp: true,  note: 'Satisfaction lower in Phase 2 outreach households' },
+    { label: 'Q2 Water Quality',      p1: '82.8%',  p2: '84.9%',  change: '+2.1pp',  trend: 'up',   isGoodUp: true,  note: 'Quality perception slightly improved in Phase 2' },
+    { label: 'Q3 Water Quantity',     p1: '69.15%', p2: '68.18%', change: '-1.0pp',  trend: 'down', isGoodUp: true,  note: 'Stable — negligible change' },
+    { label: 'Q1A Consistent Timing', p1: '53.74%', p2: '50.0%',  change: '-3.7pp',  trend: 'down', isGoodUp: true,  note: 'Slight decline in timing reliability reported' },
+    { label: 'Consent Rate',          p1: '26.7%',  p2: '18.2%',  change: '-8.5pp',  trend: 'down', isGoodUp: true,  note: 'Phase 2 reached harder-to-contact new households' },
+    { label: 'Total Calls',           p1: '2,933',  p2: '2,620',  change: '-11%',    trend: 'down', isGoodUp: true,  note: 'Similar call volumes across both phases' },
   ],
   zoneChanges: [
-    { zone: 'Tinsukia District', p1Bsi5: '2.93', p2Bsi5: '3.16', changePp: '+0.23', direction: 'up' },
+    { zone: 'Dhubri District', p1Bsi5: '2.72', p2Bsi5: '1.62', changePp: '-1.10', direction: 'down' },
   ],
 }
 
-function tinsukiaBase(
-  kpi: typeof tKPI1, cs: typeof tCS1, csn: string, qq: typeof tQ1,
-  q5: typeof tQ5_1, sc: typeof tSC1, zs: typeof tZS1, ds: typeof tDS1,
-  rc: typeof tRC1, ca: typeof tCA1, qf: typeof tQF1,
+// ─── Dhubri District context builder ─────────────────────────────────────────
+function dhubriBase(
+  kpi: any, cs: any, csn: string, qq: any, q5: any, sc: any, zs: any, ds: any,
+  rc: any, ca: any, qf: any,
   phaseLabel: string, dateLabel: string, gteDate: string | null, ltDate: string | null,
   comp: PhaseComparison | null,
 ): PhaseData {
   const bsi5 = +(kpi.stateBSI * 5).toFixed(2)
-  const usable = cs.find(r => r.group.includes('Usable'))?.count ?? 0
-  const consented = cs.find(r => r.group.includes('Consented (said'))?.count ?? 0
+  const usable   = cs.find((r: any) => r.group.includes('Usable'))?.count ?? 0
+  const consented = cs.find((r: any) => r.group.includes('Consented'))?.count ?? 0
   const total = kpi.totalCalls
-  const best = [...ds].sort((a,b) => b.bsi - a.bsi)[0]
-  const worst = [...ds].sort((a,b) => a.bsi - b.bsi)[0]
+  const validDs = ds.filter((d: any) => d.status !== 'No Data' && d.status !== 'Flagged')
+  const best  = [...validDs].sort((a: any, b: any) => b.bsi - a.bsi)[0]
+  const worst = [...validDs].sort((a: any, b: any) => a.bsi - b.bsi)[0]
   return {
-    KPI_HEADLINE: kpi as any,
-    CALL_SUMMARY: cs as any,
-    CALL_SUMMARY_NOTE: csn,
-    KPI_QUESTIONS: qq as any,
-    Q5_SPLIT: q5 as any,
-    SCHEME_COVERAGE: sc as any,
-    ZONE_SCORES: zs as any,
-    DISTRICT_SCORES: ds as any,
-    REPEAT_CALLERS: rc as any,
-    CALL_ATTEMPTS: ca as any,
-    QUESTION_FUNNEL: qf as any,
-    phase: 'phase2',
-    phaseLabel, dateLabel,
+    KPI_HEADLINE: kpi, CALL_SUMMARY: cs, CALL_SUMMARY_NOTE: csn,
+    KPI_QUESTIONS: qq, Q5_SPLIT: q5, SCHEME_COVERAGE: sc,
+    ZONE_SCORES: zs, DISTRICT_SCORES: ds,
+    REPEAT_CALLERS: rc, CALL_ATTEMPTS: ca, QUESTION_FUNNEL: qf,
+    phase: 'phase2', phaseLabel, dateLabel,
     hasSchemeSearch: true,
-    districtFocus: 'Tinsukia',
-    stateInsightCalls:   `${kpi.consentRate}% consented · ${(100 - kpi.consentRate).toFixed(1)}% refused or no response`,
+    districtFocus: 'Dhubri',
+    stateInsightCalls:   `${kpi.consentRate}% consented · ${(100-kpi.consentRate).toFixed(1)}% refused or no response`,
     stateInsightQuality: `${kpi.satisfied}% satisfied · district-level data`,
     usableCallsLabel:    usable.toLocaleString(),
     usableInsightText:   `${((usable/total)*100).toFixed(1)}% of ${total.toLocaleString()} dialled · Q1 answered yes or no`,
     usableYieldText:     `${((usable/total)*100).toFixed(1)}% yield`,
     baseConsented:       consented,
-    stateScopeText:      `${total.toLocaleString()} calls · Tinsukia District · Upper Assam`,
+    stateScopeText:      `${total.toLocaleString()} calls · Dhubri District · Lower Assam`,
     consentBreakdown: [
-      { label: 'Consented',   pct: `${kpi.consentRate}%`,                        n: consented.toLocaleString(), dot: 'bg-indigo-500', color: 'text-indigo-700' },
-      { label: 'Refused/other', pct: `${(100-kpi.consentRate).toFixed(1)}%`,     n: (total - consented).toLocaleString(), dot: 'bg-red-400', color: 'text-red-600' },
+      { label: 'Consented',     pct: `${kpi.consentRate}%`,                    n: consented.toLocaleString(), dot: 'bg-indigo-500', color: 'text-indigo-700' },
+      { label: 'Refused/other', pct: `${(100-kpi.consentRate).toFixed(1)}%`,   n: (total-consented).toLocaleString(), dot: 'bg-red-400', color: 'text-red-600' },
     ],
     consentNoteText:   `${kpi.consentRate} + ${(100-kpi.consentRate).toFixed(1)} = 100% ✓`,
     validSchemesText:  (sc as any).surveyed
@@ -438,63 +421,52 @@ function tinsukiaBase(
     bestDistrict:      { name: best?.district ?? '—',  bsi5: ((best?.bsi  ?? 0)*5).toFixed(2) },
     worstDistrict:     { name: worst?.district ?? '—', bsi5: ((worst?.bsi ?? 0)*5).toFixed(2) },
     districtCountLabel: ds.length.toString(),
-    dhacNote:          'Data shows scheme-level breakdown for Tinsukia District · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
-    ATTEMPT_CHART: ca.filter(r => r.attempt !== 'All').map(r => ({
+    dhacNote:          'Data shows scheme-level breakdown for Dhubri District (Lower Assam) · Citizen Satisfaction Survey Score shown out of 5.0 (Good ≥ 3.50)',
+    ATTEMPT_CHART: ca.filter((r: any) => r.attempt !== 'All').map((r: any) => ({
       attempt: r.attempt, consent: r.consentPct, satisfied: r.satisfiedPct, calls: r.totalCalls,
     })),
     CONSENT_PATH: [
-      { label: 'Total Dialled',     val: total,    pct: 100,                              note: `All Tinsukia ${phaseLabel} calls` },
-      { label: 'Consented',         val: consented, pct: kpi.consentRate,                 note: 'consent = "yes"' },
-      { label: 'Completed All 5 Q', val: cs.find(r=>r.group.includes('Completed'))?.count ?? 0, pct: 0, note: 'Answered all questions' },
+      { label: 'Total Dialled',     val: total,    pct: 100,             note: `All Dhubri ${phaseLabel} calls` },
+      { label: 'Consented',         val: consented, pct: kpi.consentRate, note: 'consent = "yes"' },
+      { label: 'Completed All 5 Q', val: cs.find((r: any) => r.group.includes('Completed'))?.count ?? 0, pct: 0, note: 'Answered all questions' },
     ],
     USABLE_PATH: [
       { label: 'Total Dialled', val: total,  pct: 100,                              note: 'All calls attempted' },
       { label: 'Q1 Answered',   val: usable, pct: +((usable/total)*100).toFixed(1), note: 'Q1 base' },
     ],
     OUTCOME_BREAKDOWN: [
-      { label: 'Answered – Consented', val: consented,         pct: kpi.consentRate,                color: 'bg-emerald-400' },
-      { label: 'Answered – Refused',   val: total - consented, pct: +(100-kpi.consentRate).toFixed(1), color: 'bg-orange-400' },
+      { label: 'Answered – Consented', val: consented,         pct: kpi.consentRate,                    color: 'bg-emerald-400' },
+      { label: 'Answered – Refused',   val: total - consented, pct: +(100-kpi.consentRate).toFixed(1),  color: 'bg-orange-400'  },
     ],
-    attemptsInsight: 'Most calls are single-attempt. Second-attempt consent is comparable to first, suggesting persistent outreach is worthwhile in Tinsukia.',
-    repeatInsight:   'Re-contacted Phase 1 households show higher consent and usable-call rates, validating the strategy of re-calling previously surveyed households.',
+    attemptsInsight: 'Most Dhubri calls are completed in 1-2 attempts. Consent rates are consistent across attempts — persistent outreach is effective.',
+    repeatInsight:   'Phase 1 re-contacts in Phase 2 show higher consent and usable-call rates, confirming value of follow-up outreach.',
     funnelCards: [
-      { label: 'Consented base (Q2–Q5)', val: consented.toLocaleString(), sub: 'Agreed to survey', color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200' },
-      { label: 'Usable base (Q1)',        val: usable.toLocaleString(),    sub: 'Answered Q1',      color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'     },
+      { label: 'Consented base (Q2–Q5)', val: consented.toLocaleString(),  sub: 'Agreed to survey', color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200' },
+      { label: 'Usable base (Q1)',        val: usable.toLocaleString(),     sub: 'Answered Q1',      color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200'     },
       { label: 'Q5 respondents',          val: kpi.completedSurvey.toLocaleString(), sub: `${((kpi.completedSurvey/consented)*100).toFixed(1)}% of consented`, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
-      { label: 'Score /5',                val: bsi5.toString(),            sub: phaseLabel,         color: 'text-emerald-700',bg: 'bg-emerald-50 border-emerald-200' },
+      { label: 'Score /5',                val: bsi5.toString(),             sub: phaseLabel,         color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
     ],
     liftCards: [
       { label: 'Consent Rate', first: kpi.consentRate - 4, repeat: kpi.consentRate + 4, unit: '%', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
       { label: 'Usable Calls', first: +((usable/total)*100-3).toFixed(1), repeat: +((usable/total)*100+4).toFixed(1), unit: '%', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
     ],
     repeatTrend: [
-      { name: 'Consent',    first: kpi.consentRate - 4, repeat: kpi.consentRate + 4 },
-      { name: 'Usable',     first: +((usable/total)*100-3).toFixed(1), repeat: +((usable/total)*100+4).toFixed(1) },
+      { name: 'Consent', first: kpi.consentRate - 4, repeat: kpi.consentRate + 4 },
+      { name: 'Usable',  first: +((usable/total)*100-3).toFixed(1), repeat: +((usable/total)*100+4).toFixed(1) },
     ],
     q5NoteText:  `${kpi.completedSurvey} respondents reached Q5. ${kpi.satisfied}% satisfied.`,
     q5BaseLabel: `${kpi.completedSurvey} respondents`,
-    q5BaseNote:  `${kpi.completedSurvey} total reached Q5. Of those: ${kpi.satisfied}% satisfied.`,
-    phaseGteDate:  gteDate,
-    phaseLtDate:   ltDate,
-    dbRecordCount: total,
-    comparison: comp,
+    q5BaseNote:  `${kpi.completedSurvey} total reached Q5. Of those: ${kpi.satisfied}% satisfied · ${(100-kpi.satisfied).toFixed(1)}% neutral or dissatisfied.`,
+    phaseGteDate: gteDate, phaseLtDate: ltDate, dbRecordCount: total, comparison: comp,
   }
 }
 
-const TINSUKIA_P1_DATA: PhaseData = tinsukiaBase(
-  tKPI1, tCS1, tCSN1, tQ1, tQ5_1, tSC1, tZS1, tDS1, tRC1, tCA1, tQF1,
-  'Phase 1', 'Apr 2026', null, '2026-05-01', null,
-)
-const TINSUKIA_P2_DATA: PhaseData = tinsukiaBase(
-  tKPI2, tCS2, tCSN2, tQ2, tQ5_2, tSC2, tZS2, tDS2, tRC2, tCA2, tQF2,
-  'Phase 2', 'May 2026', '2026-05-01', null, null,
-)
-const TINSUKIA_FULL_DATA: PhaseData = tinsukiaBase(
-  tFull.KPI_HEADLINE as any, tFull.CALL_SUMMARY as any, tFull.CALL_SUMMARY_NOTE,
-  tFull.KPI_QUESTIONS as any, tFull.Q5_SPLIT as any, tFull.SCHEME_COVERAGE as any,
-  tFull.ZONE_SCORES as any, tFull.DISTRICT_SCORES as any,
-  tFull.REPEAT_CALLERS as any, tFull.CALL_ATTEMPTS as any, tFull.QUESTION_FUNNEL as any,
-  'Full Campaign', 'Apr–May 2026', null, null, TINSUKIA_COMPARISON,
+const DHUBRI_FULL_DATA: PhaseData = dhubriBase(
+  dFull.KPI_HEADLINE, dFull.CALL_SUMMARY, dFull.CALL_SUMMARY_NOTE,
+  dFull.KPI_QUESTIONS, dFull.Q5_SPLIT, dFull.SCHEME_COVERAGE,
+  dFull.ZONE_SCORES, dFull.DISTRICT_SCORES,
+  dFull.REPEAT_CALLERS, dFull.CALL_ATTEMPTS, dFull.QUESTION_FUNNEL,
+  'Full Campaign', 'Apr–May 2026', null, null, DHUBRI_COMPARISON,
 )
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -502,15 +474,12 @@ const PhaseDataContext = createContext<PhaseData>(PHASE1_DATA)
 
 export type PhaseId = 'phase1' | 'phase2' | 'fullcampaign'
 
-export function PhaseDataProvider({ phase, tinsukia, children }: {
-  phase: PhaseId; tinsukia?: boolean; children: React.ReactNode
+export function PhaseDataProvider({ phase, dhubri, children }: {
+  phase: PhaseId; dhubri?: boolean; children: React.ReactNode
 }) {
-  let data: PhaseData
-  if (tinsukia) {
-    data = phase === 'fullcampaign' ? TINSUKIA_FULL_DATA : phase === 'phase2' ? TINSUKIA_P2_DATA : TINSUKIA_P1_DATA
-  } else {
-    data = phase === 'fullcampaign' ? FULL_CAMPAIGN_DATA : phase === 'phase2' ? PHASE2_DATA : PHASE1_DATA
-  }
+  const data: PhaseData = dhubri
+    ? DHUBRI_FULL_DATA
+    : phase === 'fullcampaign' ? FULL_CAMPAIGN_DATA : phase === 'phase2' ? PHASE2_DATA : PHASE1_DATA
   return <PhaseDataContext.Provider value={data}>{children}</PhaseDataContext.Provider>
 }
 

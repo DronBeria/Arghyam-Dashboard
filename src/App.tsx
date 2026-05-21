@@ -14,7 +14,7 @@ import { GeographicPage } from './pages/GeographicPage'
 import { ComparisonPage } from './pages/ComparisonPage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Workspace = 'main' | 'tinsukia'
+type Workspace = 'main' | 'dhubri'
 type PageId = 'overview' | 'calls' | 'records' | 'survey' | 'schemes' | 'geographic' | 'comparison'
 
 interface NavItem {
@@ -105,7 +105,7 @@ export default function App() {
   }
 
   function switchWorkspace() {
-    const next: Workspace = workspace === 'tinsukia' ? 'main' : 'tinsukia'
+    const next: Workspace = workspace === 'dhubri' ? 'main' : 'dhubri'
     selectWorkspace(next)
   }
 
@@ -193,15 +193,15 @@ export default function App() {
         <div className={`flex items-center h-14 border-b border-white/[0.06] flex-shrink-0 ${sidebarOpen ? 'px-4 gap-3' : 'justify-center'}`}>
           {sidebarOpen ? (
             <>
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${workspace === 'tinsukia' ? 'bg-amber-500' : 'bg-blue-500'}`}>
-                <span className="text-white text-xs font-black">{workspace === 'tinsukia' ? 'T' : 'A'}</span>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${workspace === 'dhubri' ? 'bg-amber-500' : 'bg-blue-500'}`}>
+                <span className="text-white text-xs font-black">{workspace === 'dhubri' ? 'T' : 'A'}</span>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-bold text-white leading-none">
-                  {workspace === 'tinsukia' ? 'Tinsukia' : 'Arghyam'}
+                  {workspace === 'dhubri' ? 'Dhubri' : 'Arghyam'}
                 </p>
                 <p className="text-[9px] text-slate-500 mt-0.5 font-medium tracking-widest uppercase">
-                  {workspace === 'tinsukia' ? 'District · CSAT AI' : 'JJM · CSAT AI'}
+                  {workspace === 'dhubri' ? 'District · CSAT AI' : 'JJM · CSAT AI'}
                 </p>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="text-slate-600 hover:text-slate-300 transition-colors p-1 flex-shrink-0">
@@ -209,8 +209,8 @@ export default function App() {
               </button>
             </>
           ) : (
-            <button onClick={() => setSidebarOpen(true)} className={`w-7 h-7 rounded-lg flex items-center justify-center ${workspace === 'tinsukia' ? 'bg-amber-500' : 'bg-blue-500'}`}>
-              <span className="text-white text-xs font-black">{workspace === 'tinsukia' ? 'T' : 'A'}</span>
+            <button onClick={() => setSidebarOpen(true)} className={`w-7 h-7 rounded-lg flex items-center justify-center ${workspace === 'dhubri' ? 'bg-amber-500' : 'bg-blue-500'}`}>
+              <span className="text-white text-xs font-black">{workspace === 'dhubri' ? 'T' : 'A'}</span>
             </button>
           )}
         </div>
@@ -278,18 +278,18 @@ export default function App() {
           {sidebarOpen ? (
             <button onClick={switchWorkspace}
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-white/[0.06] transition-colors group">
-              <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${workspace === 'tinsukia' ? 'bg-blue-600/20' : 'bg-amber-600/20'}`}>
-                <svg className={`w-3 h-3 ${workspace === 'tinsukia' ? 'text-blue-400' : 'text-amber-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${workspace === 'dhubri' ? 'bg-blue-600/20' : 'bg-amber-600/20'}`}>
+                <svg className={`w-3 h-3 ${workspace === 'dhubri' ? 'text-blue-400' : 'text-amber-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                 </svg>
               </div>
               <span className="text-[11px] font-semibold text-slate-400 group-hover:text-slate-200 truncate transition-colors">
-                {workspace === 'tinsukia' ? 'Switch to Main' : 'Switch to Tinsukia'}
+                {workspace === 'dhubri' ? 'Switch to Main Dashboard' : 'Switch to Dhubri District'}
               </span>
             </button>
           ) : (
-            <button onClick={switchWorkspace} title={workspace === 'tinsukia' ? 'Switch to Main Dashboard' : 'Switch to Tinsukia Dashboard'}
-              className={`w-full flex items-center justify-center py-1.5 rounded-lg transition-colors ${workspace === 'tinsukia' ? 'text-blue-500 hover:text-blue-300' : 'text-amber-500 hover:text-amber-300'}`}>
+            <button onClick={switchWorkspace} title={workspace === 'dhubri' ? 'Switch to Main Dashboard' : 'Switch to Dhubri Dashboard'}
+              className={`w-full flex items-center justify-center py-1.5 rounded-lg transition-colors ${workspace === 'dhubri' ? 'text-blue-500 hover:text-blue-300' : 'text-amber-500 hover:text-amber-300'}`}>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
               </svg>
@@ -332,9 +332,9 @@ export default function App() {
             <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
               <span>Arghyam</span>
               <span className="text-slate-300">/</span>
-              {workspace === 'tinsukia' && (
+              {workspace === 'dhubri' && (
                 <>
-                  <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded text-amber-700 bg-amber-100">Tinsukia</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded text-amber-700 bg-amber-100">Dhubri</span>
                   <span className="text-slate-300">/</span>
                 </>
               )}
@@ -354,7 +354,7 @@ export default function App() {
           </div>
 
           <div className="px-6 py-6 max-w-7xl mx-auto w-full">
-            <PhaseDataProvider phase="fullcampaign" tinsukia={workspace === 'tinsukia'}>
+            <PhaseDataProvider phase="fullcampaign" dhubri={workspace === 'dhubri'}>
               {page === 'overview'   && <OverviewPage />}
               {page === 'calls'      && <CallAnalysisPage />}
               {page === 'records'    && <CallRecordsPage />}
@@ -366,8 +366,8 @@ export default function App() {
 
             <footer className="mt-12 pt-6 border-t border-slate-200/60 text-center">
               <p className="panel-label">
-                {workspace === 'tinsukia'
-                  ? 'Arghyam · CSAT AI · Tinsukia District · Full Campaign · 806 calls · Apr–May 2026'
+                {workspace === 'dhubri'
+                  ? 'Arghyam · CSAT AI · Dhubri District · Full Campaign · 5,553 calls · Apr–May 2026'
                   : 'Arghyam · CSAT AI · Assam JJM · Full Campaign · 125,588 calls · Apr–May 2026'}
               </p>
             </footer>

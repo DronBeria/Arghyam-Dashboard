@@ -6,24 +6,26 @@ import { usePhaseData } from '../context/PhaseDataContext'
 function fmt(n: number) { return n.toLocaleString() }
 
 // ─── Phase headline summary ───────────────────────────────────────────────────
+// Note: BSI values updated to min_usable=4 threshold (was min=6)
+// With ≥4, Phase 2 includes more under-sampled schemes → overall Score lower than Phase 1
 const HEADLINE = [
   {
     phase: 'Phase 1', period: 'April 2026', color: 'emerald',
-    calls: 45863, consent: 27.4, bsi5: 2.20, satisfied: 51.7,
-    usable: 9224, usablePct: 20.1, validSchemes: 615, districts: 31,
+    calls: 45863, consent: 27.4, bsi5: 2.54, satisfied: 51.7,
+    usable: 9224, usablePct: 20.1, validSchemes: 1016, districts: 33,
     border: 'border-emerald-200', bg: 'bg-emerald-50', badge: 'bg-emerald-600',
     text: 'text-emerald-700',
   },
   {
     phase: 'Phase 2', period: 'May 2026', color: 'blue',
-    calls: 79725, consent: 16.1, bsi5: 2.72, satisfied: 55.0,
-    usable: 6408, usablePct: 8.0, validSchemes: 106, districts: 23,
+    calls: 79725, consent: 16.1, bsi5: 2.13, satisfied: 55.0,
+    usable: 6408, usablePct: 8.0, validSchemes: 461, districts: 33,
     border: 'border-blue-200', bg: 'bg-blue-50', badge: 'bg-blue-600',
     text: 'text-blue-700',
   },
 ]
 
-// ─── Survey Q1–Q5 side-by-side ────────────────────────────────────────────────
+// ─── Survey Q1–Q5 side-by-side (Q% unchanged — not scheme-weighted) ───────────
 const SURVEY_CHART = [
   { q: 'Q1 Daily', p1: 30.95, p2: 30.34, benchmark: 70 },
   { q: 'Q1A Timing', p1: 57.2, p2: 56.7, benchmark: 70 },
@@ -32,59 +34,58 @@ const SURVEY_CHART = [
   { q: 'Q5 Satisfied', p1: 51.7, p2: 55.02, benchmark: 70 },
 ]
 
-// ─── Zone BSI comparison ──────────────────────────────────────────────────────
+// ─── Zone BSI comparison (min_usable=4) ──────────────────────────────────────
 const ZONE_CHART = [
-  { zone: 'North Assam', p1: 2.418, p2: 2.553 },
-  { zone: 'Upper Assam', p1: 2.393, p2: 2.971 },
-  { zone: 'Lower Assam', p1: 2.277, p2: 2.557 },
-  { zone: 'BTAD',        p1: 1.921, p2: 2.505 },
-  { zone: 'KAAC',        p1: 2.316, p2: 3.125 },
-  { zone: 'Barak Valley',p1: 1.895, p2: null  },
+  { zone: 'North Assam', p1: 2.681, p2: 2.302 },
+  { zone: 'Upper Assam', p1: 2.666, p2: 2.265 },
+  { zone: 'Lower Assam', p1: 2.485, p2: 1.800 },
+  { zone: 'BTAD',        p1: 2.101, p2: 1.805 },
+  { zone: 'KAAC',        p1: 3.568, p2: null  },
+  { zone: 'Barak Valley',p1: 2.206, p2: null  },
 ]
 
 // ─── What improved / what didn't ─────────────────────────────────────────────
 const IMPROVED = [
-  { label: 'State Citizen Satisfaction Survey Score', p1: '2.20/5', p2: '2.72/5', change: '+24%', note: 'Significant across-the-board improvement' },
-  { label: 'Q5 Overall Satisfaction', p1: '51.7%',  p2: '55.0%',  change: '+3.3pp', note: 'More households satisfied with supply' },
+  { label: 'Q5 Overall Satisfaction', p1: '51.7%',  p2: '55.0%',  change: '+3.3pp', note: 'More households satisfied overall in Phase 2' },
   { label: 'Q3 Water Quantity',       p1: '62.23%', p2: '64.93%', change: '+2.7pp', note: 'Availability improved slightly' },
-  { label: 'Q2 Water Quality',        p1: '72.33%', p2: '73.09%', change: '+0.8pp', note: 'Already good — stayed good' },
-  { label: 'Upper Assam Score',        p1: '2.39/5', p2: '2.97/5', change: '+24%', note: 'Biggest zone improvement' },
-  { label: 'BTAD Zone Score',          p1: '1.92/5', p2: '2.51/5', change: '+31%', note: 'Previously critical — now Moderate' },
+  { label: 'Q2 Water Quality',        p1: '72.33%', p2: '73.09%', change: '+0.8pp', note: 'Already good — remained strong' },
+  { label: 'Phase 2 outreach',        p1: '45,863', p2: '79,725', change: '+74%',   note: 'Phase 2 reached many more new households' },
 ]
 
 const NEEDS_WORK = [
+  { label: 'State Score (≥4 scheme threshold)', p1: '2.54/5', p2: '2.13/5', note: 'Phase 2 included more under-sampled schemes with lower scores' },
   { label: 'Q1 Daily Water Supply',   p1: '30.95%', p2: '30.34%', note: 'No progress — only 1 in 3 households get water daily' },
   { label: 'Consent Rate',            p1: '27.4%',  p2: '16.1%',  note: 'Phase 2 reached harder-to-contact new households' },
-  { label: 'Usable Call Yield',       p1: '20.1%',  p2: '8.0%',   note: 'Larger campaign area means fewer responses per call' },
-  { label: 'Barak Valley',            p1: '1.90/5', p2: 'No data',note: 'Insufficient Phase 2 calls in the zone for Score' },
-  { label: 'Valid Scheme Coverage',   p1: '615',     p2: '106',    note: 'Phase 2 spread thinner — fewer schemes with ≥6 usable calls' },
+  { label: 'Usable Call Yield',       p1: '20.1%',  p2: '8.0%',   note: 'Larger area, more first-time contacts, lower yield' },
+  { label: 'Barak Valley / KAAC',     p1: 'Moderate', p2: 'No data', note: 'Insufficient Phase 2 calls for reliable score' },
+  { label: 'Valid Scheme Coverage',   p1: '1,016',  p2: '461',    note: 'Phase 2 spread across more schemes — fewer per scheme' },
 ]
 
 // ─── Key insight callouts ──────────────────────────────────────────────────────
 const INSIGHTS = [
   {
-    emoji: '📈',
-    title: 'Score improved by 24%',
-    body: 'The state Citizen Satisfaction Survey Score rose from 2.20 to 2.72 out of 5. Every zone tracked in Phase 2 showed improvement.',
-    color: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+    emoji: '📊',
+    title: 'Score methodology updated to ≥4 calls threshold',
+    body: 'The Citizen Satisfaction Survey Score now includes schemes with ≥4 usable survey responses (previously ≥6). This broader threshold captures more ground reality and includes schemes that were lightly surveyed in Phase 2.',
+    color: 'bg-violet-50 border-violet-200 text-violet-800',
   },
   {
     emoji: '🚱',
-    title: 'Daily water still the critical gap',
-    body: 'Only 30% of households get water daily — unchanged from Phase 1. This single indicator is the biggest drag on the overall Citizen Satisfaction Survey Score.',
+    title: 'Daily water remains the critical gap',
+    body: 'Only 30% of households report receiving water every day — unchanged across both phases. This is the single biggest drag on the overall Score and the most urgent priority for Phase 3.',
     color: 'bg-red-50 border-red-200 text-red-800',
   },
   {
     emoji: '📞',
     title: 'Phase 2 reached 74% more households',
-    body: '79,725 new calls in May vs 45,863 in April. Lower consent (16% vs 27%) is expected when reaching first-time contacts at scale.',
+    body: '79,725 new calls in May vs 45,863 in April. Lower consent (16% vs 27%) is expected when reaching first-time contacts at scale across a wider area.',
     color: 'bg-blue-50 border-blue-200 text-blue-800',
   },
   {
-    emoji: '🔄',
-    title: 'Re-contacting Phase 1 households pays off',
-    body: 'Phase 1 contacts called again in Phase 2 showed 73% higher usable rate (13.5% vs 7.8%) and 4.5% completion vs 2.1%.',
-    color: 'bg-violet-50 border-violet-200 text-violet-800',
+    emoji: '✅',
+    title: 'Quality and quantity satisfaction improving',
+    body: 'Q2 (water quality) and Q3 (quantity) both improved from Phase 1 to Phase 2 at the individual-response level. Citizens who participated report better experiences with these dimensions.',
+    color: 'bg-emerald-50 border-emerald-200 text-emerald-800',
   },
 ]
 
@@ -100,7 +101,7 @@ const ATTEMPTS_COMPARE = [
 export function ComparisonPage() {
   const data = usePhaseData()
 
-  // In district-focus mode (Tinsukia) show district-specific comparison from context
+  // In district-focus mode (Dhubri etc.) show district-specific comparison from context
   if (data.districtFocus && data.comparison) {
     const c = data.comparison
     return (
