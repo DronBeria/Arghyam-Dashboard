@@ -5,7 +5,6 @@ import type { Session } from '@supabase/supabase-js'
 import { Header } from './components/Header'
 import { PhaseDataProvider } from './context/PhaseDataContext'
 import { LoginPage } from './pages/LoginPage'
-import { WorkspacePicker } from './pages/WorkspacePicker'
 import { OverviewPage } from './pages/OverviewPage'
 import { CallAnalysisPage } from './pages/CallAnalysisPage'
 import { CallRecordsPage } from './pages/CallRecordsPage'
@@ -91,8 +90,8 @@ const PAGE_META: Record<PageId, { title: string; sub: string }> = {
 export default function App() {
   const [session, setSession]           = useState<Session | null>(null)
   const [authLoading, setAuthLoading]   = useState(true)
-  const [workspace, setWorkspace]       = useState<Workspace | null>(
-    () => (localStorage.getItem('jjm_workspace') as Workspace | null)
+  const [workspace, setWorkspace]       = useState<Workspace>(
+    () => (localStorage.getItem('jjm_workspace') as Workspace) ?? 'main'
   )
   const [page, setPage]                 = useState<PageId>('overview')
   const [sidebarOpen, setSidebarOpen]   = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
@@ -119,7 +118,6 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       // Clear workspace when user signs out so next login always chooses fresh
       if (!session) {
-        setWorkspace(null)
         localStorage.removeItem('jjm_workspace')
       }
       setSession(session)
@@ -174,9 +172,6 @@ export default function App() {
   if (!session) return <LoginPage />
 
   const userEmail = session.user?.email ?? ''
-
-  // Show workspace picker if no workspace chosen yet this session
-  if (!workspace) return <WorkspacePicker userEmail={userEmail} onSelect={selectWorkspace} />
 
   const visibleNav = NAV.filter(group => group.items.length > 0)
 
