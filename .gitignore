@@ -28,9 +28,13 @@ pnpm-debug.log*
 .env.production
 .env.local
 
-# Temp files
+# Temp and local tool config
 *.crdownload
 .local-config
+.claude/
+
+# Data analysis files (local only)
+*.csv
 
 # Large data files (optional - user might want these, but usually good to ignore)
 # final.xlsx
