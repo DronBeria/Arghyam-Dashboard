@@ -364,20 +364,20 @@ const FULL_CAMPAIGN_DATA: PhaseData = {
   comparison:    COMPARISON_DATA,
 }
 
-// ─── Dhubri Phase Comparison ─────────────────────────────────────────────────
+// ─── Dhubri Phase Comparison (min_usable=6) ───────────────────────────────────
 const DHUBRI_COMPARISON: PhaseComparison = {
-  p1Calls: 2933, p2Calls: 2620, p1Bsi5: '2.72', p2Bsi5: '1.62',
+  p1Calls: 2933, p2Calls: 2620, p1Bsi5: '3.27', p2Bsi5: '3.71',
   metrics: [
-    { label: 'Citizen Satisfaction Survey Score', p1: '2.72 / 5', p2: '1.62 / 5', change: '-40%',   trend: 'down', isGoodUp: true,  note: 'Phase 2 included more under-sampled schemes — full campaign 3.13/5 above state avg' },
-    { label: 'Q5 Overall Satisfied',  p1: '64.78%', p2: '56.0%',  change: '-8.8pp',  trend: 'down', isGoodUp: true,  note: 'Satisfaction lower in Phase 2 outreach households' },
+    { label: 'Citizen Satisfaction Survey Score', p1: '3.27 / 5', p2: '3.71 / 5', change: '+13%',   trend: 'up',   isGoodUp: true,  note: 'Score improved from Moderate to near-Good in Phase 2 (4 valid schemes)' },
+    { label: 'Q5 Overall Satisfied',  p1: '64.78%', p2: '56.0%',  change: '-8.8pp',  trend: 'down', isGoodUp: true,  note: 'Q5 dipped slightly in Phase 2 outreach households' },
     { label: 'Q2 Water Quality',      p1: '82.8%',  p2: '84.9%',  change: '+2.1pp',  trend: 'up',   isGoodUp: true,  note: 'Quality perception slightly improved in Phase 2' },
     { label: 'Q3 Water Quantity',     p1: '69.15%', p2: '68.18%', change: '-1.0pp',  trend: 'down', isGoodUp: true,  note: 'Stable — negligible change' },
-    { label: 'Q1A Consistent Timing', p1: '53.74%', p2: '50.0%',  change: '-3.7pp',  trend: 'down', isGoodUp: true,  note: 'Slight decline in timing reliability reported' },
+    { label: 'Q1A Consistent Timing', p1: '53.74%', p2: '50.0%',  change: '-3.7pp',  trend: 'down', isGoodUp: true,  note: 'Minor decline in timing reliability' },
     { label: 'Consent Rate',          p1: '26.7%',  p2: '18.2%',  change: '-8.5pp',  trend: 'down', isGoodUp: true,  note: 'Phase 2 reached harder-to-contact new households' },
-    { label: 'Total Calls',           p1: '2,933',  p2: '2,620',  change: '-11%',    trend: 'down', isGoodUp: true,  note: 'Similar call volumes across both phases' },
+    { label: 'Valid Schemes (≥6)',    p1: '36',     p2: '4',      change: '-89%',    trend: 'down', isGoodUp: true,  note: 'Phase 2 had fewer schemes with ≥6 usable calls — sample is limited' },
   ],
   zoneChanges: [
-    { zone: 'Dhubri District', p1Bsi5: '2.72', p2Bsi5: '1.62', changePp: '-1.10', direction: 'down' },
+    { zone: 'Dhubri District', p1Bsi5: '3.27', p2Bsi5: '3.71', changePp: '+0.44', direction: 'up' },
   ],
 }
 

@@ -4,9 +4,9 @@
 
 export const KPI_HEADLINE = {
   totalCalls: 125588,
-  stateBSI: 0.4860,          // scheme-weighted, min_usable=4 (was 0.5516 at min=6)
+  stateBSI: 0.5516,
   satisfied: 53.1,
-  functionalSchemes: 27.0,   // ~27% of valid schemes have Q1≥50% daily supply
+  functionalSchemes: 27.1,
   consentRate: 20.4,
   completedSurvey: 6840,
 }
@@ -23,7 +23,7 @@ export const CALL_SUMMARY = [
   { group: 'Calls under 30 seconds',       count: 58389,  pct: 46.5,  note: 'Nearly all overlap with refused group above' },
 ]
 
-export const CALL_SUMMARY_NOTE = 'Full Campaign = Phase 1 (45,863 calls, April 2026) + Phase 2 (79,725 calls, May 2026). Citizen Satisfaction Survey Score computed from 11,758 scheme-weighted usable calls (schemes with ≥4 usable calls).'
+export const CALL_SUMMARY_NOTE = 'Full Campaign = Phase 1 (45,863 calls, April 2026) + Phase 2 (79,725 calls, May 2026). Citizen Satisfaction Survey Score computed from 7,843 scheme-weighted usable calls across both phases.'
 
 export const KPI_QUESTIONS = [
   { id: 'Q1',  label: 'Water Daily',         question: 'Did water come every day in last 7 days?', yesCount: 4794, noCount: 10866, base: 15660, yesPct: 30.61, weight: '0.75 / 5', status: 'Critical', benchmark: 70, color: '#ef4444' },
@@ -38,59 +38,55 @@ export const Q5_SPLIT = {
 }
 
 export const SCHEME_COVERAGE = {
-  total: 27678, valid: 1477, validPct: 5.3, flagged: 1759, flaggedPct: 6.4,
-  noData: 24442, noDataPct: 88.3, functional: 399, nonFunctional: 1078, functionalRate: 27.0, minThreshold: 4,
+  total: 5968, valid: 882, validPct: 14.8, flagged: 3407, flaggedPct: 57.1,
+  noData: 1679, noDataPct: 28.1, functional: 239, nonFunctional: 643, functionalRate: 27.1, minThreshold: 6,
 }
 
-// Zone scores recomputed with min_usable=4 threshold
-// Usable-call counts and BSI increase because more schemes now qualify
 export const ZONE_SCORES = [
-  { zone: 'North Assam',  usableCalls: 4085,  bsi: 0.5172, quality: 0.9311, quantity: 0.8643, daily: 0.2453, satisfaction: 0.2324, status: 'Moderate' },
-  { zone: 'Upper Assam',  usableCalls: 2817,  bsi: 0.4977, quality: 0.9019, quantity: 0.8178, daily: 0.2697, satisfaction: 0.2146, status: 'Moderate' },
-  { zone: 'KAAC',         usableCalls: 39,    bsi: 0.6480, quality: 1.0769, quantity: 1.2115, daily: 0.3269, satisfaction: 0.2496, status: 'Moderate' },
-  { zone: 'Lower Assam',  usableCalls: 3488,  bsi: 0.4652, quality: 0.9107, quantity: 0.7527, daily: 0.2060, satisfaction: 0.2019, status: 'Moderate' },
-  { zone: 'BTAD',         usableCalls: 957,   bsi: 0.4012, quality: 0.8042, quantity: 0.6556, daily: 0.1411, satisfaction: 0.1721, status: 'Moderate' },
-  { zone: 'Barak Valley', usableCalls: 362,   bsi: 0.4486, quality: 0.9506, quantity: 0.6857, daily: 0.2175, satisfaction: 0.1932, status: 'Moderate' },
-  { zone: 'DHAC',         usableCalls: 10,    bsi: 0.6000, quality: 0.9000, quantity: 1.5000, daily: 0.1500, satisfaction: 0.0000, status: 'Moderate' },
-  { zone: 'Assam (State)',usableCalls: 11758, bsi: 0.4860, quality: 0.9088, quantity: 0.7993, daily: 0.2303, satisfaction: 0.2128, status: 'Moderate' },
+  { zone: 'North Assam',  usableCalls: 2978, bsi: 0.5508, quality: 1.0089, quantity: 0.8903, daily: 0.2420, satisfaction: 0.2427, status: 'Moderate' },
+  { zone: 'Upper Assam',  usableCalls: 1780, bsi: 0.5814, quality: 1.0769, quantity: 0.9148, daily: 0.2912, satisfaction: 0.2565, status: 'Moderate' },
+  { zone: 'KAAC',         usableCalls: 129,  bsi: 0.5359, quality: 1.0374, quantity: 0.9280, daily: 0.1919, satisfaction: 0.2303, status: 'Moderate' },
+  { zone: 'Lower Assam',  usableCalls: 2354, bsi: 0.5532, quality: 1.0746, quantity: 0.8885, daily: 0.2116, satisfaction: 0.2528, status: 'Moderate' },
+  { zone: 'BTAD',         usableCalls: 178,  bsi: 0.4090, quality: 0.9743, quantity: 0.5837, daily: 0.1095, satisfaction: 0.1831, status: 'Moderate' },
+  { zone: 'Barak Valley', usableCalls: 424,  bsi: 0.4875, quality: 0.8897, quantity: 0.7865, daily: 0.2388, satisfaction: 0.2396, status: 'Moderate' },
+  { zone: 'DHAC',         usableCalls: 20,   bsi: null,   quality: null,   quantity: null,   daily: null,   satisfaction: null,   status: 'No Data' },
+  { zone: 'Assam (State)',usableCalls: 7843, bsi: 0.5516, quality: 1.0373, quantity: 0.8834, daily: 0.2400, satisfaction: 0.2471, status: 'Moderate' },
 ]
 
-// District scores recomputed with min_usable=4 threshold (verified from Supabase)
 export const DISTRICT_SCORES = [
-  { district: 'Nagaon',                  zone: 'Upper Assam',  validSchemes: 56,  usableCalls: 454,  bsi: 0.5774, quality: 1.0699, quantity: 0.9708, satisfaction: 0.2461, status: 'Moderate' },
-  { district: 'Golaghat',                zone: 'Upper Assam',  validSchemes: 42,  usableCalls: 304,  bsi: 0.5626, quality: 0.9390, quantity: 0.8984, satisfaction: 0.2311, status: 'Moderate' },
-  { district: 'Charaideo',               zone: 'Upper Assam',  validSchemes: 35,  usableCalls: 243,  bsi: 0.5601, quality: 1.0861, quantity: 0.8514, satisfaction: 0.2335, status: 'Moderate' },
-  { district: 'Sivasagar',               zone: 'Upper Assam',  validSchemes: 42,  usableCalls: 303,  bsi: 0.5529, quality: 1.0519, quantity: 0.9119, satisfaction: 0.2456, status: 'Moderate' },
-  { district: 'Dhubri',                  zone: 'Lower Assam',  validSchemes: 99,  usableCalls: 674,  bsi: 0.5499, quality: 1.0792, quantity: 0.8787, satisfaction: 0.2833, status: 'Moderate' },
-  { district: 'Sonitpur',                zone: 'North Assam',  validSchemes: 101, usableCalls: 1042, bsi: 0.5309, quality: 0.8895, quantity: 0.9484, satisfaction: 0.2368, status: 'Moderate' },
-  { district: 'Chirang',                 zone: 'BTAD',         validSchemes: 3,   usableCalls: 16,   bsi: 0.5188, quality: 1.1250, quantity: 1.1250, satisfaction: 0.2500, status: 'Moderate' },
-  { district: 'Goalpara',                zone: 'Lower Assam',  validSchemes: 154, usableCalls: 1241, bsi: 0.5188, quality: 0.9974, quantity: 0.8177, satisfaction: 0.2565, status: 'Moderate' },
-  { district: 'Morigaon',                zone: 'Upper Assam',  validSchemes: 6,   usableCalls: 31,   bsi: 0.5153, quality: 0.5323, quantity: 1.1250, satisfaction: 0.3710, status: 'Moderate' },
-  { district: 'Lakhimpur',               zone: 'North Assam',  validSchemes: 256, usableCalls: 2648, bsi: 0.5063, quality: 0.9372, quantity: 0.8272, satisfaction: 0.2269, status: 'Moderate' },
-  { district: 'Darrang',                 zone: 'BTAD',         validSchemes: 22,  usableCalls: 162,  bsi: 0.5039, quality: 0.7512, quantity: 1.0531, satisfaction: 0.2038, status: 'Moderate' },
-  { district: 'Bajali',                  zone: 'Lower Assam',  validSchemes: 22,  usableCalls: 257,  bsi: 0.5015, quality: 0.9554, quantity: 0.8256, satisfaction: 0.2480, status: 'Moderate' },
-  { district: 'Biswanath',               zone: 'North Assam',  validSchemes: 69,  usableCalls: 643,  bsi: 0.4947, quality: 0.8694, quantity: 0.8106, satisfaction: 0.2475, status: 'Moderate' },
-  { district: 'Tamulpur',                zone: 'BTAD',         validSchemes: 13,  usableCalls: 74,   bsi: 0.4907, quality: 1.0784, quantity: 0.7095, satisfaction: 0.2122, status: 'Moderate' },
-  { district: 'Jorhat',                  zone: 'Upper Assam',  validSchemes: 26,  usableCalls: 149,  bsi: 0.4834, quality: 0.8893, quantity: 0.6943, satisfaction: 0.1937, status: 'Moderate' },
-  { district: 'Barpeta',                 zone: 'Lower Assam',  validSchemes: 78,  usableCalls: 546,  bsi: 0.4778, quality: 0.8953, quantity: 0.8681, satisfaction: 0.1731, status: 'Moderate' },
-  { district: 'Majuli',                  zone: 'Upper Assam',  validSchemes: 18,  usableCalls: 111,  bsi: 0.4717, quality: 0.7759, quantity: 0.8363, satisfaction: 0.2036, status: 'Moderate' },
-  { district: 'Cachar',                  zone: 'Barak Valley', validSchemes: 93,  usableCalls: 781,  bsi: 0.4676, quality: 0.9604, quantity: 0.7607, satisfaction: 0.2216, status: 'Moderate' },
-  { district: 'Karbi Anglong',           zone: 'KAAC',         validSchemes: 20,  usableCalls: 154,  bsi: 0.4622, quality: 0.9755, quantity: 0.6773, satisfaction: 0.2138, status: 'Moderate' },
-  { district: 'Tinsukia',                zone: 'Upper Assam',  validSchemes: 13,  usableCalls: 89,   bsi: 0.4592, quality: 0.8781, quantity: 0.7407, satisfaction: 0.1461, status: 'Moderate' },
-  { district: 'Sribhumi',                zone: 'Barak Valley', validSchemes: 57,  usableCalls: 379,  bsi: 0.4584, quality: 0.8453, quantity: 0.7721, satisfaction: 0.2175, status: 'Moderate' },
-  { district: 'Dibrugarh',               zone: 'Upper Assam',  validSchemes: 36,  usableCalls: 256,  bsi: 0.4495, quality: 0.8362, quantity: 0.6926, satisfaction: 0.1939, status: 'Moderate' },
-  { district: 'Barak Valley (DHAC)',     zone: 'DHAC',         validSchemes: 1,   usableCalls: 6,    bsi: 0.0750, quality: 0.0000, quantity: 0.0000, satisfaction: 0.0000, status: 'Critical' },
-  { district: 'Dhemaji',                 zone: 'North Assam',  validSchemes: 78,  usableCalls: 615,  bsi: 0.4363, quality: 0.8946, quantity: 0.6705, satisfaction: 0.1660, status: 'Moderate' },
-  { district: 'West Karbi Anglong',      zone: 'KAAC',         validSchemes: 16,  usableCalls: 138,  bsi: 0.4325, quality: 0.8791, quantity: 0.8739, satisfaction: 0.1812, status: 'Moderate' },
-  { district: 'Kamrup',                  zone: 'Lower Assam',  validSchemes: 54,  usableCalls: 338,  bsi: 0.4174, quality: 0.8618, quantity: 0.7172, satisfaction: 0.1483, status: 'Moderate' },
-  { district: 'Hojai',                   zone: 'Upper Assam',  validSchemes: 22,  usableCalls: 165,  bsi: 0.4058, quality: 0.8136, quantity: 0.6424, satisfaction: 0.1534, status: 'Moderate' },
-  { district: 'Nalbari',                 zone: 'Lower Assam',  validSchemes: 25,  usableCalls: 160,  bsi: 0.3840, quality: 0.5868, quantity: 0.8228, satisfaction: 0.1626, status: 'Critical' },
-  { district: 'Udalguri',                zone: 'BTAD',         validSchemes: 21,  usableCalls: 131,  bsi: 0.3277, quality: 0.4198, quantity: 0.6412, satisfaction: 0.1393, status: 'Critical' },
-  { district: 'South Salmara Mancachar', zone: 'Lower Assam',  validSchemes: 11,  usableCalls: 85,   bsi: 0.3177, quality: 0.7401, quantity: 0.3671, satisfaction: 0.1442, status: 'Critical' },
-  { district: 'Bongaigaon',              zone: 'BTAD',         validSchemes: 14,  usableCalls: 72,   bsi: 0.3145, quality: 0.8780, quantity: 0.3333, satisfaction: 0.0278, status: 'Critical' },
-  { district: 'Kokrajhar',               zone: 'BTAD',         validSchemes: 7,   usableCalls: 30,   bsi: 0.3017, quality: 0.5333, quantity: 0.5500, satisfaction: 0.2000, status: 'Critical' },
-  { district: 'Hailakandi',              zone: 'Barak Valley', validSchemes: 16,  usableCalls: 121,  bsi: 0.2479, quality: 0.3636, quantity: 0.4866, satisfaction: 0.0778, status: 'Critical' },
-  { district: 'Baksa',                   zone: 'BTAD',         validSchemes: 5,   usableCalls: 24,   bsi: 0.1750, quality: 0.2500, quantity: 0.5625, satisfaction: 0.0000, status: 'Critical' },
+  { district: 'Baksa',                   zone: 'BTAD',         validSchemes: 9,   usableCalls: 65,   bsi: 0.3487, quality: 0.7126, quantity: 0.6308, satisfaction: 0.1269, status: 'Critical' },
+  { district: 'Chirang',                 zone: 'BTAD',         validSchemes: 2,   usableCalls: 14,   bsi: 0.4155, quality: 1.5000, quantity: 0.4286, satisfaction: 0.0953, status: 'Moderate' },
+  { district: 'Kokrajhar',               zone: 'BTAD',         validSchemes: 1,   usableCalls: 6,    bsi: 0.4417, quality: 1.1250, quantity: 0.7500, satisfaction: 0.3333, status: 'Moderate' },
+  { district: 'Tamulpur',                zone: 'BTAD',         validSchemes: 5,   usableCalls: 37,   bsi: 0.4627, quality: 1.1014, quantity: 0.5270, satisfaction: 0.2122, status: 'Moderate' },
+  { district: 'Udalguri',                zone: 'BTAD',         validSchemes: 7,   usableCalls: 56,   bsi: 0.4383, quality: 1.0464, quantity: 0.5875, satisfaction: 0.2351, status: 'Moderate' },
+  { district: 'Cachar',                  zone: 'Barak Valley', validSchemes: 42,  usableCalls: 303,  bsi: 0.4931, quality: 0.9676, quantity: 0.7577, satisfaction: 0.2455, status: 'Moderate' },
+  { district: 'Hailakandi',              zone: 'Barak Valley', validSchemes: 2,   usableCalls: 13,   bsi: 0.3077, quality: 0.2692, quantity: 0.5000, satisfaction: 0.1346, status: 'Critical' },
+  { district: 'Sribhumi',                zone: 'Barak Valley', validSchemes: 15,  usableCalls: 108,  bsi: 0.4933, quality: 0.7458, quantity: 0.9016, satisfaction: 0.2358, status: 'Moderate' },
+  { district: 'Karbi Anglong',           zone: 'KAAC',         validSchemes: 13,  usableCalls: 107,  bsi: 0.5685, quality: 1.0713, quantity: 0.9554, satisfaction: 0.2464, status: 'Moderate' },
+  { district: 'West Karbi Anglong',      zone: 'KAAC',         validSchemes: 3,   usableCalls: 22,   bsi: 0.3774, quality: 0.8727, quantity: 0.7948, satisfaction: 0.1515, status: 'Critical' },
+  { district: 'Bajali',                  zone: 'Lower Assam',  validSchemes: 17,  usableCalls: 198,  bsi: 0.5287, quality: 1.0162, quantity: 0.8772, satisfaction: 0.2512, status: 'Moderate' },
+  { district: 'Barpeta',                 zone: 'Lower Assam',  validSchemes: 61,  usableCalls: 561,  bsi: 0.5463, quality: 1.0570, quantity: 0.8755, satisfaction: 0.2617, status: 'Moderate' },
+  { district: 'Bongaigaon',              zone: 'Lower Assam',  validSchemes: 4,   usableCalls: 29,   bsi: 0.3534, quality: 0.7888, quantity: 0.4009, satisfaction: 0.0690, status: 'Critical' },
+  { district: 'Darrang',                 zone: 'Lower Assam',  validSchemes: 9,   usableCalls: 115,  bsi: 0.5344, quality: 0.9530, quantity: 0.9980, satisfaction: 0.2402, status: 'Moderate' },
+  { district: 'Dhubri',                  zone: 'Lower Assam',  validSchemes: 47,  usableCalls: 405,  bsi: 0.6609, quality: 1.2882, quantity: 1.0225, satisfaction: 0.3251, status: 'Moderate' },
+  { district: 'Goalpara',                zone: 'Lower Assam',  validSchemes: 68,  usableCalls: 539,  bsi: 0.5376, quality: 1.0345, quantity: 0.8416, satisfaction: 0.2345, status: 'Moderate' },
+  { district: 'Kamrup',                  zone: 'Lower Assam',  validSchemes: 45,  usableCalls: 383,  bsi: 0.5332, quality: 1.0858, quantity: 0.8448, satisfaction: 0.2336, status: 'Moderate' },
+  { district: 'Nalbari',                 zone: 'Lower Assam',  validSchemes: 12,  usableCalls: 106,  bsi: 0.4655, quality: 0.8118, quantity: 0.9232, satisfaction: 0.1693, status: 'Moderate' },
+  { district: 'South Salmara Mancachar', zone: 'Lower Assam',  validSchemes: 2,   usableCalls: 18,   bsi: 0.4733, quality: 1.2000, quantity: 0.6250, satisfaction: 0.1875, status: 'Moderate' },
+  { district: 'Biswanath',               zone: 'North Assam',  validSchemes: 33,  usableCalls: 311,  bsi: 0.5689, quality: 1.0213, quantity: 0.9502, satisfaction: 0.2404, status: 'Moderate' },
+  { district: 'Dhemaji',                 zone: 'North Assam',  validSchemes: 29,  usableCalls: 252,  bsi: 0.5715, quality: 1.1584, quantity: 0.9108, satisfaction: 0.2113, status: 'Moderate' },
+  { district: 'Lakhimpur',               zone: 'North Assam',  validSchemes: 164, usableCalls: 1604, bsi: 0.5324, quality: 0.9886, quantity: 0.8408, satisfaction: 0.2321, status: 'Moderate' },
+  { district: 'Sonitpur',                zone: 'North Assam',  validSchemes: 86,  usableCalls: 811,  bsi: 0.5737, quality: 0.9976, quantity: 0.9589, satisfaction: 0.2742, status: 'Moderate' },
+  { district: 'Charaideo',               zone: 'Upper Assam',  validSchemes: 30,  usableCalls: 255,  bsi: 0.5302, quality: 1.0203, quantity: 0.8093, satisfaction: 0.2242, status: 'Moderate' },
+  { district: 'Dibrugarh',               zone: 'Upper Assam',  validSchemes: 25,  usableCalls: 211,  bsi: 0.5873, quality: 1.1541, quantity: 0.9414, satisfaction: 0.2549, status: 'Moderate' },
+  { district: 'Golaghat',                zone: 'Upper Assam',  validSchemes: 24,  usableCalls: 189,  bsi: 0.6220, quality: 1.0825, quantity: 0.9755, satisfaction: 0.2689, status: 'Moderate' },
+  { district: 'Hojai',                   zone: 'Upper Assam',  validSchemes: 12,  usableCalls: 105,  bsi: 0.5138, quality: 0.8629, quantity: 0.9334, satisfaction: 0.2474, status: 'Moderate' },
+  { district: 'Jorhat',                  zone: 'Upper Assam',  validSchemes: 33,  usableCalls: 291,  bsi: 0.5705, quality: 1.0507, quantity: 0.8298, satisfaction: 0.2689, status: 'Moderate' },
+  { district: 'Majuli',                  zone: 'Upper Assam',  validSchemes: 12,  usableCalls: 103,  bsi: 0.5214, quality: 0.9379, quantity: 0.8940, satisfaction: 0.2300, status: 'Moderate' },
+  { district: 'Morigaon',                zone: 'Upper Assam',  validSchemes: 1,   usableCalls: 19,   bsi: 0.6505, quality: 1.2273, quantity: 1.0385, satisfaction: 0.3750, status: 'Moderate' },
+  { district: 'Nagaon',                  zone: 'Upper Assam',  validSchemes: 15,  usableCalls: 123,  bsi: 0.6144, quality: 1.1951, quantity: 1.0404, satisfaction: 0.2133, status: 'Moderate' },
+  { district: 'Sivasagar',               zone: 'Upper Assam',  validSchemes: 46,  usableCalls: 413,  bsi: 0.6137, quality: 1.1163, quantity: 0.9588, satisfaction: 0.2800, status: 'Moderate' },
+  { district: 'Tinsukia',                zone: 'Upper Assam',  validSchemes: 8,   usableCalls: 71,   bsi: 0.6070, quality: 1.1866, quantity: 0.8979, satisfaction: 0.2507, status: 'Moderate' },
 ]
 
 export const REPEAT_CALLERS = [
