@@ -681,13 +681,28 @@ export function OverviewPage() {
               /* ── No summary in database for this scheme ── */
               <p className="text-xs text-slate-400 italic">No citizen voice summary available for this scheme.</p>
             )}
-            {/* Note: summary is based on all calls (qualitative + quantitative) — Q% above uses usable calls only */}
-            {schemeSummary?.summary && schemeStats && schemeStats.totalCalls > schemeStats.usableCalls && (
-              <p className="text-[10px] text-slate-300 mt-3 pt-2.5 border-t border-slate-50">
-                This summary reflects citizen feedback from all {schemeStats.totalCalls} calls to this scheme.
-                The Q percentages shown above are computed from {schemeStats.usableCalls} usable calls (those where Q1 was formally answered).
-              </p>
-            )}
+            {/* ── Data vs summary consistency check ── */}
+            {schemeSummary?.summary && schemeStats && (() => {
+              const q1Pct  = schemeStats.q1Pct          // % daily supply from formal Q
+              const sumLow = schemeSummary.summary.toLowerCase()
+              // Detect: summary implies some daily supply but formal data shows very low/zero
+              const summaryClaimsSupply   = /some households receive|receive water daily|daily|regularly/i.test(schemeSummary.summary)
+              const summaryClaimsQuality  = /quality|clean|smell|iron|colour|color|discoloura/i.test(schemeSummary.summary)
+              const q2BaseZero = schemeStats.totalCalls > 3 && schemeStats.q2Pct === 0 && !sumLow.includes('no quality data')
+              const supplyContradiction = q1Pct < 10 && summaryClaimsSupply
+
+              if (!supplyContradiction && !q2BaseZero) return null
+              return (
+                <div className="mt-3 pt-2.5 border-t border-orange-100 bg-orange-50/50 rounded-b -mx-5 px-5 pb-3">
+                  <p className="text-[10px] font-semibold text-orange-700 mb-1">Data note</p>
+                  <p className="text-[10px] text-orange-600 leading-relaxed">
+                    {supplyContradiction
+                      ? `Survey responses show ${q1Pct}% daily supply (${schemeStats.usableCalls} responses). The narrative above is a general pattern summary and may not precisely reflect the severity reported by callers to this scheme.`
+                      : 'Quality data from formal responses is limited for this scheme. The narrative reflects qualitative observations from call transcripts.'}
+                  </p>
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}
