@@ -432,7 +432,9 @@ function tinsukiaBase(
       { label: 'Refused/other', pct: `${(100-kpi.consentRate).toFixed(1)}%`,     n: (total - consented).toLocaleString(), dot: 'bg-red-400', color: 'text-red-600' },
     ],
     consentNoteText:   `${kpi.consentRate} + ${(100-kpi.consentRate).toFixed(1)} = 100% ✓`,
-    validSchemesText:  `Of ${sc.valid} valid schemes:`,
+    validSchemesText:  (sc as any).surveyed
+      ? `${(sc as any).surveyed} schemes surveyed · ${sc.valid} with reliable scores:`
+      : `Of ${sc.valid} valid schemes:`,
     bestDistrict:      { name: best?.district ?? '—',  bsi5: ((best?.bsi  ?? 0)*5).toFixed(2) },
     worstDistrict:     { name: worst?.district ?? '—', bsi5: ((worst?.bsi ?? 0)*5).toFixed(2) },
     districtCountLabel: ds.length.toString(),

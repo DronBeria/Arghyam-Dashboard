@@ -191,6 +191,7 @@ export const Q5_SPLIT = {
 export const SCHEME_COVERAGE = {
   total: 1053, valid: 8, validPct: 0.8, flagged: 27, flaggedPct: 2.6,
   noData: 1018, noDataPct: 96.7, functional: 3, nonFunctional: 5, functionalRate: 37.5, minThreshold: 6,
+  surveyed: 35,   // schemes with ≥1 usable call (8 reliable + 27 limited data)
 }
 
 export const ZONE_SCORES = [

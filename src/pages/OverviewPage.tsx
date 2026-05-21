@@ -1002,7 +1002,11 @@ export function OverviewPage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-sm font-bold text-gray-800">Scheme Coverage</p>
-                <p className="text-xs text-gray-400">{fmt(SCHEME_COVERAGE.total)} IMIS schemes total · sums to 100%</p>
+                <p className="text-xs text-gray-400">
+                  {(SCHEME_COVERAGE as any).surveyed
+                    ? <><span className="font-semibold text-slate-500">{(SCHEME_COVERAGE as any).surveyed} surveyed</span> · {fmt(SCHEME_COVERAGE.valid)} reliable · {fmt(SCHEME_COVERAGE.total)} IMIS total</>
+                    : <>{fmt(SCHEME_COVERAGE.total)} IMIS schemes total · sums to 100%</>}
+                </p>
               </div>
               <span className="text-xs text-blue-500 group-hover:text-blue-700 font-medium">Details →</span>
             </div>
@@ -1013,9 +1017,9 @@ export function OverviewPage() {
             </div>
             <div className="flex justify-between text-xs">
               {[
-                { label: 'Valid (≥6 calls)', n: SCHEME_COVERAGE.valid,   pct: SCHEME_COVERAGE.validPct,   color: 'text-emerald-700', dot: 'bg-emerald-400' },
-                { label: 'Flagged (1–5)',    n: SCHEME_COVERAGE.flagged, pct: SCHEME_COVERAGE.flaggedPct, color: 'text-amber-700',   dot: 'bg-amber-400'   },
-                { label: 'No data',          n: SCHEME_COVERAGE.noData,  pct: SCHEME_COVERAGE.noDataPct,  color: 'text-gray-400',    dot: 'bg-gray-300'    },
+                { label: (SCHEME_COVERAGE as any).surveyed ? 'Reliable score (≥6)' : 'Valid (≥6 calls)', n: SCHEME_COVERAGE.valid,   pct: SCHEME_COVERAGE.validPct,   color: 'text-emerald-700', dot: 'bg-emerald-400' },
+                { label: 'Limited data (1–5)',  n: SCHEME_COVERAGE.flagged, pct: SCHEME_COVERAGE.flaggedPct, color: 'text-amber-700',   dot: 'bg-amber-400'   },
+                { label: 'No data',              n: SCHEME_COVERAGE.noData,  pct: SCHEME_COVERAGE.noDataPct,  color: 'text-gray-400',    dot: 'bg-gray-300'    },
               ].map(s => (
                 <div key={s.label} className="flex items-start gap-1.5">
                   <div className={`w-2 h-2 rounded-full ${s.dot} flex-shrink-0 mt-0.5`} />
@@ -1049,7 +1053,11 @@ export function OverviewPage() {
                       </div>
                     ))}
                 </div>
-                <p className="text-[9px] text-gray-400 mt-1">Click a district to drill down · {SCHEME_COVERAGE.valid} valid schemes total</p>
+                <p className="text-[9px] text-gray-400 mt-1">
+                  {(SCHEME_COVERAGE as any).surveyed
+                    ? `${(SCHEME_COVERAGE as any).surveyed} schemes surveyed · ${SCHEME_COVERAGE.valid} with reliable scores · click to drill down`
+                    : `Click a district to drill down · ${SCHEME_COVERAGE.valid} valid schemes total`}
+                </p>
               </div>
             )}
           </div>
