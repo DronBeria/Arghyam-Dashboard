@@ -390,19 +390,36 @@ export function OverviewPage() {
     q: q.id, label: q.label, pct: q.yesPct, max: 100, status: q.status, insight: '',
   })), [KPI_QUESTIONS])
 
-  // Build Q bars — component-derived for zone/district, direct % for state
+  // Build Q bars — when a scheme is selected use live Supabase data for full consistency;
+  // otherwise derive from BSI components stored in DISTRICT_SCORES
   const qBars = useMemo(() => {
     if (scopeType === 'state') return STATE_Q
+
+    // Scheme selected — use the live Supabase schemeStats so right panel
+    // matches the left-panel Q breakdown exactly (no more district-vs-scheme mismatch)
+    if (schemeFilter && schemeStats) {
+      const stat = (pct: number) => pct >= 70 ? 'Good' : pct >= 40 ? 'Moderate' : 'Critical'
+      return [
+        { q: 'Q1',  label: 'Daily Supply',          pct: schemeStats.q1Pct,  max: 100, status: stat(schemeStats.q1Pct),  insight: '' },
+        { q: 'Q1A', label: 'Consistent Timing',     pct: schemeStats.q1aPct, max: 100, status: stat(schemeStats.q1aPct), insight: '' },
+        { q: 'Q2',  label: 'Water Quality',         pct: schemeStats.q2Pct,  max: 100, status: stat(schemeStats.q2Pct),  insight: '' },
+        { q: 'Q3',  label: 'Water Quantity',        pct: schemeStats.q3Pct,  max: 100, status: stat(schemeStats.q3Pct),  insight: '' },
+        { q: 'Q5',  label: 'Overall Satisfaction',  pct: schemeStats.q5Pct,  max: 100, status: stat(schemeStats.q5Pct),  insight: '' },
+      ]
+    }
+
+    // Zone/district without scheme — derive from BSI components
     if (!scope.quality && !scope.quantity) return []
+    const pct = (v: number | null, max: number) => v !== null && v !== undefined ? +(v / max * 100).toFixed(1) : null
     const rows = [
-      { q: 'Q2', label: 'Water Quality',  pct: scope.quality ? +(scope.quality / 1.5 * 100).toFixed(1) : null, max: 100 },
-      { q: 'Q3', label: 'Water Quantity', pct: scope.quantity ? +(scope.quantity / 1.5 * 100).toFixed(1) : null, max: 100 },
-      { q: 'Q1', label: 'Daily Supply',   pct: scope.daily    ? +(scope.daily / 0.75 * 100).toFixed(1) : null,  max: 100 },
+      { q: 'Q2', label: 'Water Quality',  pct: pct(scope.quality,  1.5),  max: 100 },
+      { q: 'Q3', label: 'Water Quantity', pct: pct(scope.quantity, 1.5),  max: 100 },
+      { q: 'Q1', label: 'Daily Supply',   pct: pct(scope.daily,    0.75), max: 100 },
     ]
     return rows.filter(r => r.pct !== null).map(r => ({
-      ...r, pct: r.pct!, status: r.pct! >= 70 ? 'Good' : r.pct! >= 40 ? 'Moderate' : 'Critical',
+      ...r, pct: r.pct!, status: r.pct! >= 70 ? 'Good' : r.pct! >= 40 ? 'Moderate' : 'Critical', insight: '',
     }))
-  }, [scope, scopeType])
+  }, [scope, scopeType, schemeFilter, schemeStats, STATE_Q])
 
   function handleScopeTypeChange(t: 'state' | 'zone' | 'district') {
     setScopeType(t)
@@ -751,8 +768,8 @@ export function OverviewPage() {
             </div>
           )}
 
-          {/* State-level note */}
-          {scopeType !== 'state' && (
+          {/* Zone/district note — hidden when a specific scheme is selected (all Qs available then) */}
+          {scopeType !== 'state' && !(schemeFilter && schemeStats) && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <p className="text-xs text-gray-400">
                 {scopeType === 'district' ? 'Q1A & Q5 not available at district level' : 'Q1A & Q5 not available at zone level'}
@@ -769,7 +786,9 @@ export function OverviewPage() {
               <p className="panel-sub mt-0.5">
                 {scopeType === 'state'
                   ? 'Q1–Q5 · from call responses · Good ≥70%'
-                  : 'Q1–Q3 derived from Score components · Good ≥70%'}
+                  : (schemeFilter && schemeStats)
+                    ? 'Q1–Q5 · from scheme call records · Good ≥70%'
+                    : 'Q1–Q3 derived from Score components · Good ≥70%'}
               </p>
             </div>
             {scopeType === 'state' && (
