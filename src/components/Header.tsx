@@ -26,7 +26,7 @@ const QUICK_LINKS = [
     items: [
       { id: 'records', label: 'Dissatisfied calls with recordings', icon: '😞', desc: 'Call Records → Dissatisfied + Recording preset' },
       { id: 'geographic', label: 'Critical zones deep-dive', icon: '🔴', desc: 'BTAD & Barak Valley districts' },
-      { id: 'schemes', label: 'Irregular supply schemes', icon: '⚠️', desc: '507 schemes with irregular water supply' },
+      { id: 'schemes', label: 'Irregular supply schemes', icon: '⚠️', desc: '643 schemes with irregular water supply' },
     ],
   },
 ]

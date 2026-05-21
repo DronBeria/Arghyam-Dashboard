@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { ZONE_SCORES, DISTRICT_SCORES, KPI_HEADLINE } from '../data/csatData'
+import { ZONE_SCORES, DISTRICT_SCORES, KPI_HEADLINE } from '../data/csatDataFull'
 
 // ── Event helpers ─────────────────────────────────────────────────────────────
 export function goToPage(page: string) {
@@ -36,10 +36,11 @@ function buildIndex(): Item[] {
   const pages: [string, string, string][] = [
     ['overview',     'Overview',         'KPIs, Citizen Satisfaction Survey Score, scope filter'],
     ['calls',        'Call Analysis',    'Call summary, attempts, repeat callers, question funnel'],
-    ['records',      'Call Records',     'Browse, filter and play 45,863 individual call recordings'],
+    ['records',      'Call Records',     'Browse, filter and play 125,588 individual call recordings'],
     ['survey',       'Survey Results',   'Q1–Q5 KPIs, satisfaction breakdown, question funnel'],
-    ['schemes',      'Scheme Coverage',  '2,373 IMIS schemes · valid / flagged / non-functional'],
-    ['geographic',   'Zone & Districts', 'Score by zone + 31 districts'],
+    ['schemes',      'Scheme Coverage',  '5,968 IMIS schemes · valid / flagged / non-functional'],
+    ['geographic',   'Zone & Districts', 'Score by zone + 33 districts'],
+    ['comparison',   'Phase Comparison', 'Phase 1 vs Phase 2 side-by-side analysis'],
     ['verification', 'Data Verification','Python script proofs, sanity checks, bot error analysis'],
   ]
   pages.forEach(([id, title, sub]) => items.push({
@@ -80,20 +81,20 @@ function buildIndex(): Item[] {
   // Key metrics — quick facts
   const bsi5 = (KPI_HEADLINE.stateBSI * 5).toFixed(2)
   const metrics: [string, string, string][] = [
-    ['State Score',      `${bsi5}/5.0 — Moderate, target ≥3.50`,      'calls'],
-    ['Q1 Daily Water',   '30.95% Yes — Critical, only 1 in 3 households', 'survey'],
-    ['Q2 Water Quality', '72.33% Yes — Good, above 70% benchmark',        'survey'],
-    ['Q3 Water Quantity','62.23% Yes — Moderate',                         'survey'],
-    ['Q1A Consistent Timing', '57.2% Yes — Moderate · follow-up to Q1',  'survey'],
-    ['Q5 Satisfaction',  '51.7% satisfied · 25.6% dissatisfied',          'survey'],
-    ['Valid Schemes',      '615 of 2,373 — 17.6% supply water regularly',   'schemes'],
-    ['Irregular Supply',   '507 of 615 valid schemes with irregular supply', 'schemes'],
-    ['Consent Rate',     '27.4% — 12,583 of 45,863 calls consented',      'calls'],
-    ['Repeat Callers',   '170 households · 44.7% consent vs 27.4% first', 'calls'],
-    ['BTAD Zone',        'Critical — Score 1.92/5 · 142 usable calls',      'geographic'],
-    ['Barak Valley',     'Critical — Score 1.89/5 · 339 usable calls',      'geographic'],
-    ['Hailakandi',       'Worst district — Score 1.39/5 · 12 usable calls', 'geographic'],
-    ['Sivasagar',        'Best district — Score 2.66/5 · 262 usable calls', 'geographic'],
+    ['State Score',           `${bsi5}/5.0 — Moderate, target ≥3.50`,                'calls'],
+    ['Q1 Daily Water',        '30.61% Yes — Critical, only 1 in 3 households',        'survey'],
+    ['Q2 Water Quality',      '72.68% Yes — Good, above 70% benchmark',               'survey'],
+    ['Q3 Water Quantity',     '63.35% Yes — Moderate',                                'survey'],
+    ['Q1A Consistent Timing', '57.0% Yes — Moderate · follow-up to Q1',              'survey'],
+    ['Q5 Satisfaction',       '53.1% satisfied · 24.7% dissatisfied · 22.1% neutral','survey'],
+    ['Valid Schemes',         '882 of 5,968 — 27.1% supply water regularly',          'schemes'],
+    ['Irregular Supply',      '643 of 882 valid schemes with irregular supply',        'schemes'],
+    ['Consent Rate',          '20.4% — 25,617 of 125,588 calls consented',            'calls'],
+    ['Repeat Callers',        '3,958 Phase 1 re-contacts · 22.2% consent vs 20.3%',  'calls'],
+    ['BTAD Zone',             'Moderate — Score 2.05/5 · 178 usable calls',           'geographic'],
+    ['Barak Valley',          'Moderate — Score 2.44/5 · 424 usable calls',           'geographic'],
+    ['Hailakandi',            'Worst district — Score 1.54/5 · 13 usable calls',      'geographic'],
+    ['Dhubri',                'Best district — Score 3.30/5 · 405 usable calls',      'geographic'],
   ]
   metrics.forEach(([title, sub, page]) => items.push({
     id: `metric:${title}`, title, sub, tag: 'Metric',

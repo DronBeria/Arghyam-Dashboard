@@ -579,7 +579,7 @@ export function OverviewPage() {
                   : 'No Q5 data for this scope',
             accent: 'border-l-teal-500',
             valueColor: 'text-slate-900',
-            badge: activeScheme ? '' : (scopeType === 'state' ? '51.7% satisfied' : ''),
+            badge: activeScheme ? '' : (scopeType === 'state' ? `${KPI_HEADLINE.satisfied}% satisfied` : ''),
           },
           {
             value: activeScheme
